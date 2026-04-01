@@ -1,6 +1,5 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente;
 
-
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
