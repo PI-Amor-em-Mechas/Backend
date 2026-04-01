@@ -26,5 +26,10 @@ public class PacienteService {
 
     }
 
+    public PacienteResponseDto findById(Integer id) {
+        Paciente paciente = repository.findById(id).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+        return mapper.toResponse(paciente);
+    }
+
 
 }
