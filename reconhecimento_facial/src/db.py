@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any
 
-import config
+import reconhecimento_facial.src.config as config
 
 
 def _get_conn() -> sqlite3.Connection:

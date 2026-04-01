@@ -4,8 +4,8 @@ import logging
 import cv2
 import numpy as np
 
-import config
-import db
+import reconhecimento_facial.src.config as config
+import reconhecimento_facial.src.db as db
 
 LOGGER = logging.getLogger(__name__)
 

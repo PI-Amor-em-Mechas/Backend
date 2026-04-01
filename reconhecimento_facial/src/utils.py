@@ -9,7 +9,7 @@ import numpy as np
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
-import config
+import reconhecimento_facial.src.config as config
 
 LOGGER = logging.getLogger(__name__)
 

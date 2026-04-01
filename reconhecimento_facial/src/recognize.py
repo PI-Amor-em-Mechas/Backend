@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 
 import cv2
 
-import config
-import db
-from utils import create_face_detector, detect_largest_face, draw_overlay, preprocess_face, utc_now_iso
+import reconhecimento_facial.src.config as config
+import reconhecimento_facial.src.db as db
+from reconhecimento_facial.src.utils import create_face_detector, detect_largest_face, draw_overlay, preprocess_face, utc_now_iso
 
 LOGGER = logging.getLogger(__name__)
 

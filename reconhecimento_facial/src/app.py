@@ -1,10 +1,10 @@
 import logging
 
-import config
-import db
-from capture import prompt_and_capture
-from recognize import run_recognition_loop
-from train import train_model
+import reconhecimento_facial.src.config as config
+import reconhecimento_facial.src.db as db
+from reconhecimento_facial.src.capture import prompt_and_capture
+from reconhecimento_facial.src.recognize import run_recognition_loop
+from reconhecimento_facial.src.train import train_model
 
 
 def _configure_logging() -> None:

@@ -2,9 +2,9 @@ import logging
 
 import cv2
 
-import config
-import db
-from utils import create_face_detector, detect_largest_face, preprocess_face
+import reconhecimento_facial.src.config as config
+import reconhecimento_facial.src.db as db
+from reconhecimento_facial.src.utils import create_face_detector, detect_largest_face, preprocess_face
 
 LOGGER = logging.getLogger(__name__)
 
