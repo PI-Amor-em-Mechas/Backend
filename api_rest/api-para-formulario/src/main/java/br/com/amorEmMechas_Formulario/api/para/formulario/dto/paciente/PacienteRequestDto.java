@@ -13,6 +13,7 @@ import java.util.List;
 
 public class PacienteRequestDto {
 
+    
     @NotBlank(message = "Nome não pode estar vazio")
     private String nomeCompleto;
 
