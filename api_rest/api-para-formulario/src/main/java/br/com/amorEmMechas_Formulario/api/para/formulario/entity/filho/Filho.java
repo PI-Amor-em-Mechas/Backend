@@ -4,6 +4,9 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "Filho")
 public class Filho {
@@ -18,6 +21,8 @@ public class Filho {
     @ManyToOne
     @JoinColumn(name = "fkPaciente" )
     private Paciente paciente;
+
+
 
 
     public Integer getId() {

@@ -1,78 +1,38 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.endereco.EnderecoResponseDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class PacienteResponseDto {
 
     private Integer id;
-
     private String nomeCompleto;
-
     private String email;
-
     private LocalDate dtPedido;
-
+    private String cabeloAntesBase64;
     private String cel;
-
     private LocalDate dtNasc;
-
     private String estadoCivil;
-
     private Boolean temFilhos;
-
     private Integer qtdPessoasEmCasa;
-
     private String cpf;
 
-    public String getCel() {
-        return cel;
+    private EnderecoResponseDto endereco;
+    private DadosMedicosResponseDto dadosMedicos;
+
+    private List<FilhoResponseDto> filhos;
+
+    // Getters e Setters
+    public Integer getId() {
+        return id;
     }
 
-    public void setCel(String cel) {
-        this.cel = cel;
-    }
-
-    public String getCpf() {
-        return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
-
-    public LocalDate getDtNasc() {
-        return dtNasc;
-    }
-
-    public void setDtNasc(LocalDate dtNasc) {
-        this.dtNasc = dtNasc;
-    }
-
-    public LocalDate getDtPedido() {
-        return dtPedido;
-    }
-
-    public void setDtPedido(LocalDate dtPedido) {
-        this.dtPedido = dtPedido;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getEstadoCivil() {
-        return estadoCivil;
-    }
-
-    public void setEstadoCivil(String estadoCivil) {
-        this.estadoCivil = estadoCivil;
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getNomeCompleto() {
@@ -83,12 +43,52 @@ public class PacienteResponseDto {
         this.nomeCompleto = nomeCompleto;
     }
 
-    public Integer getQtdPessoasEmCasa() {
-        return qtdPessoasEmCasa;
+    public String getEmail() {
+        return email;
     }
 
-    public void setQtdPessoasEmCasa(Integer qtdPessoasEmCasa) {
-        this.qtdPessoasEmCasa = qtdPessoasEmCasa;
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public LocalDate getDtPedido() {
+        return dtPedido;
+    }
+
+    public void setDtPedido(LocalDate dtPedido) {
+        this.dtPedido = dtPedido;
+    }
+
+    public String getCabeloAntesBase64() {
+        return cabeloAntesBase64;
+    }
+
+    public void setCabeloAntesBase64(String cabeloAntesBase64) {
+        this.cabeloAntesBase64 = cabeloAntesBase64;
+    }
+
+    public String getCel() {
+        return cel;
+    }
+
+    public void setCel(String cel) {
+        this.cel = cel;
+    }
+
+    public LocalDate getDtNasc() {
+        return dtNasc;
+    }
+
+    public void setDtNasc(LocalDate dtNasc) {
+        this.dtNasc = dtNasc;
+    }
+
+    public String getEstadoCivil() {
+        return estadoCivil;
+    }
+
+    public void setEstadoCivil(String estadoCivil) {
+        this.estadoCivil = estadoCivil;
     }
 
     public Boolean getTemFilhos() {
@@ -99,11 +99,43 @@ public class PacienteResponseDto {
         this.temFilhos = temFilhos;
     }
 
-    public Integer getId() {
-        return id;
+    public Integer getQtdPessoasEmCasa() {
+        return qtdPessoasEmCasa;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public void setQtdPessoasEmCasa(Integer qtdPessoasEmCasa) {
+        this.qtdPessoasEmCasa = qtdPessoasEmCasa;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
+    }
+
+    public EnderecoResponseDto getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(EnderecoResponseDto endereco) {
+        this.endereco = endereco;
+    }
+
+    public DadosMedicosResponseDto getDadosMedicos() {
+        return dadosMedicos;
+    }
+
+    public void setDadosMedicos(DadosMedicosResponseDto dadosMedicos) {
+        this.dadosMedicos = dadosMedicos;
+    }
+
+    public List<FilhoResponseDto> getFilhos() {
+        return filhos;
+    }
+
+    public void setFilhos(List<FilhoResponseDto> filhos) {
+        this.filhos = filhos;
     }
 }
