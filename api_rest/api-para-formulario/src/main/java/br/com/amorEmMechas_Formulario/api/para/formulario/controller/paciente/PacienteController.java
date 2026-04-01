@@ -30,4 +30,10 @@ public class PacienteController {
 
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<PacienteResponseDto> findById (@PathVariable Integer id){
+        PacienteResponseDto response = service.findById(id);
+        return ResponseEntity.ok(response);
+    }
+
 }
