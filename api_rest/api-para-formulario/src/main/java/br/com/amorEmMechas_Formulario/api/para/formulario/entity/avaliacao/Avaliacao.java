@@ -2,6 +2,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.entity.avaliacao;
 
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -15,8 +16,8 @@ public class Avaliacao {
     private Integer id;
 
     @OneToOne
-    @JoinColumn(name = "fkPaciente")
-    private Paciente paciente;
+    @JoinColumn(name = "fkSolicitante")
+    private Solicitante solicitante;
 
     private Integer notaFormulario;
 
@@ -66,11 +67,11 @@ public class Avaliacao {
         this.notaFormulario = notaFormulario;
     }
 
-    public Paciente getPaciente() {
-        return paciente;
+    public Solicitante getSolicitante() {
+        return solicitante;
     }
 
-    public void setPaciente(Paciente paciente) {
-        this.paciente = paciente;
+    public void setSolicitante(Solicitante solicitante) {
+        this.solicitante = solicitante;
     }
 }

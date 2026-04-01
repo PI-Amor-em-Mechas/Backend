@@ -33,10 +33,6 @@ public class Paciente {
     private Endereco endereco;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "fkKit")
-    private KitAmor kit;
-
-    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "fkDadosMedico")
     private DadosMedicos dadosMedicos;
 
@@ -118,14 +114,6 @@ public class Paciente {
 
     public void setId(Integer id) {
         this.id = id;
-    }
-
-    public KitAmor getKit() {
-        return kit;
-    }
-
-    public void setKit(KitAmor kit) {
-        this.kit = kit;
     }
 
     public String getNomeCompleto() {

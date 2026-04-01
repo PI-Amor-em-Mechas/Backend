@@ -1,6 +1,7 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.entity.kitAmor;
 
 
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import jakarta.persistence.*;
 
@@ -17,6 +18,10 @@ public class KitAmor {
     @ManyToOne
     @JoinColumn(name = "fkSolicitante")
     private Solicitante solicitante;
+
+    @OneToOne
+    @JoinColumn(name = "fkPaciente")
+    private Paciente paciente;
 
 
     public String getCorPeruca() {
@@ -41,5 +46,13 @@ public class KitAmor {
 
     public void setSolicitante(Solicitante solicitante) {
         this.solicitante = solicitante;
+    }
+
+    public Paciente getPaciente() {
+        return paciente;
+    }
+
+    public void setPaciente(Paciente paciente) {
+        this.paciente = paciente;
     }
 }
