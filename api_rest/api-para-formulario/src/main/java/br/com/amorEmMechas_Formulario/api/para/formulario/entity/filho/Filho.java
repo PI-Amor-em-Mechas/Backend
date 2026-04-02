@@ -19,7 +19,7 @@ public class Filho {
     private Integer idade;
 
     @ManyToOne
-    @JoinColumn(name = "fkPaciente" )
+    @JoinColumn(name = "paciente_id" )
     private Paciente paciente;
 
 
