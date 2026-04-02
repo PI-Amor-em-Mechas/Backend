@@ -38,7 +38,6 @@ public class DadosMedicosMapper {
         dto.setDtInicioTratamento(entity.getDtInicioTratamento());
         dto.setTipoAtendimento(entity.getTipoAtendimento());
 
-        // Se quiser devolver a imagem em Base64
         if (entity.getRelatorioMedico() != null) {
             dto.setRelatorioMedicoBase64(Base64.getEncoder().encodeToString(entity.getRelatorioMedico()));
         }
