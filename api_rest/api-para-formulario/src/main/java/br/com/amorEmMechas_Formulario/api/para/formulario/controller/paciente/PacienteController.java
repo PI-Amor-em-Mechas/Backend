@@ -15,10 +15,8 @@ import org.springframework.web.bind.annotation.*;
 public class PacienteController {
 
     private PacienteService service;
-    private PacienteMapper mapper;
 
     public PacienteController(PacienteMapper mapper, PacienteService service) {
-        this.mapper = mapper;
         this.service = service;
     }
 

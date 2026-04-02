@@ -11,6 +11,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.filho.FilhoMapp
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,16 +51,16 @@ public class PacienteMapper {
         dto.setDadosMedicos(dadosMedicosMapper.toResponse(paciente.getDadosMedicos()));
 
         if (paciente.getFilhos() != null) {
-            List<FilhoResponseDto> filhosDto = paciente.getFilhos().stream()
-                    .map(f -> {
-                        FilhoResponseDto fr = new FilhoResponseDto();
-                        fr.setId(f.getId());
-                        fr.setIdade(f.getIdade());
-                        return fr;
-                    })
-                    .collect(Collectors.toList());
+            List<FilhoResponseDto> filhosDto = new ArrayList<>();
+            for (Filho f : paciente.getFilhos()) {
+                FilhoResponseDto fr = new FilhoResponseDto();
+                fr.setId(f.getId());
+                fr.setIdade(f.getIdade());
+                filhosDto.add(fr);
+            }
             dto.setFilhos(filhosDto);
         }
+
 
 
         return dto;
@@ -86,7 +87,6 @@ public class PacienteMapper {
         paciente.setEndereco(enderecoMapper.toEntity(dto.getEndereco()));
         paciente.setDadosMedicos(dadosMedicosMapper.toEntity(dto.getDadosMedicos()));
 
-        // Converte lista de filhos do DTO para entidade
         if (dto.getFilhos() != null) {
             List<Filho> filhos = dto.getFilhos().stream()
                     .map(f -> filhoMapper.toEntity(f, paciente))

@@ -53,7 +53,6 @@ public class PacienteRequestDto {
     @NotNull(message = "Dados médicos não podem ser nulos")
     private DadosMedicosRequestDto dadosMedicos;
 
-
     private List<FilhoRequestDto> filhos;
 
     public String getNomeCompleto() {

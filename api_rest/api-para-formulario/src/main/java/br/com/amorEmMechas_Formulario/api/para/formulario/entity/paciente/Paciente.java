@@ -32,16 +32,15 @@
         private byte[] cabeloAntes;
 
         @OneToOne(cascade = CascadeType.ALL)
-        @JoinColumn(name = "fkEndereco")
+        @JoinColumn(name = "endereco_id")
         private Endereco endereco;
 
         @OneToOne(cascade = CascadeType.ALL)
-        @JoinColumn(name = "fkDadosMedico")
+        @JoinColumn(name = "dados_medicos_id")
         private DadosMedicos dadosMedicos;
 
         @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
         private List<Filho> filhos = new ArrayList<>();
-
 
         public byte[] getCabeloAntes() {
             return cabeloAntes;

@@ -5,7 +5,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteR
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente.PacienteMapper;
-import br.com.amorEmMechas_Formulario.api.para.formulario.repository.PacienteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import org.springframework.stereotype.Service;
 
 @Service
