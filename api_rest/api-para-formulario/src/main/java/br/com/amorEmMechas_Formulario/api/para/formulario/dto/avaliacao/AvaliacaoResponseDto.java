@@ -1,30 +1,29 @@
-package br.com.amorEmMechas_Formulario.api.para.formulario.entity.avaliacao;
+package br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao;
 
-
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.solicitante.SolicitanteRequestDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.solicitante.SolicitanteResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
-import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 
-@Entity
-@Table(name = "Avaliacao")
-public class Avaliacao {
+public class AvaliacaoResponseDto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Integer id;
 
-    @OneToOne
-    @JoinColumn(name = "solicitante_id")
-    private Solicitante solicitante;
+    private SolicitanteResponseDto solicitante;
 
     private Integer notaFormulario;
 
-    private Boolean consentimento;
-
     private Boolean concluido;
 
+    private Boolean consentimento;
+
     private LocalDate dtConclusao;
+
 
     public Boolean getConcluido() {
         return concluido;
@@ -50,14 +49,6 @@ public class Avaliacao {
         this.dtConclusao = dtConclusao;
     }
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
     public Integer getNotaFormulario() {
         return notaFormulario;
     }
@@ -66,11 +57,19 @@ public class Avaliacao {
         this.notaFormulario = notaFormulario;
     }
 
-    public Solicitante getSolicitante() {
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public SolicitanteResponseDto getSolicitante() {
         return solicitante;
     }
 
-    public void setSolicitante(Solicitante solicitante) {
+    public void setSolicitante(SolicitanteResponseDto solicitante) {
         this.solicitante = solicitante;
     }
 }
