@@ -16,11 +16,11 @@ public class KitAmor {
     private String corPeruca;
 
     @ManyToOne
-    @JoinColumn(name = "fkSolicitante")
+    @JoinColumn(name = "solicitante_id")
     private Solicitante solicitante;
 
     @OneToOne
-    @JoinColumn(name = "fkPaciente")
+    @JoinColumn(name = "paciente_id")
     private Paciente paciente;
 
 
