@@ -6,6 +6,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao.Avaliaca
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.avaliacao.Avaliacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
+import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.avaliacao.AvaliacaoMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.solicitante.SolicitanteMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.avaliacao.AvaliacaoRepository;
@@ -34,13 +35,7 @@ public class AvaliacaoService {
 
     public AvaliacaoResponseDto create (AvaliacaoRequestDto dto){
 
-        if (dto.getSolicitante() == null) {
-            throw new IllegalArgumentException("Solicitante não pode ser nulo");
-        }
-
-
-        Solicitante solicitante = solicitanteMapper.toEntity(dto.getSolicitante());
-        solicitante = solicitanteRepository.save(solicitante);
+        Solicitante solicitante = solicitanteRepository.findById(dto.getSolicitanteId()).orElseThrow(() -> new IdNotFoundException("ID SOLICITANTE: " + dto.getSolicitanteId() + " Não Encontrado" ));
 
         Avaliacao avaliacao = mapper.toEntity(dto);
         avaliacao.setSolicitante(solicitante);

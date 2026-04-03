@@ -33,7 +33,7 @@ public class AvaliacaoMapper {
         avaliacao.setConsentimento(dto.getConsentimento());
         avaliacao.setConcluido(dto.getConcluido());
         avaliacao.setDtConclusao(dto.getDtConclusao());
-        avaliacao.setSolicitante(mapper.toEntity(dto.getSolicitante()));
+
 
         return avaliacao;
     }

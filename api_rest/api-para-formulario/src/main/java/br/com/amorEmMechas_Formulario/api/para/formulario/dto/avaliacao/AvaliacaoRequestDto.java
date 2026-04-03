@@ -15,8 +15,8 @@ public class AvaliacaoRequestDto {
 
 
     @NotNull(message = "Solicitante não pode ser vazio")
-    @JsonProperty("solicitante")
-    private SolicitanteRequestDto solicitante;
+    @JsonProperty("solicitanteId")
+    private Integer solicitanteId;
 
     @NotNull(message = "Nota não pode ser vazia")
     @Min(value = 0)
@@ -64,11 +64,11 @@ public class AvaliacaoRequestDto {
         this.notaFormulario = notaFormulario;
     }
 
-    public SolicitanteRequestDto getSolicitante() {
-        return solicitante;
+    public Integer getSolicitanteId() {
+        return solicitanteId;
     }
 
-    public void setSolicitante(SolicitanteRequestDto solicitante) {
-        this.solicitante = solicitante;
+    public void setSolicitanteId(Integer solicitanteId) {
+        this.solicitanteId = solicitanteId;
     }
 }
