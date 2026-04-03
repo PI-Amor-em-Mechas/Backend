@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 
 public class PacienteRequestDto {
@@ -45,15 +44,19 @@ public class PacienteRequestDto {
 
 
 
-    @Valid
+
     @NotNull(message = "Endereço não pode ser nulo")
-    private EnderecoRequestDto endereco;
+    private Integer enderecoId;
 
-    @Valid
+
     @NotNull(message = "Dados médicos não podem ser nulos")
-    private DadosMedicosRequestDto dadosMedicos;
+    private Integer dadosMedicosId;
 
-    private List<FilhoRequestDto> filhos;
+    @NotNull(message = "Quantidade de filhos não podem ser nulos")
+    private Integer qtdFilhos;
+
+    private List<Integer> idadesFilhos;
+
 
     public String getNomeCompleto() {
         return nomeCompleto;
@@ -135,27 +138,36 @@ public class PacienteRequestDto {
         this.cabeloAntesBase64 = cabeloAntesBase64;
     }
 
-    public EnderecoRequestDto getEndereco() {
-        return endereco;
+    public Integer getDadosMedicosId() {
+        return dadosMedicosId;
     }
 
-    public void setEndereco(EnderecoRequestDto endereco) {
-        this.endereco = endereco;
+    public void setDadosMedicosId(Integer dadosMedicosId) {
+        this.dadosMedicosId = dadosMedicosId;
     }
 
-    public DadosMedicosRequestDto getDadosMedicos() {
-        return dadosMedicos;
+    public Integer getEnderecoId() {
+        return enderecoId;
     }
 
-    public void setDadosMedicos(DadosMedicosRequestDto dadosMedicos) {
-        this.dadosMedicos = dadosMedicos;
+    public void setEnderecoId(Integer enderecoId) {
+        this.enderecoId = enderecoId;
     }
 
-    public List<FilhoRequestDto> getFilhos() {
-        return filhos;
+
+    public List<Integer> getIdadesFilhos() {
+        return idadesFilhos;
     }
 
-    public void setFilhos(List<FilhoRequestDto> filhos) {
-        this.filhos = filhos;
+    public void setIdadesFilhos(List<Integer> idadesFilhos) {
+        this.idadesFilhos = idadesFilhos;
+    }
+
+    public Integer getQtdFilhos() {
+        return qtdFilhos;
+    }
+
+    public void setQtdFilhos(Integer qtdFilhos) {
+        this.qtdFilhos = qtdFilhos;
     }
 }

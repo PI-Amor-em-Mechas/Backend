@@ -26,7 +26,7 @@ public class PacienteResponseDto {
 
     private List<FilhoResponseDto> filhos;
 
-    // Getters e Setters
+
     public Integer getId() {
         return id;
     }

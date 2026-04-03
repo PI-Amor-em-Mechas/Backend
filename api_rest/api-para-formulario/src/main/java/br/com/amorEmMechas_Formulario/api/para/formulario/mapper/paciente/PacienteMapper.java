@@ -49,6 +49,7 @@ public class PacienteMapper {
 
         dto.setEndereco(enderecoMapper.toResponse(paciente.getEndereco()));
         dto.setDadosMedicos(dadosMedicosMapper.toResponse(paciente.getDadosMedicos()));
+        dto.setFilhos(filhoMapper.toResponseList(paciente.getFilhos()));
 
         if (paciente.getFilhos() != null) {
             List<FilhoResponseDto> filhosDto = new ArrayList<>();
@@ -84,15 +85,6 @@ public class PacienteMapper {
             paciente.setCabeloAntes(Base64.getDecoder().decode(dto.getCabeloAntesBase64()));
         }
 
-        paciente.setEndereco(enderecoMapper.toEntity(dto.getEndereco()));
-        paciente.setDadosMedicos(dadosMedicosMapper.toEntity(dto.getDadosMedicos()));
-
-        if (dto.getFilhos() != null) {
-            List<Filho> filhos = dto.getFilhos().stream()
-                    .map(f -> filhoMapper.toEntity(f, paciente))
-                    .collect(Collectors.toList());
-            paciente.setFilhos(filhos);
-        }
 
         return paciente;
     }
