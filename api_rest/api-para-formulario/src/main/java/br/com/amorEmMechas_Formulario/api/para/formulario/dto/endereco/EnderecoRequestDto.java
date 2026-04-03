@@ -7,7 +7,7 @@ public class EnderecoRequestDto {
     @NotBlank(message = "CEP não pode estar vazio")
     private String cep;
 
-    @NotBlank(message = "A rua pode estar vazio")
+    @NotBlank(message = "A rua não pode estar vazio")
     private String rua;
 
     @NotBlank(message = "Número não pode estar vazio")
