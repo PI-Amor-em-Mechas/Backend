@@ -2,7 +2,9 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho;
 
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,10 +18,13 @@ public class Filho {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+
+
     private Integer idade;
 
     @ManyToOne
     @JoinColumn(name = "paciente_id" )
+    @JsonIgnore
     private Paciente paciente;
 
 
@@ -48,4 +53,6 @@ public class Filho {
     public void setIdade(Integer idade) {
         this.idade = idade;
     }
+
+
 }

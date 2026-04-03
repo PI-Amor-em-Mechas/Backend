@@ -1,0 +1,72 @@
+package br.com.amorEmMechas_Formulario.api.para.formulario.controller.filho;
+
+
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequestDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.service.filho.FilhoService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/filhos")
+@CrossOrigin(origins = "*")
+public class FilhoController {
+
+
+    private FilhoService service;
+    private PacienteRepository pacienteRepository;
+    private FilhoRepository filhoRepository;
+
+
+    public FilhoController(FilhoRepository filhoRepository, PacienteRepository pacienteRepository, FilhoService service) {
+        this.filhoRepository = filhoRepository;
+        this.pacienteRepository = pacienteRepository;
+        this.service = service;
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<List<FilhoResponseDto>> createBatch(@RequestBody List<FilhoRequestDto> filhosDto) {
+        List<FilhoResponseDto> response = filhosDto.stream().map(dto -> {
+            Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
+                    .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+
+            Filho filho = new Filho();
+            filho.setIdade(dto.getIdade());
+            filho.setPaciente(paciente);
+            Filho saved = filhoRepository.save(filho);
+
+            int qtdFilhos = filhoRepository.countByPacienteId(dto.getPacienteId());
+            return new FilhoResponseDto(saved, qtdFilhos);
+        }).toList();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+
+    @PostMapping("/single")
+    public ResponseEntity<FilhoResponseDto> createSingle(@RequestBody FilhoRequestDto dto) {
+        Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
+                .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+
+        Filho filho = new Filho();
+        filho.setIdade(dto.getIdade());
+        filho.setPaciente(paciente);
+        Filho saved = filhoRepository.save(filho);
+
+        int qtdFilhos = filhoRepository.countByPacienteId(dto.getPacienteId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(new FilhoResponseDto(saved, qtdFilhos));
+    }
+
+
+
+
+}
