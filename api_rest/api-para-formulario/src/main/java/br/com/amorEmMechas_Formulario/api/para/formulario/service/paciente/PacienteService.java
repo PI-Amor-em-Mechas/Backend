@@ -15,6 +15,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.Filho
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -37,7 +38,7 @@ public class PacienteService {
     public PacienteResponseDto create (PacienteRequestDto dto){
         Endereco endereco = enderecoRepository.findById(dto.getEnderecoId()).orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + dto.getEnderecoId() + " Não existe"));
         DadosMedicos dadosMedicos = dadosMedicosRepository.findById(dto.getDadosMedicosId()).orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + dto.getDadosMedicosId() + " Não existe"));
-
+        dto.setDtPedido(LocalDate.now());
 
         Paciente paciente = mapper.toEntity(dto);
         paciente.setEndereco(endereco);

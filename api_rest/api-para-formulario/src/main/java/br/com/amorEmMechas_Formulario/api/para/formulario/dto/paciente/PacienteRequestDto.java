@@ -19,7 +19,6 @@ public class PacienteRequestDto {
     @NotBlank(message = "Email não pode estar vazio")
     private String email;
 
-    @NotNull(message = "Data do pedido não pode estar vazia")
     private LocalDate dtPedido;
 
     @NotBlank(message = "Celular não pode estar vazio")

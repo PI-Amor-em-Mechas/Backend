@@ -35,6 +35,7 @@
         @JoinColumn(name = "endereco_id")
         private Endereco endereco;
 
+
         @OneToOne(cascade = CascadeType.ALL)
         @JoinColumn(name = "dados_medicos_id")
         private DadosMedicos dadosMedicos;
