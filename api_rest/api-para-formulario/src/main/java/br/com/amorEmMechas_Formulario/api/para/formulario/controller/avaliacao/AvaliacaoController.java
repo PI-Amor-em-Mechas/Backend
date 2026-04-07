@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Avaliações", description = "Gerenciamento de avaliações")
 @RestController
 @CrossOrigin(origins = "*")
@@ -29,4 +31,22 @@ public class AvaliacaoController {
         AvaliacaoResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @Operation(summary = "Lista todas as avaliações")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<AvaliacaoResponseDto>> findAll() {
+        List<AvaliacaoResponseDto> response = service.findAll();
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Busca avaliação por ID")
+    @ApiResponse(responseCode = "200", description = "Avaliação encontrada")
+    @ApiResponse(responseCode = "404", description = "Avaliação não encontrada")
+    @GetMapping("/{id}")
+    public ResponseEntity<AvaliacaoResponseDto> findById(@PathVariable Integer id) {
+        AvaliacaoResponseDto response = service.findById(id);
+        return ResponseEntity.ok(response);
+    }
+
 }
