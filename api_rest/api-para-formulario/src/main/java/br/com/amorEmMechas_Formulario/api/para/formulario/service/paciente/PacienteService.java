@@ -62,9 +62,46 @@ public class PacienteService {
 
     }
 
-    public PacienteResponseDto findById(Integer id) {
-        Paciente paciente = repository.findById(id).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
-        return mapper.toResponse(paciente);
+
+
+    public PacienteResponseDto update (Integer id, PacienteRequestDto pacienteDTO){
+        Paciente paciente = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
+
+        if (pacienteDTO.getNomeCompleto() != null){
+            paciente.setNomeCompleto(pacienteDTO.getNomeCompleto());
+        }
+        if (pacienteDTO.getCpf() != null){
+            paciente.setCpf(pacienteDTO.getCpf());
+        }
+        if (pacienteDTO.getEnderecoId() != null){
+                Endereco endereco = enderecoRepository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
+                paciente.setEndereco(endereco);
+        }
+        if (pacienteDTO.getDadosMedicosId() != null){
+            DadosMedicos dadosMedicos = dadosMedicosRepository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
+            paciente.setDadosMedicos(dadosMedicos);
+        }
+        if (pacienteDTO.getTemFilhos() != null) {
+            paciente.setTemFilhos(pacienteDTO.getTemFilhos());
+            if (pacienteDTO.getTemFilhos() && pacienteDTO.getIdadesFilhos() != null) {
+                List<Filho> filhos = pacienteDTO.getIdadesFilhos().stream()
+                        .map(idade -> {
+                            Filho f = new Filho();
+                            f.setIdade(idade);
+                            f.setPaciente(paciente);
+                            return filhoRepository.save(f);
+                        })
+                        .toList();
+                paciente.setFilhos(filhos);
+            }
+        }
+
+
+        Paciente atualizado = repository.save(paciente);
+        return mapper.toResponse(atualizado);
+
+
+
     }
 
 
