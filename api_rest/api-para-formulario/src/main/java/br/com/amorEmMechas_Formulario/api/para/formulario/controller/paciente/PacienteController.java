@@ -1,3 +1,17 @@
+package br.com.amorEmMechas_Formulario.api.para.formulario.controller.paciente;
+
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente.PacienteMapper;
+import br.com.amorEmMechas_Formulario.api.para.formulario.service.paciente.PacienteService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 @Tag(name = "Pacientes", description = "Gerenciamento de pacientes")
 @RestController
 @RequestMapping("/pacientes")
@@ -19,12 +33,16 @@ public class PacienteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "Busca paciente por ID")
-    @ApiResponse(responseCode = "200", description = "Paciente encontrado")
-    @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
-    @GetMapping("/{id}")
-    public ResponseEntity<PacienteResponseDto> findById(@PathVariable Integer id) {
-        PacienteResponseDto response = service.findById(id);
-        return ResponseEntity.ok(response);
+
+    @Operation(summary = "Atualiza um paciente")
+    @ApiResponse(responseCode = "200", description = "Paciente atualizado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @PutMapping("/{id}")
+    public ResponseEntity<PacienteResponseDto> update(@PathVariable Integer id, @RequestBody @Valid PacienteRequestDto dto){
+        PacienteResponseDto res = service.update(id, dto);
+        return ResponseEntity.status(HttpStatus.OK).body(res);
     }
+
+
+
 }
