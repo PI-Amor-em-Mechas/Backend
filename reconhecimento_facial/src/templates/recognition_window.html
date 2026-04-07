@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Janela de Reconhecimento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body class="recognition-body">
+    <main class="recognition-page">
+      <section class="video-panel">
+        <header class="video-header">
+          <h1>Reconhecimento em Tempo Real</h1>
+          <p>Mantenha o rosto centralizado. A confirmacao de identidade aparece no canto inferior direito.</p>
+        </header>
+
+        <video id="cameraFeed" autoplay muted playsinline></video>
+        <canvas id="captureCanvas" class="hidden"></canvas>
+
+        <div id="statusBox" class="status overlay-status">Inicializando camera...</div>
+      </section>
+    </main>
+
+    <aside id="identityToast" class="identity-toast hidden" aria-live="polite">
+      <img id="identityPhoto" alt="Foto da pessoa reconhecida" />
+      <div class="identity-content">
+        <h2 id="identityName">-</h2>
+        <p id="identityMeta">-</p>
+        <p id="identityMessage" class="identity-message">-</p>
+        <div id="confirmActions" class="actions hidden">
+          <button id="confirmButton" class="btn success">Confirmar</button>
+          <button id="cancelButton" class="btn danger">Cancelar</button>
+        </div>
+      </div>
+    </aside>
+
+    <script>
+      const video = document.getElementById("cameraFeed");
+      const canvas = document.getElementById("captureCanvas");
+      const statusBox = document.getElementById("statusBox");
+      const identityToast = document.getElementById("identityToast");
+      const identityPhoto = document.getElementById("identityPhoto");
+      const identityName = document.getElementById("identityName");
+      const identityMeta = document.getElementById("identityMeta");
+      const identityMessage = document.getElementById("identityMessage");
+      const confirmActions = document.getElementById("confirmActions");
+      const confirmButton = document.getElementById("confirmButton");
+      const cancelButton = document.getElementById("cancelButton");
+
+      let recognitionTimer = null;
+      let requestInFlight = false;
+      let pendingToken = null;
+      let trainingInProgress = false;
+
+      function setStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = "status overlay-status " + (type || "");
+      }
+
+      function showIdentity(data, withActions) {
+        identityPhoto.src = data.image || "";
+        identityName.textContent = data.name || "Nao reconhecido";
+        identityMeta.textContent = data.employee_id
+          ? `ID: ${data.employee_id} | Confianca: ${Number(data.confidence || 0).toFixed(1)}`
+          : data.confidence !== undefined
+          ? `Confianca: ${Number(data.confidence || 0).toFixed(1)}`
+          : "";
+        identityMessage.textContent = data.message || "";
+
+        if (withActions) {
+          confirmActions.classList.remove("hidden");
+        } else {
+          confirmActions.classList.add("hidden");
+        }
+
+        identityToast.classList.remove("hidden");
+      }
+
+      function hideIdentity() {
+        identityToast.classList.add("hidden");
+        confirmActions.classList.add("hidden");
+      }
+
+      function pauseRecognition() {
+        if (recognitionTimer) {
+          window.clearInterval(recognitionTimer);
+          recognitionTimer = null;
+        }
+      }
+
+      function resumeRecognition() {
+        if (!recognitionTimer) {
+          recognitionTimer = window.setInterval(recognizeFrame, 1200);
+        }
+      }
+
+      async function initCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30 },
+            },
+            audio: false,
+          });
+          video.srcObject = stream;
+          await video.play();
+          setStatus("Camera pronta. Aguardando reconhecimento...", "success");
+          resumeRecognition();
+        } catch (error) {
+          setStatus("Nao foi possivel acessar a camera: " + error.message, "error");
+        }
+      }
+
+      async function retrainAndRestartRecognition() {
+        if (trainingInProgress) {
+          return;
+        }
+
+        trainingInProgress = true;
+        pauseRecognition();
+        hideIdentity();
+        setStatus("Pessoa nao reconhecida. Treinando modelo e reiniciando reconhecimento...", "warning");
+
+        try {
+          const response = await fetch("/train-model", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          });
+          const data = await response.json();
+
+          if (data.status === "trained") {
+            setStatus("Treino concluido. Reconhecimento retomado.", "success");
+          } else {
+            setStatus(data.message || "Treino finalizado com aviso.", "warning");
+          }
+        } catch (error) {
+          setStatus("Erro ao treinar modelo: " + error.message, "error");
+        } finally {
+          trainingInProgress = false;
+          pendingToken = null;
+          resumeRecognition();
+        }
+      }
+
+      function captureFrame() {
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+
+        if (!width || !height) {
+          return null;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: false });
+        ctx.drawImage(video, 0, 0, width, height);
+        return canvas.toDataURL("image/jpeg", 0.95);
+      }
+
+      async function recognizeFrame() {
+        if (requestInFlight || pendingToken || trainingInProgress) {
+          return;
+        }
+
+        const image = captureFrame();
+        if (!image) {
+          return;
+        }
+
+        requestInFlight = true;
+
+        try {
+          const response = await fetch("/recognize-frame", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image }),
+          });
+          const data = await response.json();
+
+          if (data.status === "recognized") {
+            pendingToken = data.token;
+            showIdentity(data, true);
+            setStatus("Pessoa reconhecida. Confirme para registrar.", "success");
+            return;
+          }
+
+          if (data.status === "cooldown") {
+            showIdentity(data, false);
+            setStatus(data.message, "warning");
+            return;
+          }
+
+          if (data.status === "unknown") {
+            await retrainAndRestartRecognition();
+            return;
+          }
+
+          if (data.status === "no_face") {
+            hideIdentity();
+            setStatus("Nenhuma face detectada no quadro atual.", "info");
+            return;
+          }
+
+          setStatus(data.message || "Falha no reconhecimento.", "error");
+        } catch (error) {
+          setStatus("Erro no reconhecimento: " + error.message, "error");
+        } finally {
+          requestInFlight = false;
+        }
+      }
+
+      async function sendConfirmation(confirm) {
+        if (!pendingToken) {
+          return;
+        }
+
+        confirmButton.disabled = true;
+        cancelButton.disabled = true;
+
+        try {
+          const response = await fetch("/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: pendingToken, confirm }),
+          });
+          const data = await response.json();
+
+          if (data.status === "saved") {
+            setStatus(`${data.message} Tipo: ${data.punch_type}.`, "success");
+            if (confirm) {
+              window.setTimeout(() => window.close(), 600);
+            }
+          } else {
+            setStatus(data.message || "Operacao concluida.", "warning");
+          }
+
+          pendingToken = null;
+          hideIdentity();
+        } catch (error) {
+          setStatus("Erro ao confirmar: " + error.message, "error");
+        } finally {
+          confirmButton.disabled = false;
+          cancelButton.disabled = false;
+        }
+      }
+
+      confirmButton.addEventListener("click", () => sendConfirmation(true));
+      cancelButton.addEventListener("click", () => sendConfirmation(false));
+
+      window.addEventListener("beforeunload", () => {
+        pauseRecognition();
+
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach((track) => track.stop());
+        }
+      });
+
+      initCamera();
+    </script>
+  </body>
+</html>

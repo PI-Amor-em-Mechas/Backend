@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reconhecimento Facial</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <h1>Reconhecimento Facial</h1>
+        <p class="subtitle">Clique em iniciar para abrir a janela de reconhecimento em alta qualidade.</p>
+
+        <button id="startButton" class="btn primary">Iniciar Reconhecimento</button>
+
+        <div id="statusBox" class="status">Aguardando inicio.</div>
+      </section>
+    </main>
+
+    <script>
+      const startButton = document.getElementById("startButton");
+      const statusBox = document.getElementById("statusBox");
+
+      function setStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = "status " + (type || "");
+      }
+
+      function openRecognitionWindow() {
+        const popup = window.open(
+          "/recognition-window",
+          "face-recognition-window",
+          "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no"
+        );
+
+        if (popup) {
+          setStatus("Janela de reconhecimento aberta. Use a janela para identificar a pessoa.", "success");
+        } else {
+          setStatus("Nao foi possivel abrir a janela. Verifique se o bloqueador de popup esta ativo.", "error");
+        }
+      }
+
+      startButton.addEventListener("click", openRecognitionWindow);
+    </script>
+  </body>
+</html>
