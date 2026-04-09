@@ -9,6 +9,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.endereco.Endere
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.endereco.EnderecoRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class EnderecoService {
 
@@ -30,9 +32,8 @@ public class EnderecoService {
         return mapper.toResponse(e);
     }
 
-    public EnderecoResponseDto update (Integer id, EnderecoRequestDto dto){
+    public EnderecoResponseDto update(Integer id, EnderecoRequestDto dto) {
         Endereco e = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID: " + id + " Não Encontrado"));
-
 
             e.setRua(dto.getRua());
             e.setBairro(dto.getBairro());
@@ -43,10 +44,19 @@ public class EnderecoService {
 
             Endereco endereco = repository.save(e);
             return mapper.toResponse(endereco);
+    }
 
+    public List<EnderecoResponseDto> findAll() {
+        return repository.findAll()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
 
-
-
+    public EnderecoResponseDto findById(Integer id) {
+        Endereco e = repository.findById(id)
+                .orElseThrow(() -> new IdNotFoundException("ID ENDEREÇO: " + id + " Não Encontrado"));
+        return mapper.toResponse(e);
     }
 
 }

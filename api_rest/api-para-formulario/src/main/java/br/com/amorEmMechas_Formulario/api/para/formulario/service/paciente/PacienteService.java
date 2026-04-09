@@ -99,10 +99,19 @@ public class PacienteService {
 
         Paciente atualizado = repository.save(paciente);
         return mapper.toResponse(atualizado);
-
-
-
     }
 
+    public List<PacienteResponseDto> findAll() {
+        return repository.findAll()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    public PacienteResponseDto findById(Integer id) {
+        Paciente paciente = repository.findById(id)
+                .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + id + " Não Encontrado"));
+        return mapper.toResponse(paciente);
+    }
 
 }

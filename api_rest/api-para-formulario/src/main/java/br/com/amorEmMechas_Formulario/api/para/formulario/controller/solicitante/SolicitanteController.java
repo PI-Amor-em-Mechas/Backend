@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Solicitantes", description = "Gerenciamento de solicitantes")
 @RestController
 @RequestMapping("/solicitantes")
@@ -30,5 +32,20 @@ public class SolicitanteController {
     public ResponseEntity<SolicitanteResponseDto> create(@RequestBody @Valid SolicitanteRequestDto dto) {
         SolicitanteResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Lista todos os solicitantes")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<SolicitanteResponseDto>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
+    @Operation(summary = "Busca solicitante por ID")
+    @ApiResponse(responseCode = "200", description = "Solicitante encontrado")
+    @ApiResponse(responseCode = "404", description = "Solicitante não encontrado")
+    @GetMapping("/{id}")
+    public ResponseEntity<SolicitanteResponseDto> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findById(id));
     }
 }

@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Dados Médicos", description = "Gerenciamento de dados médicos dos pacientes")
 @RestController
 @RequestMapping("/dados-medicos")
@@ -30,5 +32,20 @@ public class DadosMedicosController {
     public ResponseEntity<DadosMedicosResponseDto> create(@RequestBody @Valid DadosMedicosRequestDto dto) {
         DadosMedicosResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Lista todos os dados médicos")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<DadosMedicosResponseDto>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
+    @Operation(summary = "Busca dados médicos por ID")
+    @ApiResponse(responseCode = "200", description = "Dados médicos encontrados")
+    @ApiResponse(responseCode = "404", description = "Dados médicos não encontrados")
+    @GetMapping("/{id}")
+    public ResponseEntity<DadosMedicosResponseDto> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findById(id));
     }
 }

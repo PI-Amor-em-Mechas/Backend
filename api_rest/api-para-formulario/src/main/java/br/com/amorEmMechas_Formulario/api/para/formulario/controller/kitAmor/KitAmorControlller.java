@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Kit do Amor", description = "Gerenciamento dos kits de peruca")
 @RestController
 @RequestMapping("/kits")
@@ -30,5 +32,20 @@ public class KitAmorControlller {
     public ResponseEntity<KitAmorResponseDto> create(@RequestBody @Valid KitAmorRequestDto dto) {
         KitAmorResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Lista todos os kits do amor")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<KitAmorResponseDto>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
+    @Operation(summary = "Busca kit do amor por ID")
+    @ApiResponse(responseCode = "200", description = "Kit encontrado")
+    @ApiResponse(responseCode = "404", description = "Kit não encontrado")
+    @GetMapping("/{id}")
+    public ResponseEntity<KitAmorResponseDto> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findById(id));
     }
 }

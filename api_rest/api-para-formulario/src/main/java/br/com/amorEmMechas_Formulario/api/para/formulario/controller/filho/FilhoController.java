@@ -69,4 +69,19 @@ public class FilhoController {
         int qtdFilhos = filhoRepository.countByPacienteId(dto.getPacienteId());
         return ResponseEntity.status(HttpStatus.CREATED).body(new FilhoResponseDto(saved, qtdFilhos));
     }
+
+    @Operation(summary = "Lista todos os filhos")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<FilhoResponseDto>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
+    @Operation(summary = "Busca filho por ID")
+    @ApiResponse(responseCode = "200", description = "Filho encontrado")
+    @ApiResponse(responseCode = "404", description = "Filho não encontrado")
+    @GetMapping("/{id}")
+    public ResponseEntity<FilhoResponseDto> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findById(id));
+    }
 }

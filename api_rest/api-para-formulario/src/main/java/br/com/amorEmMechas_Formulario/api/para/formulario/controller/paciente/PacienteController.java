@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Pacientes", description = "Gerenciamento de pacientes")
 @RestController
 @RequestMapping("/pacientes")
@@ -38,11 +40,24 @@ public class PacienteController {
     @ApiResponse(responseCode = "200", description = "Paciente atualizado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @PutMapping("/{id}")
-    public ResponseEntity<PacienteResponseDto> update(@PathVariable Integer id, @RequestBody @Valid PacienteRequestDto dto){
+    public ResponseEntity<PacienteResponseDto> update(@PathVariable Integer id, @RequestBody @Valid PacienteRequestDto dto) {
         PacienteResponseDto res = service.update(id, dto);
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 
+    @Operation(summary = "Lista todos os pacientes")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<PacienteResponseDto>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
 
+    @Operation(summary = "Busca paciente por ID")
+    @ApiResponse(responseCode = "200", description = "Paciente encontrado")
+    @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
+    @GetMapping("/{id}")
+    public ResponseEntity<PacienteResponseDto> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findById(id));
+    }
 
 }
