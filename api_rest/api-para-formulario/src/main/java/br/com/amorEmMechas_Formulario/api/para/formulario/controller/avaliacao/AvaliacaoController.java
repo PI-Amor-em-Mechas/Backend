@@ -49,4 +49,13 @@ public class AvaliacaoController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Remove uma avaliação por ID")
+    @ApiResponse(responseCode = "204", description = "Avaliação removida com sucesso")
+    @ApiResponse(responseCode = "404", description = "Avaliação não encontrada")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

@@ -48,4 +48,13 @@ public class SolicitanteController {
     public ResponseEntity<SolicitanteResponseDto> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findById(id));
     }
+
+    @Operation(summary = "Remove um solicitante por ID")
+    @ApiResponse(responseCode = "204", description = "Solicitante removido com sucesso")
+    @ApiResponse(responseCode = "404", description = "Solicitante não encontrado")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

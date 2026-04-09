@@ -48,4 +48,13 @@ public class KitAmorControlller {
     public ResponseEntity<KitAmorResponseDto> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findById(id));
     }
+
+    @Operation(summary = "Remove um kit do amor por ID")
+    @ApiResponse(responseCode = "204", description = "Kit removido com sucesso")
+    @ApiResponse(responseCode = "404", description = "Kit não encontrado")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

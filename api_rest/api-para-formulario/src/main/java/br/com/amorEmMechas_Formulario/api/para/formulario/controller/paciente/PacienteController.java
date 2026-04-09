@@ -60,4 +60,13 @@ public class PacienteController {
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @Operation(summary = "Remove um paciente por ID")
+    @ApiResponse(responseCode = "204", description = "Paciente removido com sucesso")
+    @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

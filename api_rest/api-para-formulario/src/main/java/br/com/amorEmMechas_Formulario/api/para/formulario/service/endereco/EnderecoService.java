@@ -59,4 +59,11 @@ public class EnderecoService {
         return mapper.toResponse(e);
     }
 
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID ENDEREÇO: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
+    }
+
 }

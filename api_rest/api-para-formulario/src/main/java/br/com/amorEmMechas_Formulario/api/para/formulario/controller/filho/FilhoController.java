@@ -84,4 +84,13 @@ public class FilhoController {
     public ResponseEntity<FilhoResponseDto> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findById(id));
     }
+
+    @Operation(summary = "Remove um filho por ID")
+    @ApiResponse(responseCode = "204", description = "Filho removido com sucesso")
+    @ApiResponse(responseCode = "404", description = "Filho não encontrado")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

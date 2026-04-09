@@ -8,7 +8,6 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Pacien
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.kitAmor.KitAmorMapper;
-import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.kitAmor.KitAmorRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
@@ -60,6 +59,13 @@ public class KitAmorService {
         KitAmor kitAmor = repository.findById(id)
                 .orElseThrow(() -> new IdNotFoundException("ID KIT AMOR: " + id + " Não Encontrado"));
         return mapper.toResponse(kitAmor);
+    }
+
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID KIT AMOR: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
     }
 
 }

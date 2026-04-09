@@ -114,4 +114,11 @@ public class PacienteService {
         return mapper.toResponse(paciente);
     }
 
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID PACIENTE: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
+    }
+
 }

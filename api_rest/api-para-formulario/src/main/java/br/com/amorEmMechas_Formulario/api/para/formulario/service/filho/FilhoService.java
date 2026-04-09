@@ -47,4 +47,11 @@ public class FilhoService {
                 filho.getPaciente() != null ? filho.getPaciente().getId() : null);
         return new FilhoResponseDto(filho, qtd);
     }
+
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID FILHO: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
+    }
 }

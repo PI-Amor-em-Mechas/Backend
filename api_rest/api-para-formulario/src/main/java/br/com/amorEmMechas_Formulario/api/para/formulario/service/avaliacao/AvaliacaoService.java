@@ -57,4 +57,11 @@ public class AvaliacaoService {
 
         return mapper.toResponse(avaliacao);
     }
+
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID AVALIAÇÃO: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
+    }
 }

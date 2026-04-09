@@ -48,4 +48,13 @@ public class DadosMedicosController {
     public ResponseEntity<DadosMedicosResponseDto> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findById(id));
     }
+
+    @Operation(summary = "Remove dados médicos por ID")
+    @ApiResponse(responseCode = "204", description = "Dados médicos removidos com sucesso")
+    @ApiResponse(responseCode = "404", description = "Dados médicos não encontrados")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

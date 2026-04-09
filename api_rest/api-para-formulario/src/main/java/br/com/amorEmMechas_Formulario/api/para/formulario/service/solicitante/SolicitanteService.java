@@ -42,4 +42,11 @@ public class SolicitanteService {
                 .orElseThrow(() -> new IdNotFoundException("ID SOLICITANTE: " + id + " Não Encontrado"));
         return mapper.toResponse(s);
     }
+
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID SOLICITANTE: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
+    }
 }

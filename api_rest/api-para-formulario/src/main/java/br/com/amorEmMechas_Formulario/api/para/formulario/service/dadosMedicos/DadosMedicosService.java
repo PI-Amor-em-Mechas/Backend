@@ -42,4 +42,11 @@ public class DadosMedicosService {
                 .orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + id + " Não Encontrado"));
         return mapper.toResponse(entity);
     }
+
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID DADOS MÉDICOS: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
+    }
 }
