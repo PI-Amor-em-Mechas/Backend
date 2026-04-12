@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Janela de Reconhecimento</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
   </head>
   <body class="recognition-body">
     <main class="recognition-page">
@@ -33,6 +34,45 @@
         </div>
       </div>
     </aside>
+
+    <!-- ===== Painel de Voz (oculto ate facial OK) ===== -->
+    <section id="voicePanel" class="voice-panel hidden">
+      <header class="voice-header">
+        <h1>Comando de Voz</h1>
+        <p id="voiceUserInfo">-</p>
+        <p>Fale seu comando. Diga <strong>"salvar"</strong> ao final para gravar.</p>
+      </header>
+
+      <div class="voice-display">
+        <div class="voice-block">
+          <label>Texto acumulado:</label>
+          <p id="voiceAccumulated" class="voice-text">-</p>
+        </div>
+        <div class="voice-block">
+          <label>Reconhecendo agora:</label>
+          <p id="voicePartial" class="voice-text partial">...</p>
+        </div>
+      </div>
+
+      <div id="voiceStatus" class="status voice-status">Conectando...</div>
+
+      <div class="voice-actions">
+        <button id="forceSaveBtn" class="btn success">Salvar Agora</button>
+        <input
+          id="trainPhraseInput"
+          type="text"
+          placeholder="Frase para treinar (opcional)"
+          class="voice-train-input"
+        />
+        <button id="trainVoiceBtn" class="btn secondary">Treinar Voz</button>
+        <button id="voiceCloseBtn" class="btn danger">Fechar</button>
+      </div>
+
+      <div id="voiceHistory" class="voice-history hidden">
+        <h3>Ultimos comandos salvos</h3>
+        <ul id="voiceHistoryList"></ul>
+      </div>
+    </section>
 
     <script>
       const video = document.getElementById("cameraFeed");
@@ -231,8 +271,9 @@
 
           if (data.status === "saved") {
             setStatus(`${data.message} Tipo: ${data.punch_type}.`, "success");
-            if (confirm) {
-              window.setTimeout(() => window.close(), 600);
+            if (confirm && data.voice_token) {
+              startVoiceMode(data.voice_token, data.employee_id, data.name);
+              return;
             }
           } else {
             setStatus(data.message || "Operacao concluida.", "warning");
@@ -253,11 +294,193 @@
 
       window.addEventListener("beforeunload", () => {
         pauseRecognition();
+        stopVoiceMode();
 
         if (video.srcObject) {
           video.srcObject.getTracks().forEach((track) => track.stop());
         }
       });
+
+      // ===== Voice Mode =====
+      let voiceToken = null;
+      let socket = null;
+      let audioContext = null;
+      let micStream = null;
+
+      function startVoiceMode(token, employeeId, employeeName) {
+        // Garante que nao exista conexao anterior pendurada.
+        stopVoiceMode();
+        voiceToken = token;
+
+        // Parar camera e reconhecimento facial
+        pauseRecognition();
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach((t) => t.stop());
+        }
+
+        // Alternar paineis
+        document.querySelector(".video-panel").classList.add("hidden");
+        identityToast.classList.add("hidden");
+        document.getElementById("voicePanel").classList.remove("hidden");
+
+        document.getElementById("voiceUserInfo").textContent =
+          `Usuario: ${employeeName} (ID: ${employeeId})`;
+
+        const voiceStatus = document.getElementById("voiceStatus");
+        voiceStatus.textContent = "Conectando ao servidor de voz...";
+        voiceStatus.className = "status voice-status";
+
+        // Conectar SocketIO — preferir websocket para streaming de audio estavel
+        socket = io({
+          transports: ["websocket"],
+          upgrade: false,
+          forceNew: true,
+          autoConnect: false,
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          timeout: 20000,
+        });
+
+        socket.connect();
+
+        socket.on("connect", () => {
+          socket.emit("voice_auth", { token: voiceToken });
+        });
+
+        socket.on("connect_error", (err) => {
+          console.error("Socket.IO connect_error:", err);
+          voiceStatus.textContent = "Erro de conexao: " + err.message;
+          voiceStatus.className = "status voice-status error";
+        });
+
+        socket.on("voice_ready", (data) => {
+          const phrases = Number(data?.phrases || 0);
+          voiceStatus.textContent = `Microfone ativo. Fale agora. Frases treinadas: ${phrases}.`;
+          voiceStatus.className = "status voice-status success";
+          startMicrophone();
+        });
+
+        socket.on("voice_partial", (data) => {
+          document.getElementById("voiceAccumulated").textContent =
+            data.accumulated || "-";
+          document.getElementById("voicePartial").textContent =
+            data.partial || "...";
+        });
+
+        socket.on("voice_saved", (data) => {
+          document.getElementById("voiceAccumulated").textContent = "-";
+          document.getElementById("voicePartial").textContent = "...";
+          voiceStatus.textContent = `Salvo: "${data.text}"`;
+          voiceStatus.className = "status voice-status success";
+          addToHistory(data.text);
+        });
+
+        socket.on("voice_trained", (data) => {
+          const total = Number(data?.phrases || 0);
+          voiceStatus.textContent = `Treino atualizado: "${data.phrase}". Total de frases: ${total}.`;
+          voiceStatus.className = "status voice-status success";
+          document.getElementById("trainPhraseInput").value = "";
+        });
+
+        socket.on("voice_error", (data) => {
+          voiceStatus.textContent = data.message;
+          voiceStatus.className = "status voice-status error";
+        });
+
+        socket.on("disconnect", () => {
+          voiceStatus.textContent = "Desconectado do servidor.";
+          voiceStatus.className = "status voice-status warning";
+        });
+      }
+
+      async function startMicrophone() {
+        try {
+          audioContext = new AudioContext({ sampleRate: 16000 });
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              channelCount: 1,
+              sampleRate: { ideal: 16000 },
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+            video: false,
+          });
+
+          const source = audioContext.createMediaStreamSource(micStream);
+
+          await audioContext.audioWorklet.addModule(
+            "/static/audio-processor.js"
+          );
+          const processor = new AudioWorkletNode(
+            audioContext,
+            "pcm16-processor"
+          );
+
+          processor.port.onmessage = (event) => {
+            if (socket && socket.connected) {
+              socket.emit("audio_chunk", event.data);
+            }
+          };
+
+          source.connect(processor);
+          // Nao conectar ao destination (nao reproduzir audio)
+        } catch (error) {
+          const voiceStatus = document.getElementById("voiceStatus");
+          voiceStatus.textContent =
+            "Erro ao acessar microfone: " + error.message;
+          voiceStatus.className = "status voice-status error";
+        }
+      }
+
+      function stopVoiceMode() {
+        if (micStream) {
+          micStream.getTracks().forEach((t) => t.stop());
+          micStream = null;
+        }
+        if (audioContext) {
+          audioContext.close();
+          audioContext = null;
+        }
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+      }
+
+      function addToHistory(text) {
+        const historyDiv = document.getElementById("voiceHistory");
+        const list = document.getElementById("voiceHistoryList");
+        historyDiv.classList.remove("hidden");
+        const li = document.createElement("li");
+        li.textContent = text;
+        list.prepend(li);
+      }
+
+      document
+        .getElementById("forceSaveBtn")
+        .addEventListener("click", () => {
+          if (socket && socket.connected) {
+            socket.emit("force_save");
+          }
+        });
+
+      document
+        .getElementById("trainVoiceBtn")
+        .addEventListener("click", () => {
+          if (!(socket && socket.connected)) {
+            return;
+          }
+          const phrase = document.getElementById("trainPhraseInput").value;
+          socket.emit("voice_train", { phrase });
+        });
+
+      document
+        .getElementById("voiceCloseBtn")
+        .addEventListener("click", () => {
+          stopVoiceMode();
+          window.close();
+        });
 
       initCamera();
     </script>

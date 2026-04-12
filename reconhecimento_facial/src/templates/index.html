@@ -10,9 +10,30 @@
     <main class="page">
       <section class="panel">
         <h1>Reconhecimento Facial</h1>
-        <p class="subtitle">Clique em iniciar para abrir a janela de reconhecimento em alta qualidade.</p>
+        <p class="subtitle">Selecione o perfil de acesso para usar o sistema.</p>
 
-        <button id="startButton" class="btn primary">Iniciar Reconhecimento</button>
+        <div class="profile-card">
+          <p id="profileInfo" class="subtitle">Perfil atual: nenhum</p>
+          <div class="home-actions">
+            <button id="profileDefaultButton" class="btn secondary">Entrar como Padrao</button>
+            <button id="profileAdminButton" class="btn secondary">Entrar como Admin</button>
+          </div>
+          <div id="adminPasswordWrap" class="hidden profile-pass-wrap">
+            <input
+              id="adminPassword"
+              type="password"
+              maxlength="120"
+              placeholder="Senha do admin"
+            />
+            <button id="confirmAdminButton" class="btn primary">Confirmar Admin</button>
+          </div>
+          <button id="logoutButton" class="btn danger hidden">Sair do Perfil</button>
+        </div>
+
+        <div class="home-actions">
+          <button id="startButton" class="btn primary">Iniciar Reconhecimento</button>
+          <button id="registerButton" class="btn secondary">Cadastrar Nova Pessoa</button>
+        </div>
 
         <div id="statusBox" class="status">Aguardando inicio.</div>
       </section>
@@ -20,7 +41,17 @@
 
     <script>
       const startButton = document.getElementById("startButton");
+      const registerButton = document.getElementById("registerButton");
       const statusBox = document.getElementById("statusBox");
+      const profileInfo = document.getElementById("profileInfo");
+      const profileDefaultButton = document.getElementById("profileDefaultButton");
+      const profileAdminButton = document.getElementById("profileAdminButton");
+      const adminPasswordWrap = document.getElementById("adminPasswordWrap");
+      const adminPassword = document.getElementById("adminPassword");
+      const confirmAdminButton = document.getElementById("confirmAdminButton");
+      const logoutButton = document.getElementById("logoutButton");
+
+      let currentProfile = null;
 
       function setStatus(message, type) {
         statusBox.textContent = message;
@@ -28,6 +59,11 @@
       }
 
       function openRecognitionWindow() {
+        if (!currentProfile) {
+          setStatus("Selecione um perfil antes de iniciar.", "warning");
+          return;
+        }
+
         const popup = window.open(
           "/recognition-window",
           "face-recognition-window",
@@ -41,7 +77,98 @@
         }
       }
 
+      function openRegisterWindow() {
+        if (currentProfile !== "admin") {
+          setStatus("Somente admin pode acessar cadastro e treino do modelo.", "warning");
+          return;
+        }
+
+        const popup = window.open(
+          "/register-window",
+          "face-register-window",
+          "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no"
+        );
+
+        if (popup) {
+          setStatus("Janela de cadastro aberta. Capture as fotos e confirme o cadastro.", "success");
+        } else {
+          setStatus("Nao foi possivel abrir a janela de cadastro. Verifique se o bloqueador de popup esta ativo.", "error");
+        }
+      }
+
+      function refreshUiByProfile() {
+        const readableProfile =
+          currentProfile === "admin"
+            ? "admin"
+            : currentProfile === "default"
+            ? "padrao"
+            : "nenhum";
+
+        profileInfo.textContent = `Perfil atual: ${readableProfile}`;
+        logoutButton.classList.toggle("hidden", !currentProfile);
+
+        startButton.disabled = !currentProfile;
+        registerButton.disabled = currentProfile !== "admin";
+      }
+
+      async function loadProfile() {
+        try {
+          const response = await fetch("/me");
+          const data = await response.json();
+          currentProfile = data.profile || null;
+        } catch (error) {
+          currentProfile = null;
+        }
+        refreshUiByProfile();
+      }
+
+      async function setProfile(profile, password) {
+        try {
+          const response = await fetch("/set-profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profile, password }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "ok") {
+            setStatus(data.message || "Falha ao definir perfil.", "error");
+            return;
+          }
+
+          currentProfile = data.profile;
+          refreshUiByProfile();
+          adminPasswordWrap.classList.add("hidden");
+          adminPassword.value = "";
+          setStatus(`Perfil ${currentProfile} ativado com sucesso.`, "success");
+        } catch (error) {
+          setStatus("Erro ao definir perfil: " + error.message, "error");
+        }
+      }
+
+      async function clearProfile() {
+        try {
+          await fetch("/logout", { method: "POST" });
+        } catch (error) {
+          // ignore
+        }
+        currentProfile = null;
+        refreshUiByProfile();
+        setStatus("Perfil encerrado.", "info");
+      }
+
       startButton.addEventListener("click", openRecognitionWindow);
+      registerButton.addEventListener("click", openRegisterWindow);
+      profileDefaultButton.addEventListener("click", () => setProfile("default", ""));
+      profileAdminButton.addEventListener("click", () => {
+        adminPasswordWrap.classList.remove("hidden");
+        adminPassword.focus();
+      });
+      confirmAdminButton.addEventListener("click", () => setProfile("admin", adminPassword.value));
+      logoutButton.addEventListener("click", clearProfile);
+
+      refreshUiByProfile();
+      loadProfile();
     </script>
   </body>
 </html>

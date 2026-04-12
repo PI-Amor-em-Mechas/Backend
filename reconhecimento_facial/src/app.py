@@ -1,4 +1,11 @@
 import logging
+import sys
+from pathlib import Path
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_PROJECT_PARENT = _PROJECT_ROOT.parent
+if str(_PROJECT_PARENT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_PARENT))
 
 import reconhecimento_facial.src.config as config
 import reconhecimento_facial.src.db as db

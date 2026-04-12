@@ -36,6 +36,17 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS voice_commands (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id TEXT NOT NULL,
+                text TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (employee_id) REFERENCES employees(id)
+            )
+            """
+        )
         conn.commit()
 
 
@@ -68,6 +79,16 @@ def list_employees() -> list[dict[str, Any]]:
             "SELECT id, name, created_at FROM employees ORDER BY name"
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def delete_employee(employee_id: str) -> int:
+    with _get_conn() as conn:
+        cur = conn.execute(
+            "DELETE FROM employees WHERE id = ?",
+            (employee_id,),
+        )
+        conn.commit()
+        return int(cur.rowcount)
 
 
 def add_punch(
@@ -117,4 +138,48 @@ def list_punches(limit: int = 100) -> list[dict[str, Any]]:
             """,
             (limit,),
         ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def add_voice_command(employee_id: str, text: str) -> int:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _get_conn() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO voice_commands (employee_id, text, created_at)
+            VALUES (?, ?, ?)
+            """,
+            (employee_id, text, now),
+        )
+        conn.commit()
+        return int(cur.lastrowid)
+
+
+def list_voice_commands(
+    employee_id: str | None = None, limit: int = 50
+) -> list[dict[str, Any]]:
+    with _get_conn() as conn:
+        if employee_id:
+            rows = conn.execute(
+                """
+                SELECT vc.id, vc.employee_id, e.name, vc.text, vc.created_at
+                FROM voice_commands vc
+                LEFT JOIN employees e ON e.id = vc.employee_id
+                WHERE vc.employee_id = ?
+                ORDER BY vc.created_at DESC
+                LIMIT ?
+                """,
+                (employee_id, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """
+                SELECT vc.id, vc.employee_id, e.name, vc.text, vc.created_at
+                FROM voice_commands vc
+                LEFT JOIN employees e ON e.id = vc.employee_id
+                ORDER BY vc.created_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
     return [dict(r) for r in rows]

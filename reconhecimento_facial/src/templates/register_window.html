@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cadastro de Pessoa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body class="recognition-body">
+    <main class="recognition-page">
+      <section class="video-panel register-panel">
+        <header class="video-header">
+          <h1>Cadastro de Nova Pessoa</h1>
+          <p>Preencha os dados, capture algumas fotos e clique em cadastrar.</p>
+        </header>
+
+        <div class="register-form">
+          <label>
+            ID da pessoa
+            <input id="employeeId" type="text" maxlength="60" placeholder="Ex.: 123" />
+          </label>
+          <label>
+            Nome da pessoa
+            <input id="employeeName" type="text" maxlength="120" placeholder="Ex.: Maria Silva" />
+          </label>
+        </div>
+
+        <video id="cameraFeed" autoplay muted playsinline></video>
+        <canvas id="captureCanvas" class="hidden"></canvas>
+
+        <div class="capture-actions">
+          <button id="captureButton" class="btn secondary">Capturar Foto</button>
+          <button id="registerButton" class="btn success">Cadastrar Pessoa</button>
+          <button id="clearButton" class="btn danger">Limpar Fotos</button>
+        </div>
+
+        <div id="statusBox" class="status">Inicializando camera...</div>
+
+        <section>
+          <h2 class="capture-title">Fotos Capturadas</h2>
+          <div id="previewGrid" class="preview-grid"></div>
+        </section>
+
+        <section class="users-section">
+          <div class="users-header">
+            <h2 class="capture-title">Gerenciamento de Usuarios</h2>
+            <button id="refreshUsersButton" class="btn secondary">Atualizar Lista</button>
+          </div>
+          <div id="usersStatus" class="status info">Carregando usuarios...</div>
+          <div id="usersList" class="users-list"></div>
+        </section>
+
+        <section class="users-section">
+          <div class="users-header">
+            <h2 class="capture-title">Treino do Reconhecimento de Fala</h2>
+            <button id="refreshVoicePhrasesButton" class="btn secondary">Atualizar Frases</button>
+          </div>
+          <div id="voiceTrainStatus" class="status info">Carregando frases de treino...</div>
+
+          <div class="user-controls">
+            <input id="voicePhraseInput" type="text" maxlength="200" placeholder="Ex.: abrir chamado para ti salvar" />
+            <button id="addVoicePhraseButton" class="btn success">Adicionar Frase</button>
+          </div>
+
+          <div class="user-controls">
+            <textarea
+              id="voiceBulkInput"
+              class="voice-bulk-input"
+              rows="4"
+              placeholder="Treino em lote: uma frase por linha"
+            ></textarea>
+            <button id="bulkVoicePhraseButton" class="btn secondary">Treinar em Lote</button>
+          </div>
+
+          <div class="user-controls">
+            <input id="voiceJsonFile" type="file" accept="application/json,.json" />
+            <button id="importVoiceJsonButton" class="btn secondary">Importar JSON</button>
+            <button id="exportVoiceJsonButton" class="btn secondary">Exportar JSON</button>
+          </div>
+
+          <div id="voicePhrasesList" class="users-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const video = document.getElementById("cameraFeed");
+      const canvas = document.getElementById("captureCanvas");
+      const statusBox = document.getElementById("statusBox");
+      const employeeIdInput = document.getElementById("employeeId");
+      const employeeNameInput = document.getElementById("employeeName");
+      const captureButton = document.getElementById("captureButton");
+      const registerButton = document.getElementById("registerButton");
+      const clearButton = document.getElementById("clearButton");
+      const previewGrid = document.getElementById("previewGrid");
+      const refreshUsersButton = document.getElementById("refreshUsersButton");
+      const usersStatus = document.getElementById("usersStatus");
+      const usersList = document.getElementById("usersList");
+      const refreshVoicePhrasesButton = document.getElementById("refreshVoicePhrasesButton");
+      const voiceTrainStatus = document.getElementById("voiceTrainStatus");
+      const voicePhraseInput = document.getElementById("voicePhraseInput");
+      const addVoicePhraseButton = document.getElementById("addVoicePhraseButton");
+      const voiceBulkInput = document.getElementById("voiceBulkInput");
+      const bulkVoicePhraseButton = document.getElementById("bulkVoicePhraseButton");
+      const voiceJsonFile = document.getElementById("voiceJsonFile");
+      const importVoiceJsonButton = document.getElementById("importVoiceJsonButton");
+      const exportVoiceJsonButton = document.getElementById("exportVoiceJsonButton");
+      const voicePhrasesList = document.getElementById("voicePhrasesList");
+
+      const capturedImages = [];
+
+      function setStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = "status " + (type || "");
+      }
+
+      function renderPreviews() {
+        previewGrid.innerHTML = "";
+
+        capturedImages.forEach((image, index) => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "preview-item";
+
+          const img = document.createElement("img");
+          img.src = image;
+          img.alt = "Foto capturada " + (index + 1);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "btn danger preview-remove";
+          removeBtn.textContent = "Remover";
+          removeBtn.addEventListener("click", () => {
+            capturedImages.splice(index, 1);
+            renderPreviews();
+            setStatus("Foto removida.", "info");
+          });
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(removeBtn);
+          previewGrid.appendChild(wrapper);
+        });
+      }
+
+      function setUsersStatus(message, type) {
+        usersStatus.textContent = message;
+        usersStatus.className = "status " + (type || "info");
+      }
+
+      function setVoiceTrainStatus(message, type) {
+        voiceTrainStatus.textContent = message;
+        voiceTrainStatus.className = "status " + (type || "info");
+      }
+
+      function renderVoicePhrases(phrases) {
+        voicePhrasesList.innerHTML = "";
+        if (!phrases || phrases.length === 0) {
+          setVoiceTrainStatus("Nenhuma frase treinada ainda.", "warning");
+          return;
+        }
+
+        setVoiceTrainStatus(`Frases de treino carregadas: ${phrases.length}.`, "success");
+
+        phrases.forEach((phrase) => {
+          const item = document.createElement("div");
+          item.className = "user-item";
+
+          const meta = document.createElement("div");
+          meta.className = "user-meta";
+          meta.innerHTML = `<p>${phrase}</p>`;
+
+          const controls = document.createElement("div");
+          controls.className = "user-controls";
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "btn danger";
+          deleteButton.textContent = "Remover";
+          deleteButton.addEventListener("click", () => removeVoicePhrase(phrase));
+
+          controls.appendChild(deleteButton);
+          item.appendChild(meta);
+          item.appendChild(controls);
+          voicePhrasesList.appendChild(item);
+        });
+      }
+
+      async function loadVoicePhrases() {
+        try {
+          setVoiceTrainStatus("Carregando frases de treino...", "info");
+          const response = await fetch("/voice-phrases");
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao carregar frases.", "error");
+            return;
+          }
+
+          renderVoicePhrases(data.phrases || []);
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao carregar frases: " + error.message, "error");
+        }
+      }
+
+      async function addVoicePhrase() {
+        const phrase = voicePhraseInput.value.trim();
+        if (!phrase) {
+          setVoiceTrainStatus("Informe uma frase para treino.", "warning");
+          return;
+        }
+
+        try {
+          const response = await fetch("/voice-phrases/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phrase }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao adicionar frase.", "error");
+            return;
+          }
+
+          voicePhraseInput.value = "";
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao adicionar frase: " + error.message, "error");
+        }
+      }
+
+      async function removeVoicePhrase(phrase) {
+        const confirmed = window.confirm("Deseja remover esta frase do treino de voz?");
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/voice-phrases/remove", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phrase }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao remover frase.", "error");
+            return;
+          }
+
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao remover frase: " + error.message, "error");
+        }
+      }
+
+      async function bulkVoicePhrases() {
+        const text = voiceBulkInput.value.trim();
+        if (!text) {
+          setVoiceTrainStatus("Informe frases em lote (uma por linha).", "warning");
+          return;
+        }
+
+        try {
+          const response = await fetch("/voice-phrases/bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha no treino em lote.", "error");
+            return;
+          }
+
+          voiceBulkInput.value = "";
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro no treino em lote: " + error.message, "error");
+        }
+      }
+
+      async function importVoiceJson() {
+        const file = voiceJsonFile.files && voiceJsonFile.files[0];
+        if (!file) {
+          setVoiceTrainStatus("Selecione um arquivo JSON para importar.", "warning");
+          return;
+        }
+
+        const form = new FormData();
+        form.append("file", file);
+
+        try {
+          const response = await fetch("/voice-phrases/import-json", {
+            method: "POST",
+            body: form,
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao importar JSON.", "error");
+            return;
+          }
+
+          voiceJsonFile.value = "";
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao importar JSON: " + error.message, "error");
+        }
+      }
+
+      function exportVoiceJson() {
+        window.open("/voice-phrases/export-json", "_blank");
+      }
+
+      async function loadUsers() {
+        try {
+          setUsersStatus("Carregando usuarios...", "info");
+          const response = await fetch("/employees");
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "ok") {
+            setUsersStatus(data.message || "Nao foi possivel carregar usuarios.", "error");
+            return;
+          }
+
+          const employees = data.employees || [];
+          usersList.innerHTML = "";
+
+          if (employees.length === 0) {
+            setUsersStatus("Nenhum usuario cadastrado.", "warning");
+            return;
+          }
+
+          setUsersStatus("Usuarios carregados.", "success");
+
+          employees.forEach((employee) => {
+            const item = document.createElement("div");
+            item.className = "user-item";
+
+            const meta = document.createElement("div");
+            meta.className = "user-meta";
+            meta.innerHTML = `
+              <strong>ID: ${employee.id}</strong>
+              <p>Nome atual: ${employee.name}</p>
+              <p>Amostras: ${employee.sample_count}</p>
+            `;
+
+            const controls = document.createElement("div");
+            controls.className = "user-controls";
+
+            const nameInput = document.createElement("input");
+            nameInput.type = "text";
+            nameInput.value = employee.name;
+            nameInput.maxLength = 120;
+
+            const updateButton = document.createElement("button");
+            updateButton.className = "btn secondary";
+            updateButton.textContent = "Salvar Nome";
+            updateButton.addEventListener("click", () => updateUserName(employee.id, nameInput.value));
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "btn danger";
+            deleteButton.textContent = "Excluir Usuario";
+            deleteButton.addEventListener("click", () => deleteUser(employee.id));
+
+            controls.appendChild(nameInput);
+            controls.appendChild(updateButton);
+            controls.appendChild(deleteButton);
+
+            item.appendChild(meta);
+            item.appendChild(controls);
+            usersList.appendChild(item);
+          });
+        } catch (error) {
+          setUsersStatus("Erro ao carregar usuarios: " + error.message, "error");
+        }
+      }
+
+      async function updateUserName(employee_id, employee_name) {
+        const name = String(employee_name || "").trim();
+        if (!name) {
+          setUsersStatus("Informe um nome valido para atualizar.", "warning");
+          return;
+        }
+
+        try {
+          const response = await fetch("/employees/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id, employee_name: name }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "updated") {
+            setUsersStatus(data.message || "Falha ao atualizar usuario.", "error");
+            return;
+          }
+
+          setUsersStatus(data.message, "success");
+          loadUsers();
+        } catch (error) {
+          setUsersStatus("Erro ao atualizar usuario: " + error.message, "error");
+        }
+      }
+
+      async function deleteUser(employee_id) {
+        const confirmed = window.confirm("Deseja excluir este usuario? Essa acao remove as fotos de treino do usuario.");
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/employees/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "deleted") {
+            setUsersStatus(data.message || "Falha ao excluir usuario.", "error");
+            return;
+          }
+
+          setUsersStatus(data.message, "success");
+          loadUsers();
+        } catch (error) {
+          setUsersStatus("Erro ao excluir usuario: " + error.message, "error");
+        }
+      }
+
+      function captureFrame() {
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+
+        if (!width || !height) {
+          return null;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: false });
+        ctx.drawImage(video, 0, 0, width, height);
+        return canvas.toDataURL("image/jpeg", 0.95);
+      }
+
+      async function initCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30 },
+            },
+            audio: false,
+          });
+
+          video.srcObject = stream;
+          await video.play();
+          setStatus("Camera pronta. Capture ao menos 3 fotos para um cadastro melhor.", "success");
+        } catch (error) {
+          setStatus("Nao foi possivel acessar a camera: " + error.message, "error");
+        }
+      }
+
+      async function registerPerson() {
+        const employee_id = employeeIdInput.value.trim();
+        const employee_name = employeeNameInput.value.trim();
+
+        if (!employee_id || !employee_name) {
+          setStatus("Preencha ID e nome da pessoa.", "warning");
+          return;
+        }
+
+        if (capturedImages.length === 0) {
+          setStatus("Capture pelo menos uma foto antes de cadastrar.", "warning");
+          return;
+        }
+
+        captureButton.disabled = true;
+        registerButton.disabled = true;
+        clearButton.disabled = true;
+
+        try {
+          setStatus("Cadastrando pessoa e treinando modelo...", "info");
+
+          const response = await fetch("/register-person", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id, employee_name, images: capturedImages }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.status === "registered") {
+            setStatus(data.message, "success");
+            capturedImages.length = 0;
+            renderPreviews();
+            employeeIdInput.value = "";
+            employeeNameInput.value = "";
+            loadUsers();
+            return;
+          }
+
+          setStatus(data.message || "Falha ao cadastrar pessoa.", "error");
+        } catch (error) {
+          setStatus("Erro no cadastro: " + error.message, "error");
+        } finally {
+          captureButton.disabled = false;
+          registerButton.disabled = false;
+          clearButton.disabled = false;
+        }
+      }
+
+      captureButton.addEventListener("click", () => {
+        const frame = captureFrame();
+        if (!frame) {
+          setStatus("A camera ainda nao esta pronta.", "warning");
+          return;
+        }
+
+        capturedImages.push(frame);
+        renderPreviews();
+        setStatus("Foto capturada. Total: " + capturedImages.length + ".", "success");
+      });
+
+      registerButton.addEventListener("click", registerPerson);
+
+      clearButton.addEventListener("click", () => {
+        capturedImages.length = 0;
+        renderPreviews();
+        setStatus("Fotos removidas.", "info");
+      });
+
+      refreshUsersButton.addEventListener("click", loadUsers);
+      refreshVoicePhrasesButton.addEventListener("click", loadVoicePhrases);
+      addVoicePhraseButton.addEventListener("click", addVoicePhrase);
+      bulkVoicePhraseButton.addEventListener("click", bulkVoicePhrases);
+      importVoiceJsonButton.addEventListener("click", importVoiceJson);
+      exportVoiceJsonButton.addEventListener("click", exportVoiceJson);
+
+      window.addEventListener("beforeunload", () => {
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach((track) => track.stop());
+        }
+      });
+
+      initCamera();
+      loadUsers();
+      loadVoicePhrases();
+    </script>
+  </body>
+</html>

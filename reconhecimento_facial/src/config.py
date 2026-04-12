@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "data"
@@ -9,6 +10,11 @@ PUNCH_IMAGES_DIR = DATA_DIR / "punch_images"
 DB_PATH = DATA_DIR / "attendance.db"
 LBPH_MODEL_PATH = MODELS_DIR / "lbph_model.yml"
 LABELS_PATH = MODELS_DIR / "labels.json"
+VOSK_MODEL_PATH = DATA_DIR / "vosk-model"
+VOICE_PHRASES_PATH = DATA_DIR / "voice_phrases.json"
+VOICE_SAMPLE_RATE = 16000
+VOICE_MAX_PHRASES = int(os.getenv("VOICE_MAX_PHRASES", "0"))
+
 FACE_DETECTOR_MODEL_PATH = DATA_DIR / "face_detector.task"
 FACE_DETECTOR_MODEL_URLS = [
     (
@@ -39,6 +45,7 @@ PUNCH_DUPLICATE_WINDOW_SECONDS = 60
 SAVE_PUNCH_IMAGE = True
 
 LOG_LEVEL = "INFO"
+ADMIN_PROFILE_PASSWORD = "admin123"
 
 
 def ensure_directories() -> None:
