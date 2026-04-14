@@ -1,9 +1,7 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente;
 
-import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
-import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.endereco.EnderecoMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.dadosMedicos.DadosMedicosMapper;
@@ -11,10 +9,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.filho.FilhoMapp
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class PacienteMapper {
@@ -50,17 +45,6 @@ public class PacienteMapper {
         dto.setEndereco(enderecoMapper.toResponse(paciente.getEndereco()));
         dto.setDadosMedicos(dadosMedicosMapper.toResponse(paciente.getDadosMedicos()));
         dto.setFilhos(filhoMapper.toResponseList(paciente.getFilhos()));
-
-        if (paciente.getFilhos() != null) {
-            List<FilhoResponseDto> filhosDto = new ArrayList<>();
-            for (Filho f : paciente.getFilhos()) {
-                FilhoResponseDto fr = new FilhoResponseDto();
-                fr.setId(f.getId());
-                fr.setIdade(f.getIdade());
-                filhosDto.add(fr);
-            }
-            dto.setFilhos(filhosDto);
-        }
 
 
 

@@ -4,6 +4,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequest
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.service.filho.FilhoService;
@@ -39,7 +40,7 @@ public class FilhoController {
     public ResponseEntity<List<FilhoResponseDto>> createBatch(@RequestBody List<FilhoRequestDto> filhosDto) {
         List<FilhoResponseDto> response = filhosDto.stream().map(dto -> {
             Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                    .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+                    .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
 
             Filho filho = new Filho();
             filho.setIdade(dto.getIdade());
@@ -59,7 +60,7 @@ public class FilhoController {
     @PostMapping("/single")
     public ResponseEntity<FilhoResponseDto> createSingle(@RequestBody FilhoRequestDto dto) {
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+                .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
 
         Filho filho = new Filho();
         filho.setIdade(dto.getIdade());

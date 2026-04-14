@@ -29,7 +29,7 @@ public class EnderecoService {
     public EnderecoResponseDto create (EnderecoRequestDto dto){
         Endereco e = mapper.toEntity(dto);
         Endereco saved = repository.save(e);
-        return mapper.toResponse(e);
+        return mapper.toResponse(saved);
     }
 
     public EnderecoResponseDto update(Integer id, EnderecoRequestDto dto) {

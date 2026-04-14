@@ -74,11 +74,11 @@ public class PacienteService {
             paciente.setCpf(pacienteDTO.getCpf());
         }
         if (pacienteDTO.getEnderecoId() != null){
-                Endereco endereco = enderecoRepository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
+                Endereco endereco = enderecoRepository.findById(pacienteDTO.getEnderecoId()).orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + pacienteDTO.getEnderecoId() + " Não Encontrado"));
                 paciente.setEndereco(endereco);
         }
         if (pacienteDTO.getDadosMedicosId() != null){
-            DadosMedicos dadosMedicos = dadosMedicosRepository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
+            DadosMedicos dadosMedicos = dadosMedicosRepository.findById(pacienteDTO.getDadosMedicosId()).orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + pacienteDTO.getDadosMedicosId() + " Não Encontrado"));
             paciente.setDadosMedicos(dadosMedicos);
         }
         if (pacienteDTO.getTemFilhos() != null) {

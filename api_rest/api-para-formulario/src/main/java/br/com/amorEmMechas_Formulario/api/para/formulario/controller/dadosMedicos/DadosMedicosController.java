@@ -25,6 +25,7 @@ public class DadosMedicosController {
         this.service = service;
     }
 
+
     @Operation(summary = "Cadastra dados médicos de um paciente")
     @ApiResponse(responseCode = "201", description = "Dados médicos cadastrados com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
