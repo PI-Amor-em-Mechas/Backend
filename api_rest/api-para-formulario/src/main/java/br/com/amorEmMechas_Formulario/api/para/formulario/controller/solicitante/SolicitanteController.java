@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Solicitantes", description = "Gerenciamento de solicitantes")
 @RestController
 @RequestMapping("/solicitantes")
@@ -32,6 +34,7 @@ public class SolicitanteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+<<<<<<< HEAD
     @Operation(summary = "atualiza um solicitante")
     @ApiResponse(responseCode = "201", description = "Solicitante atualizado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
@@ -42,4 +45,29 @@ public class SolicitanteController {
     }
 
 
+=======
+    @Operation(summary = "Lista todos os solicitantes")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<SolicitanteResponseDto>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
+    @Operation(summary = "Busca solicitante por ID")
+    @ApiResponse(responseCode = "200", description = "Solicitante encontrado")
+    @ApiResponse(responseCode = "404", description = "Solicitante não encontrado")
+    @GetMapping("/{id}")
+    public ResponseEntity<SolicitanteResponseDto> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findById(id));
+    }
+
+    @Operation(summary = "Remove um solicitante por ID")
+    @ApiResponse(responseCode = "204", description = "Solicitante removido com sucesso")
+    @ApiResponse(responseCode = "404", description = "Solicitante não encontrado")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+>>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }

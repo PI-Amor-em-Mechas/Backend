@@ -9,6 +9,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.dadosMedicos.Da
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.dadosMedicos.DadosMedicosRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class DadosMedicosService {
 
@@ -22,11 +24,30 @@ public class DadosMedicosService {
     }
 
 
-    public DadosMedicosResponseDto create (DadosMedicosRequestDto dto){
+    public DadosMedicosResponseDto create(DadosMedicosRequestDto dto) {
         DadosMedicos entity = mapper.toEntity(dto);
         DadosMedicos saved = repository.save(entity);
         return mapper.toResponse(saved);
+    }
 
+    public List<DadosMedicosResponseDto> findAll() {
+        return repository.findAll()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    public DadosMedicosResponseDto findById(Integer id) {
+        DadosMedicos entity = repository.findById(id)
+                .orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + id + " Não Encontrado"));
+        return mapper.toResponse(entity);
+    }
+
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID DADOS MÉDICOS: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
     }
 
     public DadosMedicosResponseDto update (Integer id, DadosMedicosRequestDto dto){

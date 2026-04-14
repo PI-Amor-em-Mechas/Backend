@@ -9,6 +9,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.solicitante.Sol
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class SolicitanteService {
 
@@ -22,13 +24,14 @@ public class SolicitanteService {
     }
 
 
-    public SolicitanteResponseDto create (SolicitanteRequestDto dto){
+    public SolicitanteResponseDto create(SolicitanteRequestDto dto) {
         Solicitante s = mapper.toEntity(dto);
         Solicitante saved = repository.save(s);
         return mapper.toResponse(saved);
 
     }
 
+<<<<<<< HEAD
 
     public SolicitanteResponseDto update (Integer id, SolicitanteRequestDto dto){
         Solicitante s = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID: " + id + " Não Encontrado"));
@@ -40,4 +43,25 @@ public class SolicitanteService {
         return mapper.toResponse(save);
     }
 
+=======
+    public List<SolicitanteResponseDto> findAll() {
+        return repository.findAll()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    public SolicitanteResponseDto findById(Integer id) {
+        Solicitante s = repository.findById(id)
+                .orElseThrow(() -> new IdNotFoundException("ID SOLICITANTE: " + id + " Não Encontrado"));
+        return mapper.toResponse(s);
+    }
+
+    public void deleteById(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new IdNotFoundException("ID SOLICITANTE: " + id + " Não Encontrado");
+        }
+        repository.deleteById(id);
+    }
+>>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }

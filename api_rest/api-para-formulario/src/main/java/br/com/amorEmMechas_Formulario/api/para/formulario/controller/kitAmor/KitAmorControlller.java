@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Kit do Amor", description = "Gerenciamento dos kits de peruca")
 @RestController
 @RequestMapping("/kits")
@@ -32,6 +34,7 @@ public class KitAmorControlller {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+<<<<<<< HEAD
     @Operation(summary = "Atualiza um kit do amor")
     @ApiResponse(responseCode = "201", description = "Kit atualizado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
@@ -41,4 +44,29 @@ public class KitAmorControlller {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+=======
+    @Operation(summary = "Lista todos os kits do amor")
+    @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    @GetMapping
+    public ResponseEntity<List<KitAmorResponseDto>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
+    @Operation(summary = "Busca kit do amor por ID")
+    @ApiResponse(responseCode = "200", description = "Kit encontrado")
+    @ApiResponse(responseCode = "404", description = "Kit não encontrado")
+    @GetMapping("/{id}")
+    public ResponseEntity<KitAmorResponseDto> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findById(id));
+    }
+
+    @Operation(summary = "Remove um kit do amor por ID")
+    @ApiResponse(responseCode = "204", description = "Kit removido com sucesso")
+    @ApiResponse(responseCode = "404", description = "Kit não encontrado")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Integer id) {
+        service.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+>>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }
