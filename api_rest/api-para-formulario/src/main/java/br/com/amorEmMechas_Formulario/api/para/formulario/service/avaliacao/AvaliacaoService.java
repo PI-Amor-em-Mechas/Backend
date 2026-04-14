@@ -14,6 +14,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Service
 public class AvaliacaoService {
 
@@ -39,6 +41,7 @@ public class AvaliacaoService {
 
         Avaliacao avaliacao = mapper.toEntity(dto);
         avaliacao.setSolicitante(solicitante);
+        avaliacao.setDtConclusao(LocalDate.now());
         Avaliacao saved = repository.save(avaliacao);
 
         return mapper.toResponse(saved);

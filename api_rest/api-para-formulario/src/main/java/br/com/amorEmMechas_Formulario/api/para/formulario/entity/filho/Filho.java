@@ -18,17 +18,12 @@ public class Filho {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-
-
     private Integer idade;
 
     @ManyToOne
     @JoinColumn(name = "paciente_id" )
     @JsonIgnore
     private Paciente paciente;
-
-
-
 
     public Integer getId() {
         return id;

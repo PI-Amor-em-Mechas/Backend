@@ -31,4 +31,14 @@ public class KitAmorControlller {
         KitAmorResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @Operation(summary = "Atualiza um kit do amor")
+    @ApiResponse(responseCode = "201", description = "Kit atualizado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @PutMapping("/{id}")
+    public ResponseEntity<KitAmorResponseDto> update(@PathVariable Integer id, @RequestBody @Valid KitAmorRequestDto dto){
+        KitAmorResponseDto response = service.update(id, dto);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
 }

@@ -10,6 +10,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.service.filho.FilhoSer
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +36,7 @@ public class FilhoController {
     @Operation(summary = "Cadastra múltiplos filhos de uma vez")
     @ApiResponse(responseCode = "201", description = "Filhos cadastrados com sucesso")
     @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
-    @PostMapping("/batch")
+    @PostMapping("/many")
     public ResponseEntity<List<FilhoResponseDto>> createBatch(@RequestBody List<FilhoRequestDto> filhosDto) {
         List<FilhoResponseDto> response = filhosDto.stream().map(dto -> {
             Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
@@ -56,7 +57,7 @@ public class FilhoController {
     @Operation(summary = "Cadastra um único filho")
     @ApiResponse(responseCode = "201", description = "Filho cadastrado com sucesso")
     @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
-    @PostMapping("/single")
+    @PostMapping("/unique")
     public ResponseEntity<FilhoResponseDto> createSingle(@RequestBody FilhoRequestDto dto) {
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
                 .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
@@ -69,4 +70,36 @@ public class FilhoController {
         int qtdFilhos = filhoRepository.countByPacienteId(dto.getPacienteId());
         return ResponseEntity.status(HttpStatus.CREATED).body(new FilhoResponseDto(saved, qtdFilhos));
     }
+
+    @Operation(summary = "Atualiza um Único filho")
+    @ApiResponse(responseCode = "200", description = "Filho atualizado com sucesso")
+    @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
+    @ApiResponse(responseCode = "400", description = "Dado do filho inválido")
+    @PutMapping("/unique/{id}")
+    public ResponseEntity<FilhoResponseDto> updateSingle(@PathVariable Integer id, @RequestBody @Valid FilhoRequestDto dto) {
+        FilhoResponseDto resp = service.update(id, dto);
+        int qtdFilhos = filhoRepository.countByPacienteId(dto.getPacienteId());
+        resp.setQtdFilho(qtdFilhos);
+        return ResponseEntity.status(HttpStatus.OK).body(resp);
+    }
+
+    @Operation(summary = "Atualiza vários filhos")
+    @ApiResponse(responseCode = "200", description = "Filhos atualizados com sucesso")
+    @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
+    @ApiResponse(responseCode = "400", description = "Dados dos filhos inválidos")
+    @PutMapping("/many")
+    public ResponseEntity<List<FilhoResponseDto>> updateMany(@RequestBody @Valid List<FilhoRequestDto> dtoList){
+        List<FilhoResponseDto> respList = service.updateMany(dtoList);
+        respList.forEach(resp -> {
+            int qtdFilhos = filhoRepository.countByPacienteId(resp.getPacienteId());
+            resp.setQtdFilho(qtdFilhos);
+        });
+        return ResponseEntity.status(HttpStatus.OK).body(respList);
+
+    }
+
+
+
+
+
 }

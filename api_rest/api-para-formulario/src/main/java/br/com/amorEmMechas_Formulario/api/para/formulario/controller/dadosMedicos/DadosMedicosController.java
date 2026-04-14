@@ -31,4 +31,14 @@ public class DadosMedicosController {
         DadosMedicosResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @Operation(summary = "Dados médicos atualizados com sucesso")
+    @ApiResponse(responseCode = "201", description = "Dados médicos atualizados com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @PutMapping("/{id}")
+    public ResponseEntity<DadosMedicosResponseDto> update(@RequestBody @Valid DadosMedicosRequestDto dto, @PathVariable Integer id){
+        DadosMedicosResponseDto response = service.update(id, dto);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
 }

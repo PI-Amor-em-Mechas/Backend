@@ -3,6 +3,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.endereco.EnderecoResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,7 +14,7 @@ public class PacienteResponseDto {
     private String nomeCompleto;
     private String email;
     private LocalDate dtPedido;
-    private String cabeloAntesBase64;
+    private String cabeloAntes;
     private String cel;
     private LocalDate dtNasc;
     private String estadoCivil;
@@ -24,7 +25,10 @@ public class PacienteResponseDto {
     private EnderecoResponseDto endereco;
     private DadosMedicosResponseDto dadosMedicos;
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<FilhoResponseDto> filhos;
+
+    private Integer qtdFilho;
 
 
     public Integer getId() {
@@ -59,12 +63,12 @@ public class PacienteResponseDto {
         this.dtPedido = dtPedido;
     }
 
-    public String getCabeloAntesBase64() {
-        return cabeloAntesBase64;
+    public String getCabeloAntes() {
+        return cabeloAntes;
     }
 
-    public void setCabeloAntesBase64(String cabeloAntesBase64) {
-        this.cabeloAntesBase64 = cabeloAntesBase64;
+    public void setCabeloAntes(String cabeloAntes) {
+        this.cabeloAntes = cabeloAntes;
     }
 
     public String getCel() {
@@ -137,5 +141,13 @@ public class PacienteResponseDto {
 
     public void setFilhos(List<FilhoResponseDto> filhos) {
         this.filhos = filhos;
+    }
+
+    public Integer getQtdFilho() {
+        return qtdFilho;
+    }
+
+    public void setQtdFilho(Integer qtdFilho) {
+        this.qtdFilho = qtdFilho;
     }
 }

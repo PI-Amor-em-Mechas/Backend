@@ -1,7 +1,7 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.mapper.filho;
 
-import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +26,15 @@ public class FilhoMapper {
         FilhoResponseDto dto = new FilhoResponseDto();
         dto.setId(entity.getId());
         dto.setIdade(entity.getIdade());
+        dto.setPacienteId(entity.getPaciente() != null ? entity.getPaciente().getId() : null);
+
+        // 🔹 calcula qtdFilho com base na lista do paciente
+        if (entity.getPaciente() != null && entity.getPaciente().getFilhos() != null) {
+            dto.setQtdFilho(entity.getPaciente().getFilhos().size());
+        } else {
+            dto.setQtdFilho(0);
+        }
+
         return dto;
     }
 
@@ -37,10 +46,3 @@ public class FilhoMapper {
                 .collect(Collectors.toList());
     }
 }
-
-
-
-
-
-
-

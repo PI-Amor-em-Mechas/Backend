@@ -8,15 +8,21 @@ public class FilhoResponseDto {
     private Integer pacienteId;
     private Integer qtdFilho;
 
-    public FilhoResponseDto(Filho filho, Integer qtdFilho) {
+    public FilhoResponseDto() {}
+
+    // Construtor que popula os campos básicos
+    public FilhoResponseDto(Filho filho) {
         this.id = filho.getId();
         this.idade = filho.getIdade();
-        this.pacienteId = filho.getPaciente().getId();
-        this.qtdFilho = qtdFilho;
+        this.pacienteId = filho.getPaciente() != null ? filho.getPaciente().getId() : null;
     }
 
-    public FilhoResponseDto() {
-
+    // 🔹 Construtor que estava vazio — agora populado corretamente
+    public FilhoResponseDto(Filho filho, int qtdFilhos) {
+        this.id = filho.getId();
+        this.idade = filho.getIdade();
+        this.pacienteId = filho.getPaciente() != null ? filho.getPaciente().getId() : null;
+        this.qtdFilho = qtdFilhos;
     }
 
     public Integer getId() {

@@ -31,4 +31,15 @@ public class SolicitanteController {
         SolicitanteResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @Operation(summary = "atualiza um solicitante")
+    @ApiResponse(responseCode = "201", description = "Solicitante atualizado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    @PutMapping("/{id}")
+    public ResponseEntity<SolicitanteResponseDto> update(@PathVariable Integer id, @RequestBody @Valid SolicitanteRequestDto dto){
+        SolicitanteResponseDto response = service.update(id, dto);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+
 }

@@ -52,4 +52,26 @@ public class KitAmorService {
 
 }
 
+    public KitAmorResponseDto update (Integer id, KitAmorRequestDto dto){
+        Solicitante solicitante = solicitanteRepository.findById(dto.getSolicitanteId())
+                .orElseThrow(() -> new IdNotFoundException("ID SOLICITANTE: "
+                        + dto.getSolicitanteId() + " Não Encontrado"));
+
+        Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
+                .orElseThrow(()
+                        ->new IdNotFoundException
+                        ("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
+
+        KitAmor kitAmor = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID: " + id + " Não Encontrado"));
+
+        kitAmor.setCorPeruca(dto.getCorPeruca());
+        kitAmor.setPaciente(paciente);
+        kitAmor.setSolicitante(solicitante);
+        KitAmor save = repository.save(kitAmor);
+        return mapper.toResponse(save);
+
+
+
+    }
+
 }

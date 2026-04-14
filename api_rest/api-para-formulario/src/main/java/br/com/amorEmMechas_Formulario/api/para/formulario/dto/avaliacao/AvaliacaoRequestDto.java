@@ -29,8 +29,6 @@ public class AvaliacaoRequestDto {
     @NotNull(message = "Assine o termo de consentimento")
     private Boolean consentimento;
 
-    @NotNull(message = "Data não pode ser vazia")
-    private LocalDate dtConclusao;
 
     public Boolean getConcluido() {
         return concluido;
@@ -48,13 +46,7 @@ public class AvaliacaoRequestDto {
         this.consentimento = consentimento;
     }
 
-    public LocalDate getDtConclusao() {
-        return dtConclusao;
-    }
 
-    public void setDtConclusao(LocalDate dtConclusao) {
-        this.dtConclusao = dtConclusao;
-    }
 
     public Integer getNotaFormulario() {
         return notaFormulario;

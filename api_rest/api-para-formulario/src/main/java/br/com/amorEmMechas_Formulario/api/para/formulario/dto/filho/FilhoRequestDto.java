@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 public class FilhoRequestDto {
 
 
+    private Integer id;
     @NotNull(message = "Idade não pode ser nula")
     private Integer idade;
 
@@ -35,5 +36,13 @@ public class FilhoRequestDto {
 
     public void setIdade(Integer idade) {
         this.idade = idade;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 }

@@ -4,6 +4,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.Dados
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.endereco.EnderecoRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequestDto;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -17,6 +18,7 @@ public class PacienteRequestDto {
     private String nomeCompleto;
 
     @NotBlank(message = "Email não pode estar vazio")
+    @Email
     private String email;
 
     private LocalDate dtPedido;
@@ -39,7 +41,7 @@ public class PacienteRequestDto {
     @NotBlank(message = "CPF não pode estar vazio")
     private String cpf;
 
-    private String cabeloAntesBase64;
+    private String cabeloAntes;
 
 
 
@@ -129,12 +131,12 @@ public class PacienteRequestDto {
         this.cpf = cpf;
     }
 
-    public String getCabeloAntesBase64() {
-        return cabeloAntesBase64;
+    public String getCabeloAntes() {
+        return cabeloAntes;
     }
 
-    public void setCabeloAntesBase64(String cabeloAntesBase64) {
-        this.cabeloAntesBase64 = cabeloAntesBase64;
+    public void setCabeloAntes(String cabeloAntes) {
+        this.cabeloAntes = cabeloAntes;
     }
 
     public Integer getDadosMedicosId() {

@@ -32,7 +32,6 @@ public class AvaliacaoMapper {
         avaliacao.setNotaFormulario(dto.getNotaFormulario());
         avaliacao.setConsentimento(dto.getConsentimento());
         avaliacao.setConcluido(dto.getConcluido());
-        avaliacao.setDtConclusao(dto.getDtConclusao());
 
 
         return avaliacao;

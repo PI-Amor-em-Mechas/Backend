@@ -25,6 +25,7 @@
         private LocalDate dtNasc;
         private String estadoCivil;
         private Boolean temFilhos;
+        private Integer qtdFilhos;
         private Integer qtdPessoasEmCasa;
         private String cpf;
 
@@ -42,6 +43,14 @@
 
         @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
         private List<Filho> filhos = new ArrayList<>();
+
+        public Integer getQtdFilhos() {
+            return qtdFilhos;
+        }
+
+        public void setQtdFilhos(Integer qtdFilhos) {
+            this.qtdFilhos = qtdFilhos;
+        }
 
         public byte[] getCabeloAntes() {
             return cabeloAntes;
@@ -154,4 +163,6 @@
         public void setFilhos(List<Filho> filhos) {
             this.filhos = filhos;
         }
+
+
     }

@@ -19,7 +19,7 @@ public class KitAmor {
     @JoinColumn(name = "solicitante_id")
     private Solicitante solicitante;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "paciente_id")
     private Paciente paciente;
 

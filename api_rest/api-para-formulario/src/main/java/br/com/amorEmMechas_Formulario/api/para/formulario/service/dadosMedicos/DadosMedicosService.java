@@ -4,6 +4,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.dadosMedicos;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
+import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.dadosMedicos.DadosMedicosMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.dadosMedicos.DadosMedicosRepository;
 import org.springframework.stereotype.Service;
@@ -27,4 +28,20 @@ public class DadosMedicosService {
         return mapper.toResponse(saved);
 
     }
+
+    public DadosMedicosResponseDto update (Integer id, DadosMedicosRequestDto dto){
+        DadosMedicos dadosMedicos = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não foi encontrado"));
+
+        dadosMedicos.setMotivo(dto.getMotivo());
+        dadosMedicos.setRelatorioMedico(dadosMedicos.getRelatorioMedico());
+        dadosMedicos.setDtInicioTratamento(dadosMedicos.getDtInicioTratamento());
+        dadosMedicos.setTipoAtendimento(dto.getTipoAtendimento());
+        dadosMedicos.setJustificativa(dto.getJustificativa());
+        dadosMedicos.setTipoCancer(dto.getTipoCancer());
+
+        DadosMedicos dadosSave = repository.save(dadosMedicos);
+        return mapper.toResponse(dadosSave);
+    }
+
+
 }

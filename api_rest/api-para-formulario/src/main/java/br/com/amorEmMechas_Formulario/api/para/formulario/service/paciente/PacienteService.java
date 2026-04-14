@@ -21,13 +21,17 @@ import java.util.List;
 @Service
 public class PacienteService {
 
-    private PacienteRepository repository;
-    private PacienteMapper mapper;
-    private EnderecoRepository enderecoRepository;
-    private DadosMedicosRepository dadosMedicosRepository;
-    private FilhoRepository filhoRepository;
+    private final PacienteRepository repository;
+    private final PacienteMapper mapper;
+    private final EnderecoRepository enderecoRepository;
+    private final DadosMedicosRepository dadosMedicosRepository;
+    private final FilhoRepository filhoRepository;
 
-    public PacienteService(DadosMedicosRepository dadosMedicosRepository, EnderecoRepository enderecoRepository, FilhoRepository filhoRepository, PacienteMapper mapper, PacienteRepository repository) {
+    public PacienteService(DadosMedicosRepository dadosMedicosRepository,
+                           EnderecoRepository enderecoRepository,
+                           FilhoRepository filhoRepository,
+                           PacienteMapper mapper,
+                           PacienteRepository repository) {
         this.dadosMedicosRepository = dadosMedicosRepository;
         this.enderecoRepository = enderecoRepository;
         this.filhoRepository = filhoRepository;
@@ -35,9 +39,11 @@ public class PacienteService {
         this.repository = repository;
     }
 
-    public PacienteResponseDto create (PacienteRequestDto dto){
-        Endereco endereco = enderecoRepository.findById(dto.getEnderecoId()).orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + dto.getEnderecoId() + " Não existe"));
-        DadosMedicos dadosMedicos = dadosMedicosRepository.findById(dto.getDadosMedicosId()).orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + dto.getDadosMedicosId() + " Não existe"));
+    public PacienteResponseDto create(PacienteRequestDto dto) {
+        Endereco endereco = enderecoRepository.findById(dto.getEnderecoId())
+                .orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + dto.getEnderecoId() + " Não existe"));
+        DadosMedicos dadosMedicos = dadosMedicosRepository.findById(dto.getDadosMedicosId())
+                .orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + dto.getDadosMedicosId() + " Não existe"));
         dto.setDtPedido(LocalDate.now());
 
         Paciente paciente = mapper.toEntity(dto);
@@ -57,28 +63,31 @@ public class PacienteService {
             saved.setFilhos(filhos);
         }
 
+        // 🔹 recalcular qtdFilhos antes de retornar
+        saved.setQtdFilhos(saved.getFilhos() != null ? saved.getFilhos().size() : 0);
+        repository.save(saved);
 
         return mapper.toResponse(saved);
-
     }
 
+    public PacienteResponseDto update(Integer id, PacienteRequestDto pacienteDTO) {
+        Paciente paciente = repository.findById(id)
+                .orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
 
-
-    public PacienteResponseDto update (Integer id, PacienteRequestDto pacienteDTO){
-        Paciente paciente = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
-
-        if (pacienteDTO.getNomeCompleto() != null){
+        if (pacienteDTO.getNomeCompleto() != null) {
             paciente.setNomeCompleto(pacienteDTO.getNomeCompleto());
         }
-        if (pacienteDTO.getCpf() != null){
+        if (pacienteDTO.getCpf() != null) {
             paciente.setCpf(pacienteDTO.getCpf());
         }
-        if (pacienteDTO.getEnderecoId() != null){
-                Endereco endereco = enderecoRepository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
-                paciente.setEndereco(endereco);
+        if (pacienteDTO.getEnderecoId() != null) {
+            Endereco endereco = enderecoRepository.findById(pacienteDTO.getEnderecoId())
+                    .orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + pacienteDTO.getEnderecoId() + " Não Encontrado"));
+            paciente.setEndereco(endereco);
         }
-        if (pacienteDTO.getDadosMedicosId() != null){
-            DadosMedicos dadosMedicos = dadosMedicosRepository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
+        if (pacienteDTO.getDadosMedicosId() != null) {
+            DadosMedicos dadosMedicos = dadosMedicosRepository.findById(pacienteDTO.getDadosMedicosId())
+                    .orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + pacienteDTO.getDadosMedicosId() + " Não Encontrado"));
             paciente.setDadosMedicos(dadosMedicos);
         }
         if (pacienteDTO.getTemFilhos() != null) {
@@ -96,13 +105,13 @@ public class PacienteService {
             }
         }
 
+        // 🔹 recalcular qtdFilhos antes de salvar
+        paciente.setQtdFilhos(paciente.getFilhos() != null ? paciente.getFilhos().size() : 0);
 
         Paciente atualizado = repository.save(paciente);
         return mapper.toResponse(atualizado);
-
-
-
     }
-
-
 }
+
+
+
