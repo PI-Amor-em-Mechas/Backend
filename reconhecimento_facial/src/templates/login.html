@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login — Reconhecimento Facial</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="login-card">
+        <div class="login-icon-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+
+        <h1 class="login-title">Amor em Mechas - Ponto</h1>
+        <p class="login-subtitle">Selecione o perfil e entre no sistema</p>
+
+        <!-- Profile selector tabs -->
+        <div class="login-tabs" role="tablist">
+          <button id="tabDefault" class="login-tab active" role="tab" aria-selected="true" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+            </svg>
+            Padrão
+          </button>
+          <button id="tabAdmin" class="login-tab" role="tab" aria-selected="false" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Admin
+          </button>
+        </div>
+
+        <!-- Login form -->
+        <form id="loginForm" class="login-form" autocomplete="off">
+          <div id="passwordGroup" class="input-group hidden">
+            <span class="input-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </span>
+            <input id="adminPassword" type="password" maxlength="120" placeholder="Senha do administrador" />
+          </div>
+
+          <button id="loginButton" class="btn primary login-btn" type="submit">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            Entrar
+          </button>
+        </form>
+
+        <div id="statusBox" class="status hidden"></div>
+      </section>
+    </main>
+
+    <script>
+      const tabDefault = document.getElementById("tabDefault");
+      const tabAdmin = document.getElementById("tabAdmin");
+      const passwordGroup = document.getElementById("passwordGroup");
+      const adminPassword = document.getElementById("adminPassword");
+      const loginForm = document.getElementById("loginForm");
+      const statusBox = document.getElementById("statusBox");
+
+      let selectedProfile = "default";
+
+      function setStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = "status " + (type || "");
+        statusBox.classList.remove("hidden");
+      }
+
+      function selectTab(profile) {
+        selectedProfile = profile;
+        tabDefault.classList.toggle("active", profile === "default");
+        tabAdmin.classList.toggle("active", profile === "admin");
+        tabDefault.setAttribute("aria-selected", profile === "default");
+        tabAdmin.setAttribute("aria-selected", profile === "admin");
+
+        if (profile === "admin") {
+          passwordGroup.classList.remove("hidden");
+          adminPassword.focus();
+        } else {
+          passwordGroup.classList.add("hidden");
+          adminPassword.value = "";
+        }
+      }
+
+      tabDefault.addEventListener("click", () => selectTab("default"));
+      tabAdmin.addEventListener("click", () => selectTab("admin"));
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const password = selectedProfile === "admin" ? adminPassword.value : "";
+
+        if (selectedProfile === "admin" && !password) {
+          setStatus("Informe a senha do administrador.", "warning");
+          adminPassword.focus();
+          return;
+        }
+
+        try {
+          const response = await fetch("/set-profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profile: selectedProfile, password }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "ok") {
+            setStatus(data.message || "Falha ao autenticar.", "error");
+            return;
+          }
+
+          window.location.href = "/";
+        } catch (error) {
+          setStatus("Erro de conexão: " + error.message, "error");
+        }
+      });
+
+      // If already logged in, redirect to home
+      (async () => {
+        try {
+          const res = await fetch("/me");
+          const data = await res.json();
+          if (data.profile) {
+            window.location.href = "/";
+          }
+        } catch (_) {}
+      })();
+    </script>
+  </body>
+</html>

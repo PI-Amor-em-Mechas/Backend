@@ -94,7 +94,7 @@ def require_any_profile(view):
     def wrapper(*args, **kwargs):
         if _current_profile() is None:
             if request.method == "GET" and request.path.endswith("-window"):
-                return redirect(url_for("index"))
+                return redirect(url_for("login_page"))
             return _forbidden_json("Selecione um perfil antes de continuar.")
         return view(*args, **kwargs)
 
@@ -107,12 +107,12 @@ def require_admin_profile(view):
         profile = _current_profile()
         if profile is None:
             if request.method == "GET" and request.path.endswith("-window"):
-                return redirect(url_for("index"))
+                return redirect(url_for("login_page"))
             return _forbidden_json("Selecione um perfil antes de continuar.")
 
         if profile != PROFILE_ADMIN:
             if request.method == "GET" and request.path.endswith("-window"):
-                return redirect(url_for("index"))
+                return redirect(url_for("login_page"))
             return _forbidden_json("Somente perfil admin pode executar esta acao.")
 
         return view(*args, **kwargs)
@@ -282,8 +282,17 @@ def _update_name_in_labels_file(employee_id: str, employee_name: str) -> None:
 
 
 
+@app.get("/login")
+def login_page():
+    if _current_profile() is not None:
+        return redirect(url_for("index"))
+    return render_template("login.html")
+
+
 @app.get("/")
 def index():
+    if _current_profile() is None:
+        return redirect(url_for("login_page"))
     return render_template("index.html")
 
 
@@ -315,7 +324,9 @@ def set_profile():
 @app.post("/logout")
 def logout():
     session.pop("profile", None)
-    return jsonify({"status": "ok"})
+    if request.is_json:
+        return jsonify({"status": "ok"})
+    return redirect(url_for("login_page"))
 
 
 @app.get("/recognition-window")
@@ -910,13 +921,14 @@ def handle_voice_auth(data):
 
     sid = request.sid
     _voice_sessions.pop(sid, None)  # limpar sessao anterior (reconexao)
+    phrases = load_phrases()
+    LOGGER.info("Voice session started for user %s (sid=%s) — grammar: %d phrases", auth["employee_id"], sid, len(phrases))
     _voice_sessions[sid] = VoiceSession(
         user_id=auth["employee_id"],
         user_name=auth["name"],
         recognizer=_build_voice_recognizer(),
     )
-    LOGGER.info("Voice session started for user %s (sid=%s)", auth["employee_id"], sid)
-    emit("voice_ready", {"message": "Pronto para receber audio.", "phrases": len(load_phrases())})
+    emit("voice_ready", {"message": "Pronto para receber audio.", "phrases": len(phrases)})
 
 
 def _emit_partial(session: VoiceSession, partial: str = "") -> None:
@@ -951,6 +963,7 @@ def handle_audio_chunk(data):
         elif isinstance(data, list):
             audio_bytes = bytes(data)
         else:
+            LOGGER.warning("audio_chunk: tipo inesperado %s (sid=%s)", type(data).__name__, sid)
             emit("voice_error", {"message": "Formato de audio invalido."})
             return
 
@@ -960,6 +973,7 @@ def handle_audio_chunk(data):
         final_text, partial_text = feed_audio(session.recognizer, audio_bytes)
 
         if final_text is not None:
+            LOGGER.debug("Vosk final (sid=%s): '%s'", sid, final_text)
             result = _check_and_save(session, final_text)
             if result and result.get("empty"):
                 emit("voice_error", {"message": "Nada para salvar (texto vazio)."})

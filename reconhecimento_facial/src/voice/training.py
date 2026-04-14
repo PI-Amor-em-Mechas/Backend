@@ -10,6 +10,18 @@ def _normalize(text: str) -> str:
     return " ".join((text or "").strip().lower().split())
 
 
+def _is_valid_phrase(text: str) -> bool:
+    """Rejeita frases que sejam JSON, brackets, ou contenham caracteres invalidos."""
+    stripped = text.strip()
+    if not stripped:
+        return False
+    if stripped.startswith("{") or stripped.startswith("[") or stripped.startswith("}") or stripped.startswith("]"):
+        return False
+    if stripped.endswith(",") and ('"' in stripped):
+        return False
+    return True
+
+
 def load_phrases() -> list[str]:
     path: Path = config.VOICE_PHRASES_PATH
     if not path.exists():
@@ -25,7 +37,7 @@ def load_phrases() -> list[str]:
 
     phrases: list[str] = []
     for item in payload:
-        if isinstance(item, str):
+        if isinstance(item, str) and _is_valid_phrase(item):
             normalized = _normalize(item)
             if normalized:
                 phrases.append(normalized)
@@ -52,6 +64,9 @@ def save_phrases(phrases: list[str]) -> None:
 
 
 def add_phrase(text: str) -> list[str]:
+    if not _is_valid_phrase(text):
+        return load_phrases()
+
     phrase = _normalize(text)
     if not phrase:
         return load_phrases()
@@ -67,6 +82,8 @@ def add_phrases(texts: list[str]) -> list[str]:
     current = load_phrases()
     seen = set(current)
     for text in texts:
+        if not _is_valid_phrase(text):
+            continue
         phrase = _normalize(text)
         if not phrase or phrase in seen:
             continue

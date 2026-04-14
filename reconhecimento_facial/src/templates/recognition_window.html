@@ -35,7 +35,6 @@
       </div>
     </aside>
 
-    <!-- ===== Painel de Voz (oculto ate facial OK) ===== -->
     <section id="voicePanel" class="voice-panel hidden">
       <header class="voice-header">
         <h1>Comando de Voz</h1>
@@ -397,6 +396,12 @@
       async function startMicrophone() {
         try {
           audioContext = new AudioContext({ sampleRate: 16000 });
+
+          // Garantir que o AudioContext nao esta suspenso (politica de autoplay do browser)
+          if (audioContext.state === "suspended") {
+            await audioContext.resume();
+          }
+
           micStream = await navigator.mediaDevices.getUserMedia({
             audio: {
               channelCount: 1,
