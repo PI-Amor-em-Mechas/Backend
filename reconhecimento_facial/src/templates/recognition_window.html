@@ -10,6 +10,11 @@
   <body class="recognition-body">
     <main class="recognition-page">
       <section class="video-panel">
+        <div class="video-step-indicator">
+          <span class="step-dot active">1</span>
+          <span class="step-line"></span>
+          <span class="step-dot">2</span>
+        </div>
         <header class="video-header">
           <h1>Reconhecimento em Tempo Real</h1>
           <p>Mantenha o rosto centralizado. A confirmacao de identidade aparece no canto inferior direito.</p>
@@ -36,10 +41,16 @@
     </aside>
 
     <section id="voicePanel" class="voice-panel hidden">
+      <div class="voice-step-indicator" aria-label="Etapa 2 de 2">
+        <span class="step-dot completed" title="Reconhecimento facial">&#10003;</span>
+        <span class="step-line"></span>
+        <span class="step-dot active" title="Comando de voz">2</span>
+      </div>
+
       <header class="voice-header">
-        <h1>Comando de Voz</h1>
-        <p id="voiceUserInfo">-</p>
-        <p>Fale seu comando. Diga <strong>"salvar"</strong> ao final para gravar.</p>
+        <h1>&#127908; Comando de Voz</h1>
+        <p id="voiceUserInfo" class="voice-user-badge">-</p>
+        <p class="voice-instruction">Fale seu comando.<br>Diga <strong>"salvar"</strong> ao final para gravar.</p>
       </header>
 
       <div class="voice-display">
@@ -47,7 +58,7 @@
           <label>Texto acumulado:</label>
           <p id="voiceAccumulated" class="voice-text">-</p>
         </div>
-        <div class="voice-block">
+        <div class="voice-block voice-block-partial">
           <label>Reconhecendo agora:</label>
           <p id="voicePartial" class="voice-text partial">...</p>
         </div>
@@ -55,17 +66,23 @@
 
       <div id="voiceStatus" class="status voice-status">Conectando...</div>
 
-      <div class="voice-actions">
-        <button id="forceSaveBtn" class="btn success">Salvar Agora</button>
-        <input
-          id="trainPhraseInput"
-          type="text"
-          placeholder="Frase para treinar (opcional)"
-          class="voice-train-input"
-        />
-        <button id="trainVoiceBtn" class="btn secondary">Treinar Voz</button>
-        <button id="voiceCloseBtn" class="btn danger">Fechar</button>
+      <div class="voice-main-actions">
+        <button id="forceSaveBtn" class="btn success voice-btn-lg">&#128190; Salvar Agora</button>
+        <button id="voiceCloseBtn" class="btn danger voice-btn-lg">&#10006; Fechar</button>
       </div>
+
+      <details class="voice-advanced">
+        <summary>Opcoes avancadas</summary>
+        <div class="voice-advanced-content">
+          <input
+            id="trainPhraseInput"
+            type="text"
+            placeholder="Frase para treinar (opcional)"
+            class="voice-train-input"
+          />
+          <button id="trainVoiceBtn" class="btn secondary">Treinar Voz</button>
+        </div>
+      </details>
 
       <div id="voiceHistory" class="voice-history hidden">
         <h3>Ultimos comandos salvos</h3>
@@ -317,10 +334,19 @@
           video.srcObject.getTracks().forEach((t) => t.stop());
         }
 
-        // Alternar paineis
-        document.querySelector(".video-panel").classList.add("hidden");
+        // Alternar paineis com transicao suave
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        const videoPanel = document.querySelector(".video-panel");
+        const voicePanel = document.getElementById("voicePanel");
+        videoPanel.classList.add("panel-exit");
         identityToast.classList.add("hidden");
-        document.getElementById("voicePanel").classList.remove("hidden");
+        setTimeout(() => {
+          videoPanel.classList.add("hidden");
+          videoPanel.classList.remove("panel-exit");
+          voicePanel.classList.remove("hidden");
+          voicePanel.classList.add("panel-enter");
+          voicePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 350);
 
         document.getElementById("voiceUserInfo").textContent =
           `Usuario: ${employeeName} (ID: ${employeeId})`;
