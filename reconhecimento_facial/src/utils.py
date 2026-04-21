@@ -9,14 +9,12 @@ import numpy as np
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
-import reconhecimento_facial.src.config as config
+from . import config
 
 LOGGER = logging.getLogger(__name__)
 
-
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
 
 def ensure_face_detector_model() -> None:
     config.ensure_directories()
@@ -50,7 +48,6 @@ def ensure_face_detector_model() -> None:
         f"{reasons}"
     )
 
-
 def create_face_detector() -> Any:
     ensure_face_detector_model()
     options = vision.FaceDetectorOptions(
@@ -61,7 +58,6 @@ def create_face_detector() -> Any:
         min_detection_confidence=config.MP_MIN_DETECTION_CONFIDENCE,
     )
     return vision.FaceDetector.create_from_options(options)
-
 
 def _clip_bbox(x: int, y: int, w: int, h: int, width: int, height: int) -> tuple[int, int, int, int]:
     x = max(0, x)
@@ -75,7 +71,6 @@ def _clip_bbox(x: int, y: int, w: int, h: int, width: int, height: int) -> tuple
         h = height - y
 
     return x, y, max(0, w), max(0, h)
-
 
 def detect_largest_face(
     frame_bgr: np.ndarray,
@@ -131,14 +126,12 @@ def detect_largest_face(
         "detection": best_det,
     }
 
-
 def preprocess_face(face_bgr: np.ndarray) -> np.ndarray:
     gray = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2GRAY)
     gray = cv2.resize(gray, config.FACE_IMAGE_SIZE)
     if config.EQUALIZE_HIST:
         gray = cv2.equalizeHist(gray)
     return gray
-
 
 def draw_overlay(
     frame: np.ndarray,

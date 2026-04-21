@@ -1,18 +1,14 @@
+"""Menu CLI principal (run via `python -m src.app`)."""
+from __future__ import annotations
+
 import logging
-import sys
-from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_PROJECT_PARENT = _PROJECT_ROOT.parent
-if str(_PROJECT_PARENT) not in sys.path:
-    sys.path.insert(0, str(_PROJECT_PARENT))
-
-import reconhecimento_facial.src.config as config
-import reconhecimento_facial.src.db as db
-from reconhecimento_facial.src.capture import prompt_and_capture
-from reconhecimento_facial.src.recognize import run_recognition_loop
-from reconhecimento_facial.src.train import train_model
-
+from . import config
+from . import db
+from .capture import prompt_and_capture
+from .recognize import run_recognition_loop
+from .services.lgpd import apply_retention_policy
+from .train import train_model
 
 def _configure_logging() -> None:
     level = getattr(logging, config.LOG_LEVEL.upper(), logging.INFO)
@@ -21,33 +17,29 @@ def _configure_logging() -> None:
         format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
     )
 
-
 def _model_trained() -> bool:
     return config.LBPH_MODEL_PATH.exists() and config.LABELS_PATH.exists()
-
 
 def _print_menu() -> None:
     trained = _model_trained()
     model_status = "[modelo OK]" if trained else "[sem modelo - treinar primeiro]"
     print("\n=== Face Attendance (MediaPipe + LBPH) ===")
     print("1) Cadastrar colaborador e capturar amostras")
-    print(f"2) Treinar modelo LBPH")
+    print("2) Treinar modelo LBPH")
     print(f"3) Reconhecer e bater ponto  {model_status}")
     print("4) Listar colaboradores")
     print("5) Listar registros de ponto")
+    print("6) Aplicar retencao LGPD agora")
     print("0) Sair")
-
 
 def _list_employees() -> None:
     employees = db.list_employees()
     if not employees:
         print("Nenhum colaborador cadastrado.")
         return
-
     print("\nColaboradores:")
     for e in employees:
         print(f"- id={e['id']} | nome={e['name']} | criado_em={e['created_at']}")
-
 
 def _list_punches() -> None:
     raw_limit = input("Limite de registros [50]: ").strip()
@@ -62,7 +54,6 @@ def _list_punches() -> None:
     if not punches:
         print("Nenhum registro encontrado.")
         return
-
     print("\nRegistros:")
     for p in punches:
         print(
@@ -71,11 +62,15 @@ def _list_punches() -> None:
             f"| img={p.get('image_path') or '-'}"
         )
 
-
 def main() -> None:
     _configure_logging()
     config.ensure_directories()
     db.init_db()
+
+    try:
+        apply_retention_policy()
+    except Exception:
+        logging.exception("Falha ao aplicar politica de retencao LGPD")
 
     while True:
         _print_menu()
@@ -112,6 +107,9 @@ def main() -> None:
                 _list_employees()
             elif choice == "5":
                 _list_punches()
+            elif choice == "6":
+                result = apply_retention_policy()
+                print(f"Retencao aplicada: {result}")
             elif choice == "0":
                 print("Encerrando.")
                 break
@@ -120,7 +118,6 @@ def main() -> None:
         except Exception as exc:
             logging.exception("Falha ao executar opcao '%s'", choice)
             print(f"Erro ao executar opcao: {exc}")
-
 
 if __name__ == "__main__":
     main()

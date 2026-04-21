@@ -3,12 +3,10 @@
 import json
 from pathlib import Path
 
-import reconhecimento_facial.src.config as config
-
+from .. import config
 
 def _normalize(text: str) -> str:
     return " ".join((text or "").strip().lower().split())
-
 
 def _is_valid_phrase(text: str) -> bool:
     """Rejeita frases que sejam JSON, brackets, ou contenham caracteres invalidos."""
@@ -20,7 +18,6 @@ def _is_valid_phrase(text: str) -> bool:
     if stripped.endswith(",") and ('"' in stripped):
         return False
     return True
-
 
 def load_phrases() -> list[str]:
     path: Path = config.VOICE_PHRASES_PATH
@@ -45,7 +42,6 @@ def load_phrases() -> list[str]:
         return phrases[: config.VOICE_MAX_PHRASES]
     return phrases
 
-
 def save_phrases(phrases: list[str]) -> None:
     config.ensure_directories()
     unique: list[str] = []
@@ -62,7 +58,6 @@ def save_phrases(phrases: list[str]) -> None:
         encoding="utf-8",
     )
 
-
 def add_phrase(text: str) -> list[str]:
     if not _is_valid_phrase(text):
         return load_phrases()
@@ -77,7 +72,6 @@ def add_phrase(text: str) -> list[str]:
     save_phrases(current)
     return current
 
-
 def add_phrases(texts: list[str]) -> list[str]:
     current = load_phrases()
     seen = set(current)
@@ -91,7 +85,6 @@ def add_phrases(texts: list[str]) -> list[str]:
         seen.add(phrase)
     save_phrases(current)
     return current
-
 
 def remove_phrase(text: str) -> list[str]:
     phrase = _normalize(text)

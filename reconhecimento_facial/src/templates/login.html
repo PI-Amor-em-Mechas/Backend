@@ -65,6 +65,9 @@
 
         <div id="statusBox" class="status hidden"></div>
       </section>
+      <p class="lgpd-link" style="margin-top:12px; text-align:center; font-size:12px; opacity:0.8;">
+        <a href="#" id="privacyLink">Aviso de privacidade (LGPD)</a>
+      </p>
     </main>
 
     <script>
@@ -142,6 +145,17 @@
           }
         } catch (_) {}
       })();
+
+      document.getElementById("privacyLink").addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          const resp = await fetch("/lgpd/privacy-notice");
+          const data = await resp.json();
+          if (data.status === "ok") {
+            alert(`Aviso de privacidade (v${data.version})\n\n${data.text}\n\nRetencao de imagens: ${data.retention_days} dias.`);
+          }
+        } catch (_) {}
+      });
     </script>
   </body>
 </html>

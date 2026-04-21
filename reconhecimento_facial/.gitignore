@@ -1,1 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+venv/
 .venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dados sensíveis / LGPD
+data/attendance.db
+data/attendance.db-shm
+data/attendance.db-wal
+data/dataset/
+data/punch_images/
+data/models/*.onnx
+data/models/*.yml
+data/models/labels.json
+
+# Modelos grandes / binários baixados
+data/vosk-model/
+data/face_detector.task
+
+# Logs
+*.log
+logs/
+
+# Segredos
+data/secret_key
+data/voice_phrases.json.bak
+.env
+.env.*
+!.env.example

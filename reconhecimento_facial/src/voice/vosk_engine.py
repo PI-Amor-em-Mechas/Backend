@@ -8,12 +8,11 @@ import logging
 
 from vosk import Model, KaldiRecognizer
 
-import reconhecimento_facial.src.config as config
+from .. import config
 
 LOGGER = logging.getLogger(__name__)
 
 _model: Model | None = None
-
 
 def get_model() -> Model:
     """Retorna o modelo Vosk singleton (carrega na primeira chamada)."""
@@ -24,7 +23,6 @@ def get_model() -> Model:
         _model = Model(model_path)
         LOGGER.info("Modelo Vosk carregado com sucesso.")
     return _model
-
 
 def create_recognizer(
     sample_rate: int = 16000,
@@ -42,7 +40,6 @@ def create_recognizer(
 
     return KaldiRecognizer(get_model(), sample_rate)
 
-
 def feed_audio(recognizer: KaldiRecognizer, data: bytes) -> tuple[str | None, str | None]:
     """Alimenta o recognizer com PCM16-LE mono.
 
@@ -56,7 +53,6 @@ def feed_audio(recognizer: KaldiRecognizer, data: bytes) -> tuple[str | None, st
     else:
         partial = json.loads(recognizer.PartialResult())
         return None, partial.get("partial", "")
-
 
 def finalize(recognizer: KaldiRecognizer) -> str:
     """Encerra o stream e retorna qualquer texto restante no buffer."""

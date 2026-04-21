@@ -19,22 +19,38 @@ Este projeto implementa:
 ├── requirements.txt
 ├── README.md
 ├── data
-│   ├── dataset
-│   │   └── <employee_id>/*.png
-│   ├── models
-│   │   ├── lbph_model.yml
-│   │   └── labels.json
-│   ├── punch_images
+│   ├── dataset/<employee_id>/*.png
+│   ├── models/            (lbph_model.yml, labels.json)
+│   ├── punch_images/
+│   ├── exports/
+│   ├── secret_key         (gerado localmente, nao versionar)
 │   ├── attendance.db
 │   └── face_detector.task
 └── src
-	 ├── app.py
-	 ├── capture.py
-	 ├── train.py
-	 ├── recognize.py
-	 ├── db.py
-	 ├── config.py
-	 └── utils.py
+     ├── __init__.py
+     ├── app.py            (CLI: python -m src.app)
+     ├── web_app.py        (factory + SocketIO: python -m src.web_app)
+     ├── config.py
+     ├── db.py
+     ├── security.py       (auth/profile decorators)
+     ├── utils.py
+     ├── train.py
+     ├── recognize.py      (loop OpenCV desktop)
+     ├── capture.py        (CLI captura de amostras)
+     ├── services/
+     │   ├── frames.py       (encode/decode/reference image)
+     │   ├── lgpd.py         (consent, retention, export, erase, audit)
+     │   ├── model_cache.py  (singleton LBPH + detector + locks)
+     │   └── punch_rules.py  (IN/OUT por dia, cooldown)
+     ├── routes/
+     │   ├── auth.py         (/, /login, /set-profile, /logout, /me)
+     │   ├── employees.py    (/employees, /register-person, /train-model)
+     │   ├── recognition.py  (/recognize, /recognize-frame, /confirm)
+     │   ├── voice_phrases.py(/voice-phrases/*)
+     │   └── lgpd.py         (/lgpd/privacy-notice, /lgpd/export, /lgpd/erase, /lgpd/retention, /lgpd/audit)
+     ├── voice/              (Vosk: engine, state, training)
+     ├── static/
+     └── templates/
 ```
 
 ## Requisitos
@@ -91,7 +107,7 @@ Fluxo recomendado:
 Inicie o menu principal:
 
 ```bash
-python src/app.py
+python -m src.app
 ```
 
 Menu:
@@ -101,6 +117,26 @@ Menu:
 - `3` Reconhecer e bater ponto.
 - `4` Listar colaboradores.
 - `5` Listar registros de ponto.
+
+## Interface web para reconhecimento
+
+Agora tambem existe uma interface HTML amigavel para reconhecimento com confirmacao:
+
+- Botao `Iniciar Reconhecimento` para capturar pela webcam.
+- Exibicao da foto detectada e nome da pessoa reconhecida.
+- Solicitacao de confirmacao antes de salvar o ponto.
+
+Executar servidor web:
+
+```bash
+python -m src.web_app
+```
+
+Depois abra no navegador:
+
+```text
+http://127.0.0.1:5000
+```
 
 ## Pipeline tecnico
 
@@ -127,13 +163,10 @@ Tabelas:
 ## Regras de ponto
 
 - Anti-duplicacao: nao registra novo ponto do mesmo colaborador dentro da janela configurada (`PUNCH_DUPLICATE_WINDOW_SECONDS`, default 60s).
-- Tipo automatico:
-  - Se ultimo ponto for `IN`, proximo vira `OUT`.
-  - Caso contrario, vira `IN`.
-- Durante reconhecimento, teclas opcionais:
-  - `i` forca proximo registro para `IN`.
-  - `o` forca proximo registro para `OUT`.
-  - `q` encerra.
+- Tipo automatico: baseado na contagem de pontos **do dia atual** (fuso local).
+  - Contagem par -> proximo e `IN`.
+  - Contagem impar -> proximo e `OUT`.
+- Sem intervencao manual: a regra e determinista e um novo dia sempre comeca com `IN`.
 
 ## Calibracao do confidence (LBPH)
 
@@ -160,27 +193,73 @@ Como calibrar:
 
 ## LGPD e seguranca (importante)
 
-Biometria facial e dado pessoal sensivel.
+Biometria facial e dado pessoal sensivel. Este projeto ja inclui:
 
-Recomendacoes minimas:
+- **Consentimento explicito** por colaborador (tabela `consents`), com versao
+  corrente em `config.CONSENT_VERSION`. O cadastro pelo web exige marcar o
+  checkbox de consentimento; o CLI exige confirmacao textual.
+- **Retencao automatica** de imagens de ponto (`data/punch_images/`) com base
+  em `DATA_RETENTION_DAYS` (default 90). Aplicada no boot e a cada 6h em
+  background, e disponivel via endpoint `/lgpd/retention/apply`.
+- **Direito de acesso / portabilidade**: `GET /lgpd/export/<employee_id>`
+  retorna um JSON com todos os dados daquele titular.
+- **Direito ao esquecimento**: `POST /lgpd/erase/<employee_id>` remove
+  amostras de dataset, imagens de ponto, comandos de voz, revoga consentimentos
+  e **anonimiza** o cadastro mantendo apenas o historico de pontos sem PII
+  (para cumprir obrigacoes contabeis/legais por `ANONYMIZED_PUNCHES_RETENTION_DAYS`).
+- **Aviso de privacidade** publico: `GET /lgpd/privacy-notice`.
+- **Log de auditoria** (`audit_log`) para acoes sensiveis (login, cadastro,
+  treino, export, erase, revogacao). Consulta via `GET /lgpd/audit`.
+- **Imagens de ponto desativadas por padrao** (`SAVE_PUNCH_IMAGE=false`),
+  reduzindo o volume de biometria armazenada.
+- **SECRET_KEY persistida** em `data/secret_key` (modo 0600 em SO compativel) —
+  sessoes sobrevivem a reinicios. Pode ser sobrescrita por `FLASK_SECRET_KEY`.
+- **Senha admin sem default**: defina `ADMIN_PROFILE_PASSWORD` via variavel de
+  ambiente (comparacao resistente a timing attacks). Sem ela, o login admin
+  fica desabilitado.
 
-- Obter consentimento explicito dos colaboradores.
-- Definir base legal, finalidade e prazo de retencao.
-- Restringir acesso ao banco e imagens.
-- Criptografar dados em repouso e em transito.
-- Evitar armazenar imagem bruta quando nao necessario.
-- Preferir representacoes vetoriais/embeddings com protecao adequada.
-- Nao enviar imagens para internet sem necessidade e sem controles.
+### Variaveis de ambiente relevantes
 
-Este projeto roda localmente e nao envia imagens para servicos externos por padrao.
+| Variavel                           | Default            | Descricao                              |
+|------------------------------------|--------------------|----------------------------------------|
+| `ADMIN_PROFILE_PASSWORD`           | _(vazio)_          | Senha do perfil admin                  |
+| `FLASK_SECRET_KEY`                 | _arquivo_          | Chave da sessao Flask                  |
+| `SAVE_PUNCH_IMAGE`                 | `false`            | Persistir imagens do ponto?            |
+| `CONSENT_VERSION`                  | `1.0`              | Versao do termo vigente                |
+| `DATA_RETENTION_DAYS`              | `90`               | Retencao de imagens de ponto           |
+| `AUDIT_LOG_RETENTION_DAYS`         | `365`              | Retencao do log de auditoria           |
+| `ANONYMIZED_PUNCHES_RETENTION_DAYS`| `1825` (5 anos)    | Retencao do historico anonimizado      |
+| `LOCAL_TIMEZONE`                   | `America/Sao_Paulo`| Timezone para a regra IN/OUT diaria    |
+
+## Regra IN/OUT automatica
+
+O sistema determina `IN` ou `OUT` **automaticamente pela contagem de pontos do
+colaborador no dia corrente** (fuso horario `LOCAL_TIMEZONE`):
+
+- 0, 2, 4, ... pontos no dia -> proximo registro e `IN` (entrada).
+- 1, 3, 5, ... pontos no dia -> proximo registro e `OUT` (saida).
+
+Vantagens frente a alternancia baseada apenas no ultimo ponto:
+
+- Um novo dia sempre comeca com `IN`, mesmo que o colaborador tenha esquecido
+  de bater o par do dia anterior.
+- Suporta multiplos pares no mesmo dia (entrada/saida/entrada/saida).
+- O tipo e recomputado no momento do commit (`/confirm`) para evitar race
+  conditions entre reconhecimento e confirmacao.
+
+Teclas manuais `i`/`o` foram removidas do loop CLI — a regra e totalmente
+automatica. Um cooldown (`PUNCH_DUPLICATE_WINDOW_SECONDS`) continua evitando
+registros duplicados na mesma janela de segundos.
 
 ## Comandos diretos (opcional)
 
-Tambem e possivel executar modulos separadamente:
+Execute modulos como parte do pacote `src`:
 
 ```bash
-python src/train.py
-python src/recognize.py
+python -m src.app          # menu CLI
+python -m src.web_app      # servidor web
+python -m src.train        # treina somente
+python -m src.recognize    # loop OpenCV somente
 ```
 
 ## Observacoes

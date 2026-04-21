@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 
 from vosk import KaldiRecognizer
 
-
 @dataclass
 class VoiceSession:
     """Um estado isolado por conexao WebSocket."""
