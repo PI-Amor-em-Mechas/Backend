@@ -34,18 +34,15 @@ public class SolicitanteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-<<<<<<< HEAD
-    @Operation(summary = "atualiza um solicitante")
-    @ApiResponse(responseCode = "201", description = "Solicitante atualizado com sucesso")
+    @Operation(summary = "Atualiza um solicitante")
+    @ApiResponse(responseCode = "200", description = "Solicitante atualizado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @PutMapping("/{id}")
-    public ResponseEntity<SolicitanteResponseDto> update(@PathVariable Integer id, @RequestBody @Valid SolicitanteRequestDto dto){
+    public ResponseEntity<SolicitanteResponseDto> update(@PathVariable Integer id, @RequestBody @Valid SolicitanteRequestDto dto) {
         SolicitanteResponseDto response = service.update(id, dto);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-
-=======
     @Operation(summary = "Lista todos os solicitantes")
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @GetMapping
@@ -69,5 +66,4 @@ public class SolicitanteController {
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }

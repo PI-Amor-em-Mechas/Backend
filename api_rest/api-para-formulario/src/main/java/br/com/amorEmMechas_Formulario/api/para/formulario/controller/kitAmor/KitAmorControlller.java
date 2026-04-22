@@ -34,17 +34,15 @@ public class KitAmorControlller {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-<<<<<<< HEAD
     @Operation(summary = "Atualiza um kit do amor")
-    @ApiResponse(responseCode = "201", description = "Kit atualizado com sucesso")
+    @ApiResponse(responseCode = "200", description = "Kit atualizado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @PutMapping("/{id}")
-    public ResponseEntity<KitAmorResponseDto> update(@PathVariable Integer id, @RequestBody @Valid KitAmorRequestDto dto){
+    public ResponseEntity<KitAmorResponseDto> update(@PathVariable Integer id, @RequestBody @Valid KitAmorRequestDto dto) {
         KitAmorResponseDto response = service.update(id, dto);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-=======
     @Operation(summary = "Lista todos os kits do amor")
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @GetMapping
@@ -68,5 +66,4 @@ public class KitAmorControlller {
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }

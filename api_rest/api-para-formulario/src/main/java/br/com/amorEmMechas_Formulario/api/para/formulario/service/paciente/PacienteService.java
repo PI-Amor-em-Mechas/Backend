@@ -80,7 +80,6 @@ public class PacienteService {
         if (pacienteDTO.getCpf() != null) {
             paciente.setCpf(pacienteDTO.getCpf());
         }
-<<<<<<< HEAD
         if (pacienteDTO.getEnderecoId() != null) {
             Endereco endereco = enderecoRepository.findById(pacienteDTO.getEnderecoId())
                     .orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + pacienteDTO.getEnderecoId() + " Não Encontrado"));
@@ -89,14 +88,6 @@ public class PacienteService {
         if (pacienteDTO.getDadosMedicosId() != null) {
             DadosMedicos dadosMedicos = dadosMedicosRepository.findById(pacienteDTO.getDadosMedicosId())
                     .orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + pacienteDTO.getDadosMedicosId() + " Não Encontrado"));
-=======
-        if (pacienteDTO.getEnderecoId() != null){
-                Endereco endereco = enderecoRepository.findById(pacienteDTO.getEnderecoId()).orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + pacienteDTO.getEnderecoId() + " Não Encontrado"));
-                paciente.setEndereco(endereco);
-        }
-        if (pacienteDTO.getDadosMedicosId() != null){
-            DadosMedicos dadosMedicos = dadosMedicosRepository.findById(pacienteDTO.getDadosMedicosId()).orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + pacienteDTO.getDadosMedicosId() + " Não Encontrado"));
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
             paciente.setDadosMedicos(dadosMedicos);
         }
         if (pacienteDTO.getTemFilhos() != null) {
@@ -120,8 +111,6 @@ public class PacienteService {
         Paciente atualizado = repository.save(paciente);
         return mapper.toResponse(atualizado);
     }
-<<<<<<< HEAD
-=======
 
     public List<PacienteResponseDto> findAll() {
         return repository.findAll()
@@ -142,8 +131,6 @@ public class PacienteService {
         }
         repository.deleteById(id);
     }
-
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }
 
 

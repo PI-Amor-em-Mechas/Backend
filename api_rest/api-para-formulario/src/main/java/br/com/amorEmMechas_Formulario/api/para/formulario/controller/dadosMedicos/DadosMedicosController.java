@@ -35,17 +35,15 @@ public class DadosMedicosController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-<<<<<<< HEAD
-    @Operation(summary = "Dados médicos atualizados com sucesso")
-    @ApiResponse(responseCode = "201", description = "Dados médicos atualizados com sucesso")
+    @Operation(summary = "Atualiza dados médicos")
+    @ApiResponse(responseCode = "200", description = "Dados médicos atualizados com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @PutMapping("/{id}")
-    public ResponseEntity<DadosMedicosResponseDto> update(@RequestBody @Valid DadosMedicosRequestDto dto, @PathVariable Integer id){
+    public ResponseEntity<DadosMedicosResponseDto> update(@RequestBody @Valid DadosMedicosRequestDto dto, @PathVariable Integer id) {
         DadosMedicosResponseDto response = service.update(id, dto);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-=======
     @Operation(summary = "Lista todos os dados médicos")
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @GetMapping
@@ -69,5 +67,4 @@ public class DadosMedicosController {
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }

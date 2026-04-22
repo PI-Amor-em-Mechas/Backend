@@ -31,10 +31,9 @@ public class SolicitanteService {
 
     }
 
-<<<<<<< HEAD
-
-    public SolicitanteResponseDto update (Integer id, SolicitanteRequestDto dto){
-        Solicitante s = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID: " + id + " Não Encontrado"));
+    public SolicitanteResponseDto update(Integer id, SolicitanteRequestDto dto) {
+        Solicitante s = repository.findById(id)
+                .orElseThrow(() -> new IdNotFoundException("ID: " + id + " Não Encontrado"));
 
         s.setNomeCompleto(dto.getNomeCompleto());
         s.setRg(dto.getRg());
@@ -43,7 +42,6 @@ public class SolicitanteService {
         return mapper.toResponse(save);
     }
 
-=======
     public List<SolicitanteResponseDto> findAll() {
         return repository.findAll()
                 .stream()
@@ -63,5 +61,4 @@ public class SolicitanteService {
         }
         repository.deleteById(id);
     }
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }

@@ -8,11 +8,6 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.endereco.Endere
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.filho.FilhoMapper;
 import org.springframework.stereotype.Component;
 
-<<<<<<< HEAD
-=======
-import java.util.Base64;
-
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 @Component
 public class PacienteMapper {
 
@@ -70,7 +65,6 @@ public class PacienteMapper {
             dto.setCabeloAntes("");
         }
 
-<<<<<<< HEAD
         if (paciente.getEndereco() != null) {
             dto.setEndereco(enderecoMapper.toResponse(paciente.getEndereco()));
         }
@@ -83,13 +77,6 @@ public class PacienteMapper {
         } else {
             dto.setQtdFilho(0);
         }
-=======
-        dto.setEndereco(enderecoMapper.toResponse(paciente.getEndereco()));
-        dto.setDadosMedicos(dadosMedicosMapper.toResponse(paciente.getDadosMedicos()));
-        dto.setFilhos(filhoMapper.toResponseList(paciente.getFilhos()));
-
-
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 
         return dto;
     }

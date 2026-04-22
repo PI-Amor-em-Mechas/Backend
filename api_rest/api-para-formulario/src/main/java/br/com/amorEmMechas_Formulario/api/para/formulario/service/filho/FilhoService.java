@@ -4,10 +4,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
-<<<<<<< HEAD
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
-=======
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.filho.FilhoMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
@@ -29,20 +26,13 @@ public class FilhoService {
         this.repository = repository;
     }
 
-<<<<<<< HEAD
-    public FilhoResponseDto create (FilhoRequestDto dto){
-=======
-
     public FilhoResponseDto create(FilhoRequestDto dto) {
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
         Filho f = mapper.toEntity(dto);
         Filho saved = repository.save(f);
         return mapper.toResponse(saved);
     }
 
-<<<<<<< HEAD
-
-    public FilhoResponseDto update (Integer id, FilhoRequestDto dto){
+    public FilhoResponseDto update(Integer id, FilhoRequestDto dto) {
         Filho filhoBuscado = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
 
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId()).orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
@@ -67,7 +57,8 @@ public class FilhoService {
             Filho atualizado = repository.save(filho);
             return mapper.toResponse(atualizado);
         }).toList();
-=======
+    }
+
     public List<FilhoResponseDto> findAll() {
         return repository.findAll()
                 .stream()
@@ -92,6 +83,5 @@ public class FilhoService {
             throw new IdNotFoundException("ID FILHO: " + id + " Não Encontrado");
         }
         repository.deleteById(id);
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
     }
 }

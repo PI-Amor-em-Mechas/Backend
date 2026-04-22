@@ -72,8 +72,7 @@ public class FilhoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new FilhoResponseDto(saved, qtdFilhos));
     }
 
-<<<<<<< HEAD
-    @Operation(summary = "Atualiza um Único filho")
+    @Operation(summary = "Atualiza um único filho")
     @ApiResponse(responseCode = "200", description = "Filho atualizado com sucesso")
     @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
     @ApiResponse(responseCode = "400", description = "Dado do filho inválido")
@@ -90,21 +89,15 @@ public class FilhoController {
     @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
     @ApiResponse(responseCode = "400", description = "Dados dos filhos inválidos")
     @PutMapping("/many")
-    public ResponseEntity<List<FilhoResponseDto>> updateMany(@RequestBody @Valid List<FilhoRequestDto> dtoList){
+    public ResponseEntity<List<FilhoResponseDto>> updateMany(@RequestBody @Valid List<FilhoRequestDto> dtoList) {
         List<FilhoResponseDto> respList = service.updateMany(dtoList);
         respList.forEach(resp -> {
             int qtdFilhos = filhoRepository.countByPacienteId(resp.getPacienteId());
             resp.setQtdFilho(qtdFilhos);
         });
         return ResponseEntity.status(HttpStatus.OK).body(respList);
-
     }
 
-
-
-
-
-=======
     @Operation(summary = "Lista todos os filhos")
     @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
     @GetMapping
@@ -128,5 +121,4 @@ public class FilhoController {
         service.deleteById(id);
         return ResponseEntity.noContent().build();
     }
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 }

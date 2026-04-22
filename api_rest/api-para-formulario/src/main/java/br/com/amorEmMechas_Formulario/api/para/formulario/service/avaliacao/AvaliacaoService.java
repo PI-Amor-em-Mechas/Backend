@@ -12,11 +12,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-<<<<<<< HEAD
 import java.time.LocalDate;
-=======
 import java.util.List;
->>>>>>> dabbcabc21c2bdc15faaac9021171cabe08cf69f
 
 @Service
 public class AvaliacaoService {
