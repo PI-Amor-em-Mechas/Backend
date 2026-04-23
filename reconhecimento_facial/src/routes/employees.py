@@ -141,6 +141,9 @@ def register_person():
     person_dir = config.DATASET_DIR / employee_id
     person_dir.mkdir(parents=True, exist_ok=True)
 
+    # Garante o colaborador antes de gravar embeddings (FK face_embeddings -> employees).
+    db.add_employee(employee_id, employee_name)
+
     saved = sum(1 for idx, img in enumerate(images)
                 if _save_sample_and_embed(employee_id, img, idx))
 
@@ -150,7 +153,6 @@ def register_person():
             "message": "Nao foi possivel detectar um rosto valido nas fotos capturadas.",
         }), 400
 
-    db.add_employee(employee_id, employee_name)
     record_consent(
         employee_id,
         user_agent=request.headers.get("User-Agent"),
