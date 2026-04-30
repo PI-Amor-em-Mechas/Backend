@@ -24,6 +24,15 @@ VOICE_PHRASES_PATH = DATA_DIR / "voice_phrases.json"
 VOICE_SAMPLE_RATE = 16000
 VOICE_MAX_PHRASES = int(os.getenv("VOICE_MAX_PHRASES", "0"))
 
+# ---- Text-to-Speech (Piper) ----
+# Diretorio com os modelos Piper (.onnx + .onnx.json).
+PIPER_MODELS_DIR = Path(os.getenv("PIPER_MODELS_DIR", str(DATA_DIR / "piper")))
+# Nome do modelo a usar (sem extensao) ou caminho absoluto para o .onnx.
+# Se vazio, o servico tenta auto-detectar o primeiro .onnx do PIPER_MODELS_DIR.
+PIPER_VOICE = os.getenv("PIPER_VOICE", "")
+# Engine TTS: "auto" (padrao), "piper" ou "pyttsx3".
+TTS_ENGINE = os.getenv("TTS_ENGINE", "auto").strip().lower()
+
 FACE_DETECTOR_MODEL_PATH = DATA_DIR / "face_detector.task"
 FACE_DETECTOR_MODEL_URLS = [
     (
@@ -75,7 +84,7 @@ SAVE_PUNCH_IMAGE = os.getenv("SAVE_PUNCH_IMAGE", "false").lower() in {"1", "true
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
-ADMIN_PROFILE_PASSWORD = os.getenv("ADMIN_PROFILE_PASSWORD", "")
+ADMIN_PROFILE_PASSWORD = os.getenv("ADMIN_PROFILE_PASSWORD", "admin123")
 
 SECRET_KEY_PATH = DATA_DIR / "secret_key"
 
@@ -116,3 +125,4 @@ def ensure_directories() -> None:
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     PUNCH_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    PIPER_MODELS_DIR.mkdir(parents=True, exist_ok=True)

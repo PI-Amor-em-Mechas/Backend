@@ -322,6 +322,47 @@
       let socket = null;
       let audioContext = null;
       let micStream = null;
+      let ttsAudio = null;
+
+      function speakWelcome(employeeName) {
+        // Usa pyttsx3 no servidor para gerar WAV e reproduz no navegador.
+        try {
+          if (ttsAudio) {
+            try { ttsAudio.pause(); } catch (_) {}
+            ttsAudio = null;
+          }
+        } catch (_) {}
+
+        const firstName = String(employeeName || "")
+          .trim()
+          .split(/\s+/)[0] || "";
+        const greeting =
+          `Olá ${firstName}. Reconhecimento concluído com sucesso. ` +
+          `Por favor, fale a atividade que deseja registrar e diga "salvar" ao final.`;
+
+        fetch("/tts/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: greeting }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("HTTP " + response.status);
+            }
+            return response.blob();
+          })
+          .then((blob) => {
+            const url = URL.createObjectURL(blob);
+            ttsAudio = new Audio(url);
+            ttsAudio.addEventListener("ended", () => URL.revokeObjectURL(url));
+            ttsAudio.play().catch((err) => {
+              console.warn("Nao foi possivel reproduzir TTS:", err);
+            });
+          })
+          .catch((err) => {
+            console.warn("Falha ao obter audio TTS:", err);
+          });
+      }
 
       function startVoiceMode(token, employeeId, employeeName) {
         // Garante que nao exista conexao anterior pendurada.
@@ -350,6 +391,9 @@
 
         document.getElementById("voiceUserInfo").textContent =
           `Usuario: ${employeeName} (ID: ${employeeId})`;
+
+        // Saudacao TTS chamando o usuario pelo nome.
+        speakWelcome(employeeName);
 
         const voiceStatus = document.getElementById("voiceStatus");
         voiceStatus.textContent = "Conectando ao servidor de voz...";
@@ -465,6 +509,10 @@
       }
 
       function stopVoiceMode() {
+        if (ttsAudio) {
+          try { ttsAudio.pause(); } catch (_) {}
+          ttsAudio = null;
+        }
         if (micStream) {
           micStream.getTracks().forEach((t) => t.stop());
           micStream = null;

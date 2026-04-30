@@ -45,3 +45,6 @@ data/voice_phrases.json.bak
 .env
 .env.*
 !.env.example
+# Piper TTS models (download via Hugging Face)
+data/piper/
+

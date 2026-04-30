@@ -18,6 +18,7 @@ from .routes import auth as auth_bp
 from .routes import employees as employees_bp
 from .routes import lgpd as lgpd_bp
 from .routes import recognition as recognition_bp
+from .routes import tts as tts_bp
 from .routes import voice_phrases as voice_phrases_bp
 from .services.lgpd import apply_retention_policy
 from .voice.state import VoiceSession
@@ -60,6 +61,7 @@ def create_app() -> tuple[Flask, SocketIO]:
     app.register_blueprint(recognition_bp.bp)
     app.register_blueprint(voice_phrases_bp.bp)
     app.register_blueprint(lgpd_bp.bp)
+    app.register_blueprint(tts_bp.bp)
 
     async_mode = "gevent"
     try:
