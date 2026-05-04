@@ -14,7 +14,7 @@ from . import config
 LOGGER = logging.getLogger(__name__)
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 def ensure_face_detector_model() -> None:
     config.ensure_directories()

@@ -16,7 +16,6 @@ MODELS_DIR = DATA_DIR / "models"
 PUNCH_IMAGES_DIR = DATA_DIR / "punch_images"
 EXPORTS_DIR = DATA_DIR / "exports"
 
-DB_PATH = DATA_DIR / "attendance.db"
 LBPH_MODEL_PATH = MODELS_DIR / "lbph_model.yml"
 LABELS_PATH = MODELS_DIR / "labels.json"
 VOSK_MODEL_PATH = DATA_DIR / "vosk-model"
@@ -85,6 +84,14 @@ SAVE_PUNCH_IMAGE = os.getenv("SAVE_PUNCH_IMAGE", "false").lower() in {"1", "true
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 ADMIN_PROFILE_PASSWORD = os.getenv("ADMIN_PROFILE_PASSWORD", "admin123")
+
+# ---- Banco de dados (MariaDB / MySQL) ----
+DB_HOST = os.getenv("DB_HOST", "172.20.208.128")
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_NAME = os.getenv("DB_NAME", "amor_em_mechas")
+DB_CHARSET = os.getenv("DB_CHARSET", "utf8mb4")
 
 SECRET_KEY_PATH = DATA_DIR / "secret_key"
 

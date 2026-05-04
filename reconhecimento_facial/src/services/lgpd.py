@@ -102,7 +102,7 @@ def apply_retention_policy() -> dict[str, int]:
 
     if config.DATA_RETENTION_DAYS > 0:
         cutoff = datetime.now(timezone.utc) - timedelta(days=config.DATA_RETENTION_DAYS)
-        cutoff_iso = cutoff.isoformat(timespec="seconds")
+        cutoff_iso = cutoff.strftime("%Y-%m-%d %H:%M:%S")
 
         for path_str in db.collect_punch_image_paths_before(cutoff_iso):
             if _safe_unlink(Path(path_str)):
@@ -120,7 +120,7 @@ def apply_retention_policy() -> dict[str, int]:
 
     if config.AUDIT_LOG_RETENTION_DAYS > 0:
         cutoff = datetime.now(timezone.utc) - timedelta(days=config.AUDIT_LOG_RETENTION_DAYS)
-        result["audit_rows_removed"] = db.delete_audit_before(cutoff.isoformat(timespec="seconds"))
+        result["audit_rows_removed"] = db.delete_audit_before(cutoff.strftime("%Y-%m-%d %H:%M:%S"))
 
     if any(v for v in result.values()):
         db.add_audit(

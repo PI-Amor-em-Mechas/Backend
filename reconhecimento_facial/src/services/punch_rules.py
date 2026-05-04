@@ -36,8 +36,9 @@ def _today_utc_bounds() -> tuple[str, str]:
     now_local = datetime.now(tz)
     start_local = datetime.combine(now_local.date(), time.min, tzinfo=tz)
     end_local = start_local + timedelta(days=1)
-    start_utc = start_local.astimezone(timezone.utc).isoformat(timespec="seconds")
-    end_utc = end_local.astimezone(timezone.utc).isoformat(timespec="seconds")
+    fmt = "%Y-%m-%d %H:%M:%S"
+    start_utc = start_local.astimezone(timezone.utc).strftime(fmt)
+    end_utc = end_local.astimezone(timezone.utc).strftime(fmt)
     return start_utc, end_utc
 
 def punches_today(employee_id: str) -> int:
@@ -49,8 +50,11 @@ def determine_punch_type(employee_id: str) -> str:
     count = punches_today(employee_id)
     return "IN" if count % 2 == 0 else "OUT"
 
-def _parse_ts(ts_text: str) -> datetime:
-    dt = datetime.fromisoformat(ts_text)
+def _parse_ts(ts_value) -> datetime:
+    if isinstance(ts_value, datetime):
+        dt = ts_value
+    else:
+        dt = datetime.fromisoformat(str(ts_value).replace(" ", "T"))
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
