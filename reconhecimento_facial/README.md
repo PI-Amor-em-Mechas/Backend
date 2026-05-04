@@ -1,16 +1,20 @@
-# Face Attendance - MediaPipe + OpenCV LBPH
+# Face Attendance - YuNet + SFace (OpenCV)
 
-Aplicacao de ponto (clock-in/clock-out) com reconhecimento facial em tempo real.
+Sistema de registro de ponto (clock-in/clock-out) com reconhecimento facial em tempo real, interface web, reconhecimento de voz offline e conformidade LGPD.
 
 ## Visao geral
 
-Este projeto implementa:
+O projeto implementa:
 
-- Cadastro de colaboradores (`id` + `name`) e coleta de amostras de rosto via webcam.
-- Deteccao de face com MediaPipe Tasks Face Detector (`mediapipe.tasks.python.vision`).
-- Reconhecimento facial com OpenCV LBPH (`cv2.face`).
-- Registro de ponto em SQLite com tipo `IN/OUT`, timestamp, confianca e imagem opcional.
+- Cadastro de colaboradores com coleta de amostras via webcam e armazenamento de embeddings faciais.
+- Deteccao de face com **YuNet** (`cv2.FaceDetectorYN`) — modelo ONNX leve e CPU-friendly.
+- Reconhecimento facial com **SFace** (`cv2.FaceRecognizerSF`) — embedding 128-D com similaridade de cosseno.
+- Registro de ponto em SQLite com tipo `IN/OUT`, timestamp, score de confianca e imagem opcional.
 - Regra anti-duplicacao por janela de tempo (cooldown).
+- Text-To-Speech (TTS) com **Piper** (neural, offline, pt-BR) ou pyttsx3 como fallback.
+- Reconhecimento de voz offline com **Vosk**, com frases treinadas e palavra-chave `salvar`.
+- Autenticacao por perfis (`default` e `admin`) com senha.
+- Conformidade LGPD: consentimento, auditoria, exportacao e anonimizacao de dados.
 
 ## Estrutura
 
@@ -18,39 +22,53 @@ Este projeto implementa:
 .
 ├── requirements.txt
 ├── README.md
-├── data
-│   ├── dataset/<employee_id>/*.png
-│   ├── models/            (lbph_model.yml, labels.json)
+├── data/
+│   ├── dataset/<employee_id>/*.png   (amostras de rostos alinhados)
+│   ├── models/
+│   │   ├── face_detection_yunet_2023mar.onnx  (auto-download)
+│   │   ├── face_recognition_sface_2021dec.onnx (auto-download)
+│   │   ├── labels.json
+│   │   └── lbph_model.yml
+│   ├── piper/
+│   │   ├── pt_BR-faber-medium.onnx
+│   │   └── pt_BR-faber-medium.onnx.json
+│   ├── vosk-model/                   (modelo Vosk pt-BR)
 │   ├── punch_images/
 │   ├── exports/
-│   ├── secret_key         (gerado localmente, nao versionar)
+│   ├── secret_key                    (gerado localmente, nao versionar)
 │   ├── attendance.db
-│   └── face_detector.task
-└── src
-     ├── __init__.py
-     ├── app.py            (CLI: python -m src.app)
-     ├── web_app.py        (factory + SocketIO: python -m src.web_app)
-     ├── config.py
-     ├── db.py
-     ├── security.py       (auth/profile decorators)
-     ├── utils.py
-     ├── train.py
-     ├── recognize.py      (loop OpenCV desktop)
-     ├── capture.py        (CLI captura de amostras)
-     ├── services/
-     │   ├── frames.py       (encode/decode/reference image)
-     │   ├── lgpd.py         (consent, retention, export, erase, audit)
-     │   ├── model_cache.py  (singleton LBPH + detector + locks)
-     │   └── punch_rules.py  (IN/OUT por dia, cooldown)
-     ├── routes/
-     │   ├── auth.py         (/, /login, /set-profile, /logout, /me)
-     │   ├── employees.py    (/employees, /register-person, /train-model)
-     │   ├── recognition.py  (/recognize, /recognize-frame, /confirm)
-     │   ├── voice_phrases.py(/voice-phrases/*)
-     │   └── lgpd.py         (/lgpd/privacy-notice, /lgpd/export, /lgpd/erase, /lgpd/retention, /lgpd/audit)
-     ├── voice/              (Vosk: engine, state, training)
-     ├── static/
-     └── templates/
+│   └── voice_phrases.json
+└── src/
+    ├── __init__.py
+    ├── app.py            (CLI auxiliar: python -m src.app)
+    ├── web_app.py        (factory Flask + SocketIO: python -m src.web_app)
+    ├── config.py
+    ├── db.py
+    ├── security.py       (decoradores de perfil/auth)
+    ├── utils.py
+    ├── train.py
+    ├── recognize.py      (loop OpenCV desktop, uso auxiliar)
+    ├── capture.py        (captura CLI de amostras)
+    ├── services/
+    │   ├── face_engine.py  (YuNet detect + SFace embed + index cosine)
+    │   ├── frames.py       (encode/decode/imagem de referencia)
+    │   ├── lgpd.py         (consentimento, retencao, export, erase, audit)
+    │   ├── model_cache.py  (lock global de rebuild de embeddings)
+    │   ├── punch_rules.py  (IN/OUT por dia, cooldown)
+    │   └── tts.py          (Piper / pyttsx3)
+    ├── routes/
+    │   ├── auth.py          (/, /login, /set-profile, /logout, /me)
+    │   ├── employees.py     (/employees, /register-person, /employees/update, /employees/delete)
+    │   ├── recognition.py   (/recognition-window, /recognize, /recognize-frame, /confirm)
+    │   ├── tts.py           (/tts/speak, /tts/info)
+    │   ├── voice_phrases.py (/voice-phrases/*, export/import JSON)
+    │   └── lgpd.py          (/lgpd/privacy-notice, /lgpd/consent/*, /lgpd/export/*, /lgpd/erase/*, /lgpd/retention/*)
+    ├── voice/
+    │   ├── vosk_engine.py  (STT offline com Vosk)
+    │   ├── state.py        (sessao de voz por conexao WebSocket)
+    │   └── training.py     (gerenciamento de frases de treino)
+    ├── static/
+    └── templates/
 ```
 
 ## Requisitos
@@ -62,19 +80,19 @@ Este projeto implementa:
 ## Instalacao
 
 ```bash
-python -m venv .venv
+python -m venv venv
 ```
 
 Windows (PowerShell):
 
 ```bash
-.venv\Scripts\Activate.ps1
+venv\Scripts\Activate.ps1
 ```
 
 Linux/macOS:
 
 ```bash
-source .venv/bin/activate
+source venv/bin/activate
 ```
 
 Instale dependencias:
@@ -83,73 +101,92 @@ Instale dependencias:
 pip install -r requirements.txt
 ```
 
-## Modelo do Face Detector (MediaPipe)
+## Modelos (auto-download)
 
-O app usa `mediapipe.tasks.python.vision.FaceDetector` e precisa do arquivo local `data/face_detector.task`.
+Os modelos ONNX sao baixados automaticamente na primeira execucao:
 
-- O projeto tenta baixar automaticamente na primeira execucao.
-- URL configurada em `src/config.py` (`FACE_DETECTOR_MODEL_URL`).
-- Se o download automatico falhar, baixe manualmente um modelo compatovel do Face Detector e salve em:
+| Modelo | Arquivo | Uso |
+|--------|---------|-----|
+| YuNet | `data/models/face_detection_yunet_2023mar.onnx` | Deteccao de face |
+| SFace | `data/models/face_recognition_sface_2021dec.onnx` | Embedding facial |
 
-```text
-data/face_detector.task
+Se o download automatico falhar, baixe manualmente de:
+- YuNet: `https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet`
+- SFace: `https://github.com/opencv/opencv_zoo/tree/main/models/face_recognition_sface`
+
+## TTS (Text-To-Speech)
+
+O sistema usa **Piper** como engine principal (TTS neural offline, pt-BR) e **pyttsx3** como fallback.
+
+O modelo padrao incluido e `pt_BR-faber-medium`. Para usar outro:
+
+```bash
+# Exemplo via huggingface-cli
+huggingface-cli download rhasspy/piper-voices \
+    pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx \
+    pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx.json \
+    --local-dir data/piper
 ```
+
+Variaveis de ambiente para TTS:
+
+| Variavel | Padrao | Descricao |
+|----------|--------|-----------|
+| `TTS_ENGINE` | `auto` | `piper`, `pyttsx3` ou `auto` |
+| `PIPER_MODELS_DIR` | `data/piper` | Diretorio com modelos .onnx |
+| `PIPER_VOICE` | _(auto-detect)_ | Nome ou caminho do modelo .onnx |
+
+## Reconhecimento de Voz (Vosk)
+
+O sistema usa **Vosk** para STT offline via WebSocket (SocketIO). O modelo deve estar em `data/vosk-model/`.
+
+- Frases treinadas sao gerenciadas pelo endpoint `/voice-phrases/`.
+- A palavra-chave `salvar` ao final de uma frase confirma e persiste o comando de voz.
+- Frases sao salvas na tabela `voice_commands` e adicionadas ao treino do reconhecedor.
 
 ## Como executar
 
-Fluxo recomendado:
-
-1. Cadastrar colaborador e coletar amostras.
-2. Treinar modelo LBPH.
-3. Rodar reconhecimento para bater ponto.
-4. Consultar registros.
-
-Inicie o menu principal:
-
-```bash
-python -m src.app
-```
-
-Menu:
-
-- `1` Cadastrar colaborador e capturar amostras.
-- `2` Treinar modelo LBPH.
-- `3` Reconhecer e bater ponto.
-- `4` Listar colaboradores.
-- `5` Listar registros de ponto.
-
-## Interface web para reconhecimento
-
-Agora tambem existe uma interface HTML amigavel para reconhecimento com confirmacao:
-
-- Botao `Iniciar Reconhecimento` para capturar pela webcam.
-- Exibicao da foto detectada e nome da pessoa reconhecida.
-- Solicitacao de confirmacao antes de salvar o ponto.
-
-Executar servidor web:
+Inicie o servidor web (modo principal):
 
 ```bash
 python -m src.web_app
 ```
 
-Depois abra no navegador:
+Abra no navegador:
 
-```text
+```
 http://127.0.0.1:5000
 ```
 
+## Perfis de acesso
+
+Na tela de login, selecione o perfil:
+
+- **Padrao**: acesso ao reconhecimento facial e registro de ponto.
+- **Admin**: acesso completo — cadastro de colaboradores, treinamento, LGPD.
+
+A senha do perfil admin e configurada via variavel de ambiente:
+
+```bash
+ADMIN_PROFILE_PASSWORD=minha_senha_segura
+```
+
+Valor padrao (apenas desenvolvimento): `admin123`.
+
 ## Pipeline tecnico
 
-1. Webcam -> frame BGR (OpenCV).
-2. MediaPipe Face Detector -> bounding box + keypoints.
-3. Seleciona maior face (caso multipla deteccao).
-4. Crop do rosto -> preprocessamento (`gray`, `resize 200x200`, `equalizeHist` opcional).
-5. LBPH `predict` -> label + confidence.
+1. Frame capturado pela webcam ou enviado via data URI pelo navegador.
+2. **YuNet** detecta faces e retorna bounding box + 5 landmarks.
+3. Face maior selecionada (caso multipla deteccao).
+4. **SFace** alinha e extrai embedding 128-D.
+5. Similaridade de cosseno contra matriz de embeddings armazenados no banco.
 6. Decisao:
-	- `confidence <= threshold` -> conhecido.
-	- `confidence > threshold` -> desconhecido.
-7. Registro no SQLite:
-	- `employee_id`, `ts`, `type` (`IN/OUT`), `confidence`, `image_path` opcional.
+   - `score >= SFACE_COSINE_THRESHOLD` (0.363) -> conhecido.
+   - `score < threshold` -> desconhecido.
+7. Fluxo de confirmacao:
+   - Resultado retornado ao frontend com token temporario (2 min).
+   - Usuario confirma -> ponto registrado no SQLite.
+   - Cooldown verificado antes de gerar token.
 
 ## Banco SQLite
 
@@ -157,47 +194,73 @@ Arquivo: `data/attendance.db`
 
 Tabelas:
 
-- `employees(id TEXT PK, name TEXT, created_at TEXT)`
-- `punches(id INTEGER PK AUTOINCREMENT, employee_id TEXT FK, ts TEXT, type TEXT, confidence REAL, image_path TEXT NULL)`
+| Tabela | Descricao |
+|--------|-----------|
+| `employees` | Colaboradores (`id`, `name`, `created_at`, `anonymized_at`) |
+| `punches` | Registros de ponto (`employee_id`, `ts`, `type IN/OUT`, `confidence`, `image_path`) |
+| `face_embeddings` | Embeddings SFace por colaborador (BLOB `float32`, dim 128) |
+| `voice_commands` | Comandos de voz registrados por colaborador |
+| `consents` | Consentimento LGPD por colaborador/versao |
+| `audit_log` | Trilha de auditoria de acoes sensiveis |
 
 ## Regras de ponto
 
-- Anti-duplicacao: nao registra novo ponto do mesmo colaborador dentro da janela configurada (`PUNCH_DUPLICATE_WINDOW_SECONDS`, default 60s).
-- Tipo automatico: baseado na contagem de pontos **do dia atual** (fuso local).
+- **Anti-duplicacao**: nao registra novo ponto dentro da janela configurada (`PUNCH_DUPLICATE_WINDOW_SECONDS`, default `60s`).
+- **Tipo automatico** baseado na contagem de pontos do dia atual (fuso local):
   - Contagem par -> proximo e `IN`.
   - Contagem impar -> proximo e `OUT`.
-- Sem intervencao manual: a regra e determinista e um novo dia sempre comeca com `IN`.
+- Um novo dia sempre comeca com `IN`.
 
-## Calibracao do confidence (LBPH)
+## Calibracao do score (SFace)
 
-No LBPH do OpenCV, o `confidence` e uma distancia (menor = mais parecido).
+O SFace usa similaridade de cosseno (maior = mais parecido, intervalo `[0, 1]`).
 
-- Regra usada no projeto: `conhecido` quando `confidence <= LBPH_CONFIDENCE_THRESHOLD`.
-- Valor inicial sugerido: `65.0` (em `src/config.py`).
+- Regra: `conhecido` quando `score >= SFACE_COSINE_THRESHOLD`.
+- Valor padrao: `0.363` (configuravel via `SFACE_COSINE_THRESHOLD`).
+- Tambem suporta distancia L2 (`SFACE_L2_THRESHOLD = 1.128`).
 
 Como calibrar:
 
-1. Rode com usuarios reais e observe os valores exibidos no overlay.
-2. Colete distribuicao de:
-	- acertos (mesma pessoa) -> tende a menor distancia.
-	- falsos positivos (pessoa errada) -> tende a maior distancia.
-3. Ajuste o threshold para reduzir falso positivo sem perder muito recall.
+1. Rode com usuarios reais e observe os scores retornados pela API.
+2. Colete distribuicao de acertos (mesma pessoa) e falsos positivos.
+3. Ajuste o threshold via variavel de ambiente para equilibrar precisao e recall.
 
-## Qualidade e robustez
+## Variaveis de ambiente
 
-- Tratamento para camera indisponivel.
-- Caso sem face detectada.
-- Caso multiplas faces: pega a maior.
-- Processamento a cada `N` frames para melhor FPS (`PROCESS_EVERY_N_FRAMES`).
-- Logs com `logging`.
+| Variavel | Padrao | Descricao |
+|----------|--------|-----------|
+| `ADMIN_PROFILE_PASSWORD` | `admin123` | Senha do perfil admin |
+| `FLASK_SECRET_KEY` | _(arquivo `data/secret_key`)_ | Chave secreta Flask |
+| `CAMERA_INDEX` | `0` | Indice da webcam |
+| `SFACE_COSINE_THRESHOLD` | `0.363` | Threshold de reconhecimento (cosseno) |
+| `SFACE_L2_THRESHOLD` | `1.128` | Threshold alternativo (L2) |
+| `YUNET_SCORE_THRESHOLD` | `0.6` | Confianca minima de deteccao YuNet |
+| `PUNCH_DUPLICATE_WINDOW_SECONDS` | `60` | Janela anti-duplicacao em segundos |
+| `SAVE_PUNCH_IMAGE` | `false` | Salvar imagem no registro de ponto |
+| `TTS_ENGINE` | `auto` | Engine TTS: `piper`, `pyttsx3` ou `auto` |
+| `PIPER_MODELS_DIR` | `data/piper` | Diretorio de modelos Piper |
+| `PIPER_VOICE` | _(auto-detect)_ | Modelo Piper a usar |
+| `LOG_LEVEL` | `INFO` | Nivel de log |
+| `VOICE_MAX_PHRASES` | `0` (ilimitado) | Limite de frases de voz armazenadas |
 
 ## LGPD e seguranca (importante)
 
-Biometria facial e dado pessoal sensivel. Este projeto ja inclui:
+Biometria facial e dado pessoal sensivel (Art. 5, II, LGPD). O projeto inclui:
 
 - **Consentimento explicito** por colaborador (tabela `consents`), com versao
-  corrente em `config.CONSENT_VERSION`. O cadastro pelo web exige marcar o
-  checkbox de consentimento; o CLI exige confirmacao textual.
+  corrente em `config.CONSENT_VERSION`. O cadastro pela interface web exige
+  marcar o checkbox de consentimento.
+- **Trilha de auditoria** (`audit_log`) para todas as acoes sensiveis (login,
+  cadastro, exclusao, export, consentimento).
+- **Exportacao de dados** (`/lgpd/export/<id>`) em JSON pelo perfil admin.
+- **Anonimizacao** (`/lgpd/erase/<id>`): apaga embeddings, amostras e anonimiza
+  o registro do colaborador no banco.
+- **Politica de retencao** (`/lgpd/retention/apply`): remove automaticamente
+  registros apos periodo configurado.
+- Autenticacao por perfis com comparacao de senha via `secrets.compare_digest`
+  (mitigacao de timing attacks).
+- `SESSION_COOKIE_HTTPONLY=True` e `SESSION_COOKIE_SAMESITE=Lax`.
+- `data/secret_key` gerado localmente com `secrets.token_bytes` — **nao versionar**.
 - **Retencao automatica** de imagens de ponto (`data/punch_images/`) com base
   em `DATA_RETENTION_DAYS` (default 90). Aplicada no boot e a cada 6h em
   background, e disponivel via endpoint `/lgpd/retention/apply`.
