@@ -36,6 +36,8 @@ def create_recognizer(
         grammar = [p for p in phrases if p]
         if "salvar" not in grammar:
             grammar.append("salvar")
+        if "apagar" not in grammar:
+            grammar.append("apagar")
         return KaldiRecognizer(get_model(), sample_rate, json.dumps(grammar, ensure_ascii=False))
 
     return KaldiRecognizer(get_model(), sample_rate)

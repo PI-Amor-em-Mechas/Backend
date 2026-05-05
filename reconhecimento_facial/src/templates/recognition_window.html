@@ -50,7 +50,7 @@
       <header class="voice-header">
         <h1>&#127908; Comando de Voz</h1>
         <p id="voiceUserInfo" class="voice-user-badge">-</p>
-        <p class="voice-instruction">Fale seu comando.<br>Diga <strong>"salvar"</strong> ao final para gravar.</p>
+        <p class="voice-instruction">Fale seu comando.<br>Diga <strong>"salvar"</strong> ao final para gravar ou <strong>"apagar"</strong> para descartar.</p>
       </header>
 
       <div class="voice-display">
@@ -338,7 +338,8 @@
           .split(/\s+/)[0] || "";
         const greeting =
           `Olá ${firstName}. Reconhecimento concluído com sucesso. ` +
-          `Por favor, fale a atividade que deseja registrar e diga "salvar" ao final.`;
+          `Por favor, fale a atividade que deseja registrar e diga "salvar" ao final ` +
+          `ou diga "apagar" para descartar a mensagem.`;
 
         fetch("/tts/speak", {
           method: "POST",
@@ -443,6 +444,13 @@
           voiceStatus.textContent = `Salvo: "${data.text}"`;
           voiceStatus.className = "status voice-status success";
           addToHistory(data.text);
+        });
+
+        socket.on("voice_cleared", (data) => {
+          document.getElementById("voiceAccumulated").textContent = "-";
+          document.getElementById("voicePartial").textContent = "...";
+          voiceStatus.textContent = data?.message || "Mensagem apagada.";
+          voiceStatus.className = "status voice-status warning";
         });
 
         socket.on("voice_trained", (data) => {

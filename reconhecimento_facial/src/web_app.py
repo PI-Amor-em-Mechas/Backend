@@ -1,6 +1,8 @@
 """Aplicacao Flask (app factory) + handlers SocketIO de voz.
 
-Executar com:  `python -m src.web_app`
+Executar (PowerShell, a partir da raiz do projeto):
+
+    $env:DB_USER="mechas"; $env:DB_PASSWORD="mechas123"; $env:DB_HOST="172.20.208.128"; $env:DB_PORT="3306"; $env:DB_NAME="amor_em_mechas"; .\venv\Scripts\python.exe -m src.web_app
 """
 from __future__ import annotations
 
@@ -32,6 +34,7 @@ socketio: SocketIO | None = None
 _voice_sessions: dict[str, VoiceSession] = {}
 
 KEYWORD = "salvar"
+CLEAR_KEYWORD = "apagar"
 VOICE_NOT_AUTH_MSG = "Sessao de voz nao autenticada."
 
 def _configure_logging() -> None:
@@ -93,6 +96,16 @@ def _cleanup_voice_auth() -> None:
         expired = [t for t, v in auth_map.items() if v["created_at"] < expiry]
         for t in expired:
             auth_map.pop(t, None)
+
+def _check_and_clear(session: VoiceSession, new_text: str) -> bool:
+    """Se a frase termina com a palavra-chave de limpar, descarta o texto."""
+    stripped = new_text.strip()
+    if not stripped.endswith(CLEAR_KEYWORD):
+        return False
+    session.accumulated_text = ""
+    session.partial_text = ""
+    return True
+
 
 def _check_and_save(session: VoiceSession, new_text: str) -> dict | None:
     stripped = new_text.strip()
@@ -187,6 +200,10 @@ def _register_voice_handlers(sio: SocketIO) -> None:
             final_text, partial_text = feed_audio(session.recognizer, audio_bytes)
 
             if final_text is not None:
+                if _check_and_clear(session, final_text):
+                    emit("voice_cleared", {"message": "Mensagem apagada."})
+                    _emit_partial(session)
+                    return
                 result = _check_and_save(session, final_text)
                 if result and result.get("empty"):
                     emit("voice_error", {"message": "Nada para salvar (texto vazio)."})

@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, render_template, request
 
 from .. import config
 from .. import db
-from ..security import require_admin_profile
+from ..security import require_admin_profile, require_any_profile
 from ..services.face_engine import (
     compute_embedding,
     detect_largest_face,
@@ -177,7 +177,7 @@ def register_person():
     })
 
 @bp.post("/train-model")
-@require_admin_profile
+@require_any_profile
 def retrain_model():
     """Recalcula embeddings a partir do dataset/ (substitui o treino LBPH)."""
     with train_lock():
