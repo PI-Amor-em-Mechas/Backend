@@ -9,7 +9,7 @@ O projeto implementa:
 - Cadastro de colaboradores com coleta de amostras via webcam e armazenamento de embeddings faciais.
 - Deteccao de face com **YuNet** (`cv2.FaceDetectorYN`) — modelo ONNX leve e CPU-friendly.
 - Reconhecimento facial com **SFace** (`cv2.FaceRecognizerSF`) — embedding 128-D com similaridade de cosseno.
-- Registro de ponto em SQLite com tipo `IN/OUT`, timestamp, score de confianca e imagem opcional.
+- Persistencia em **MySQL / MariaDB** (via PyMySQL) com schema em portugues — registro de ponto com tipo `IN/OUT`, timestamp, score de confianca e imagem opcional.
 - Regra anti-duplicacao por janela de tempo (cooldown).
 - Text-To-Speech (TTS) com **Piper** (neural, offline, pt-BR) ou pyttsx3 como fallback.
 - Reconhecimento de voz offline com **Vosk**, com frases treinadas e palavra-chave `salvar`.
@@ -23,6 +23,8 @@ O projeto implementa:
 ├── requirements.txt
 ├── README.md
 ├── data/
+│   ├── schema.sql                    (schema MySQL — dominio + reconhecimento)
+│   ├── schemaMdB.sql                 (schema MariaDB — mesmo dominio, idiomatico)
 │   ├── dataset/<employee_id>/*.png   (amostras de rostos alinhados)
 │   ├── models/
 │   │   ├── face_detection_yunet_2023mar.onnx  (auto-download)
@@ -36,7 +38,6 @@ O projeto implementa:
 │   ├── punch_images/
 │   ├── exports/
 │   ├── secret_key                    (gerado localmente, nao versionar)
-│   ├── attendance.db
 │   └── voice_phrases.json
 └── src/
     ├── __init__.py
@@ -76,6 +77,35 @@ O projeto implementa:
 - Python 3.10+
 - Webcam local
 - CPU (sem GPU obrigatoria)
+- **MySQL 8+** ou **MariaDB 10.4+** acessivel (local ou remoto)
+
+## Banco de dados (MySQL / MariaDB)
+
+O projeto usa **PyMySQL** como driver. Antes de subir a aplicacao, importe o
+schema apropriado no seu servidor:
+
+```bash
+# MySQL
+mysql -u <user> -p < data/schema.sql
+
+# MariaDB (versao com CHECK constraints e ROW_FORMAT=DYNAMIC explicito)
+mysql -u <user> -p < data/schemaMdB.sql
+```
+
+Ambos os schemas criam o database `amor_em_mechas` com o dominio de negocio
+(pacientes, madrinhas, kits) + as tabelas do reconhecimento facial.
+O `init_db()` apenas valida que as tabelas existem; ele nao cria nada.
+
+Configure as credenciais via variaveis de ambiente:
+
+| Variavel      | Padrao            | Descricao                       |
+|---------------|-------------------|---------------------------------|
+| `DB_HOST`     | `127.0.0.1`       | Host do MySQL/MariaDB           |
+| `DB_PORT`     | `3306`            | Porta                           |
+| `DB_USER`     | `root`            | Usuario                         |
+| `DB_PASSWORD` | _(vazio)_         | Senha                           |
+| `DB_NAME`     | `amor_em_mechas`  | Nome do database                |
+| `DB_CHARSET`  | `utf8mb4`         | Charset da conexao              |
 
 ## Instalacao
 
@@ -185,23 +215,25 @@ Valor padrao (apenas desenvolvimento): `admin123`.
    - `score < threshold` -> desconhecido.
 7. Fluxo de confirmacao:
    - Resultado retornado ao frontend com token temporario (2 min).
-   - Usuario confirma -> ponto registrado no SQLite.
+   - Usuario confirma -> ponto registrado em `ponto` (MySQL/MariaDB).
    - Cooldown verificado antes de gerar token.
 
-## Banco SQLite
+## Banco de dados — tabelas do reconhecimento facial
 
-Arquivo: `data/attendance.db`
+Nomes em portugues no schema; o `src/db.py` mantem aliases em ingles nos
+`SELECT`s para preservar a interface usada pelas rotas e templates.
 
-Tabelas:
+| Tabela              | Descricao                                                                 |
+|---------------------|---------------------------------------------------------------------------|
+| `colaborador`       | Colaboradoras (`id`, `nome`, `criado_em`, `anonimizado_em`)               |
+| `ponto`             | Registros de ponto (`colaborador_id`, `data_hora`, `tipo IN/OUT`, `confianca`, `caminho_imagem`) |
+| `embedding_facial`  | Embeddings SFace por colaboradora (BLOB `float32`, `dimensao` 128)        |
+| `comando_voz`       | Comandos de voz registrados (`colaborador_id`, `texto`, `criado_em`)      |
+| `consentimento`     | Consentimento LGPD por colaboradora/versao                                |
+| `log_auditoria`     | Trilha de auditoria de acoes sensiveis (`autor`, `acao`, `alvo`, `detalhes`) |
 
-| Tabela | Descricao |
-|--------|-----------|
-| `employees` | Colaboradores (`id`, `name`, `created_at`, `anonymized_at`) |
-| `punches` | Registros de ponto (`employee_id`, `ts`, `type IN/OUT`, `confidence`, `image_path`) |
-| `face_embeddings` | Embeddings SFace por colaborador (BLOB `float32`, dim 128) |
-| `voice_commands` | Comandos de voz registrados por colaborador |
-| `consents` | Consentimento LGPD por colaborador/versao |
-| `audit_log` | Trilha de auditoria de acoes sensiveis |
+A tabela `madrinha` do dominio de negocio possui `colaborador_id` opcional
+como FK para vinculo com o cadastro biometrico.
 
 ## Regras de ponto
 
@@ -242,6 +274,12 @@ Como calibrar:
 | `PIPER_VOICE` | _(auto-detect)_ | Modelo Piper a usar |
 | `LOG_LEVEL` | `INFO` | Nivel de log |
 | `VOICE_MAX_PHRASES` | `0` (ilimitado) | Limite de frases de voz armazenadas |
+| `DB_HOST` | `127.0.0.1` | Host do MySQL/MariaDB |
+| `DB_PORT` | `3306` | Porta do banco |
+| `DB_USER` | `root` | Usuario do banco |
+| `DB_PASSWORD` | _(vazio)_ | Senha do banco |
+| `DB_NAME` | `amor_em_mechas` | Nome do database |
+| `DB_CHARSET` | `utf8mb4` | Charset da conexao |
 
 ## LGPD e seguranca (importante)
 
