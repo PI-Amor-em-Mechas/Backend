@@ -13,6 +13,7 @@ O projeto implementa:
 - Regra anti-duplicacao por janela de tempo (cooldown).
 - Text-To-Speech (TTS) com **Piper** (neural, offline, pt-BR) ou pyttsx3 como fallback.
 - Reconhecimento de voz offline com **Vosk**, com frases treinadas e palavra-chave `salvar`.
+- **Biometria de voz (2o fator)** com **Resemblyzer** (GE2E / d-vector 256-D) verificando o falante em paralelo ao STT, antes de persistir o comando.
 - Autenticacao por perfis (`default` e `admin`) com senha.
 - Conformidade LGPD: consentimento, auditoria, exportacao e anonimizacao de dados.
 
@@ -52,6 +53,7 @@ O projeto implementa:
     ├── capture.py        (captura CLI de amostras)
     ├── services/
     │   ├── face_engine.py  (YuNet detect + SFace embed + index cosine)
+    │   ├── voice_engine.py (Resemblyzer encoder + verify_speaker + enroll)
     │   ├── frames.py       (encode/decode/imagem de referencia)
     │   ├── lgpd.py         (consentimento, retencao, export, erase, audit)
     │   ├── model_cache.py  (lock global de rebuild de embeddings)
@@ -63,6 +65,7 @@ O projeto implementa:
     │   ├── recognition.py   (/recognition-window, /recognize, /recognize-frame, /confirm)
     │   ├── tts.py           (/tts/speak, /tts/info)
     │   ├── voice_phrases.py (/voice-phrases/*, export/import JSON)
+    │   ├── voice_biometry.py(/voice-biometry/status, /enroll, /clear)
     │   └── lgpd.py          (/lgpd/privacy-notice, /lgpd/consent/*, /lgpd/export/*, /lgpd/erase/*, /lgpd/retention/*)
     ├── voice/
     │   ├── vosk_engine.py  (STT offline com Vosk)
@@ -131,6 +134,22 @@ Instale dependencias:
 pip install -r requirements.txt
 ```
 
+### PyTorch (CPU)
+
+O `torch` (transitivo de `resemblyzer`) deve ser instalado via wheel CPU
+oficial para evitar baixar a build com CUDA:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+### `webrtcvad` no Windows
+
+O `resemblyzer` depende de `webrtcvad`, que compila a partir do fonte e exige
+o **Microsoft C++ Build Tools**. Para evitar isso, o `requirements.txt` usa
+`webrtcvad-wheels`, que fornece wheels pre-compiladas para Windows expondo o
+mesmo modulo `webrtcvad`. Em Linux/macOS, qualquer das duas opcoes funciona.
+
 ## Modelos (auto-download)
 
 Os modelos ONNX sao baixados automaticamente na primeira execucao:
@@ -173,6 +192,103 @@ O sistema usa **Vosk** para STT offline via WebSocket (SocketIO). O modelo deve 
 - Frases treinadas sao gerenciadas pelo endpoint `/voice-phrases/`.
 - A palavra-chave `salvar` ao final de uma frase confirma e persiste o comando de voz.
 - Frases sao salvas na tabela `voice_commands` e adicionadas ao treino do reconhecedor.
+
+## Biometria de voz (2o fator — Resemblyzer)
+
+Apos a verificacao facial confirmar a identidade, a sessao de voz captura o
+PCM16-LE @ 16 kHz em paralelo ao Vosk e calcula um d-vector (256-D) com
+**Resemblyzer** (GE2E). Antes de persistir o `comando_voz`, o vetor e comparado
+por similaridade de cosseno com o **centroid** dos voiceprints cadastrados do
+colaborador. Se a similaridade fica abaixo de `VOICE_BIOMETRY_THRESHOLD`, o
+comando e rejeitado (evento WebSocket `voice_rejected`).
+
+### Enrollment
+
+Cadastre **>= `VOICE_BIOMETRY_MIN_ENROLL_SAMPLES` amostras** (3 por padrao) por
+colaborador, cada uma com pelo menos `VOICE_BIOMETRY_MIN_SECONDS` segundos
+(1,5s por padrao; idealmente 5-10s).
+
+#### Pela interface (recomendado)
+
+Abra **`/register-window`** (perfil admin). Para cada colaborador da lista de
+"Gerenciamento de Usuarios" sao exibidos:
+
+- **Status:** `Voiceprints: N / minimo` com indicador `(pronto)` ou `(faltam amostras)`.
+- **Botao "Gravar voz (5s)":** ativa o microfone, faz a contagem regressiva de
+  5s e envia o PCM16-LE @ 16 kHz para `POST /voice-biometry/enroll`.
+- **Botao "Limpar voz":** chama `POST /voice-biometry/clear` para remover todos
+  os voiceprints do colaborador (uso administrativo / LGPD).
+
+Repita o "Gravar voz" pelo menos 3 vezes por pessoa, em momentos/frases
+diferentes, para um centroid mais robusto.
+
+#### Pela API
+
+```http
+POST /voice-biometry/enroll
+Content-Type: application/json
+
+{
+  "employee_id": "123",
+  "pcm_base64": "<PCM16-LE mono @ 16 kHz em base64>"
+}
+```
+
+Alternativamente, envie o array de bytes em `"pcm": [..]`. Status e contagem
+de voiceprints:
+
+```http
+GET  /voice-biometry/status/<employee_id>
+POST /voice-biometry/clear   # body: {"employee_id": "..."} (admin)
+```
+
+O endpoint `GET /employees` (admin) tambem devolve, para cada colaborador,
+`voiceprint_count`, `voiceprint_min_samples`, `voiceprint_ready` e o bloco
+global `voice_biometry` com a config corrente (`enforced`, `min_samples`,
+`min_seconds`, `threshold`).
+
+### Feedback na janela de reconhecimento
+
+Em **`/recognition-window`**, depois do reconhecimento facial:
+
+- O painel de voz exibe `Voiceprints: N` no status inicial. Se a biometria
+  estiver `enforced=true` **e** o colaborador nao tiver voiceprints
+  cadastrados, o aviso aparece em vermelho ("comandos serao rejeitados").
+- Em `voice_saved` o status mostra `[biometria: score >= threshold]`.
+- Em `voice_rejected` (novo evento WebSocket) o status mostra
+  `Score=X, limiar=Y, (motivo)` em vermelho e o comando nao e gravado.
+
+### Schema (tabela nova)
+
+O schema (`data/schema.sql` e `data/schemaMdB.sql`) inclui `embedding_voz`
+(256-D float32 serializado, FK CASCADE para `colaborador`). Aplique no banco
+antes de subir a aplicacao.
+
+### Variaveis de ambiente da biometria de voz
+
+| Variavel                              | Padrao | Descricao                                                                |
+|---------------------------------------|--------|--------------------------------------------------------------------------|
+| `VOICE_BIOMETRY_ENFORCE`              | `true` | Se `false`, apenas audita o resultado e nao rejeita comandos             |
+| `VOICE_BIOMETRY_THRESHOLD`            | `0.70` | Similaridade de cosseno minima para aceitar o falante                    |
+| `VOICE_BIOMETRY_MIN_SECONDS`          | `1.5`  | Duracao minima de audio acumulado para tentar verificacao                |
+| `VOICE_BIOMETRY_MAX_BUFFER_SECONDS`   | `30`   | Tamanho maximo do buffer PCM por sessao (janela deslizante)              |
+| `VOICE_BIOMETRY_MIN_ENROLL_SAMPLES`   | `3`    | Quantidade minima de amostras para considerar o cadastro pronto          |
+| `VOICE_BIOMETRY_ALLOW_UNENROLLED`     | `true` | Aceita comandos quando o colaborador nao tem voiceprint (rollout gradual)|
+
+### Calibracao recomendada
+
+1. Inicie com `VOICE_BIOMETRY_ENFORCE=false` e cadastre 3+ amostras por colaborador.
+2. Acompanhe os logs em `log_auditoria` (acao `voice.biometry.verify`) para
+   medir distribuicao de `score` por colaborador (mesma pessoa) vs.
+   tentativas legitimas de outros (falsos positivos).
+3. Ajuste `VOICE_BIOMETRY_THRESHOLD` para equilibrar FAR/FRR (tipico em pt-BR:
+   0.65-0.75). Em seguida ative `VOICE_BIOMETRY_ENFORCE=true`.
+
+### LGPD
+
+Voiceprints sao **dado biometrico sensivel** (LGPD art. 5, II + art. 11). A
+anonimizacao (`POST /lgpd/erase/<id>`) tambem remove `embedding_voz` em cascata,
+e o consentimento existente cobre tambem o uso para autenticacao por voz.
 
 ## Como executar
 
@@ -228,6 +344,7 @@ Nomes em portugues no schema; o `src/db.py` mantem aliases em ingles nos
 | `colaborador`       | Colaboradoras (`id`, `nome`, `criado_em`, `anonimizado_em`)               |
 | `ponto`             | Registros de ponto (`colaborador_id`, `data_hora`, `tipo IN/OUT`, `confianca`, `caminho_imagem`) |
 | `embedding_facial`  | Embeddings SFace por colaboradora (BLOB `float32`, `dimensao` 128)        |
+| `embedding_voz`     | Voiceprints Resemblyzer/GE2E (BLOB `float32`, `dimensao` 256) — 2o fator  |
 | `comando_voz`       | Comandos de voz registrados (`colaborador_id`, `texto`, `criado_em`)      |
 | `consentimento`     | Consentimento LGPD por colaboradora/versao                                |
 | `log_auditoria`     | Trilha de auditoria de acoes sensiveis (`autor`, `acao`, `alvo`, `detalhes`) |
@@ -274,6 +391,12 @@ Como calibrar:
 | `PIPER_VOICE` | _(auto-detect)_ | Modelo Piper a usar |
 | `LOG_LEVEL` | `INFO` | Nivel de log |
 | `VOICE_MAX_PHRASES` | `0` (ilimitado) | Limite de frases de voz armazenadas |
+| `VOICE_BIOMETRY_ENFORCE` | `true` | Aplicar biometria de voz como 2o fator |
+| `VOICE_BIOMETRY_THRESHOLD` | `0.70` | Cosseno minimo para aceitar o falante |
+| `VOICE_BIOMETRY_MIN_SECONDS` | `1.5` | Duracao minima de audio para verificacao |
+| `VOICE_BIOMETRY_MAX_BUFFER_SECONDS` | `30` | Janela do buffer PCM por sessao |
+| `VOICE_BIOMETRY_MIN_ENROLL_SAMPLES` | `3` | Amostras minimas no enrollment |
+| `VOICE_BIOMETRY_ALLOW_UNENROLLED` | `true` | Aceita comandos sem voiceprint cadastrado |
 | `DB_HOST` | `127.0.0.1` | Host do MySQL/MariaDB |
 | `DB_PORT` | `3306` | Porta do banco |
 | `DB_USER` | `root` | Usuario do banco |

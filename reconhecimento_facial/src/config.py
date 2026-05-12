@@ -23,6 +23,29 @@ VOICE_PHRASES_PATH = DATA_DIR / "voice_phrases.json"
 VOICE_SAMPLE_RATE = 16000
 VOICE_MAX_PHRASES = int(os.getenv("VOICE_MAX_PHRASES", "0"))
 
+# ---- Biometria de voz (Resemblyzer / GE2E) — 2o fator pos-face ----
+# Threshold de similaridade de cosseno para aceitar o falante (0..1).
+VOICE_BIOMETRY_THRESHOLD = float(os.getenv("VOICE_BIOMETRY_THRESHOLD", "0.70"))
+# Duracao minima de audio acumulado para tentar verificacao (segundos).
+VOICE_BIOMETRY_MIN_SECONDS = float(os.getenv("VOICE_BIOMETRY_MIN_SECONDS", "1.5"))
+# Buffer maximo de PCM por sessao de voz (segundos) — protege a memoria.
+VOICE_BIOMETRY_MAX_BUFFER_SECONDS = float(
+    os.getenv("VOICE_BIOMETRY_MAX_BUFFER_SECONDS", "30")
+)
+# Quantidade minima de amostras de enrollment para considerar o cadastro valido.
+VOICE_BIOMETRY_MIN_ENROLL_SAMPLES = int(
+    os.getenv("VOICE_BIOMETRY_MIN_ENROLL_SAMPLES", "3")
+)
+# Se True, exige biometria de voz para salvar comandos. Se False, somente loga.
+VOICE_BIOMETRY_ENFORCE = os.getenv(
+    "VOICE_BIOMETRY_ENFORCE", "true"
+).lower() in {"1", "true", "yes"}
+# Se True, aceita comando quando o colaborador nao tem voiceprint cadastrado
+# (modo permissivo durante adocao gradual).
+VOICE_BIOMETRY_ALLOW_UNENROLLED = os.getenv(
+    "VOICE_BIOMETRY_ALLOW_UNENROLLED", "true"
+).lower() in {"1", "true", "yes"}
+
 # ---- Text-to-Speech (Piper) ----
 # Diretorio com os modelos Piper (.onnx + .onnx.json).
 PIPER_MODELS_DIR = Path(os.getenv("PIPER_MODELS_DIR", str(DATA_DIR / "piper")))

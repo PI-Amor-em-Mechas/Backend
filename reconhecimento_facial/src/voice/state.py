@@ -12,3 +12,7 @@ class VoiceSession:
     recognizer: KaldiRecognizer
     accumulated_text: str = ""
     partial_text: str = ""
+    # Buffer PCM16-LE mono @ VOICE_SAMPLE_RATE acumulado para biometria de voz.
+    # E reiniciado a cada save/clear/force_save e limitado por
+    # config.VOICE_BIOMETRY_MAX_BUFFER_SECONDS para nao crescer indefinidamente.
+    pcm_buffer: bytearray = field(default_factory=bytearray)

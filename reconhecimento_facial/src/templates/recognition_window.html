@@ -426,8 +426,18 @@
 
         socket.on("voice_ready", (data) => {
           const phrases = Number(data?.phrases || 0);
-          voiceStatus.textContent = `Microfone ativo. Fale agora. Frases treinadas: ${phrases}.`;
-          voiceStatus.className = "status voice-status success";
+          const enrolled = Number(data?.voice_enrolled || 0);
+          const enforced = Boolean(data?.biometry_enforced);
+          let msg = `Microfone ativo. Fale agora. Frases treinadas: ${phrases}. Voiceprints: ${enrolled}.`;
+          let cls = "status voice-status success";
+          if (enforced && enrolled === 0) {
+            msg += " ATENCAO: biometria de voz exigida e voce nao tem voiceprint cadastrado — comandos serao rejeitados.";
+            cls = "status voice-status error";
+          } else if (!enforced) {
+            msg += " (modo monitoramento — biometria nao bloqueia)";
+          }
+          voiceStatus.textContent = msg;
+          voiceStatus.className = cls;
           startMicrophone();
         });
 
@@ -444,6 +454,18 @@
           voiceStatus.textContent = `Salvo: "${data.text}"`;
           voiceStatus.className = "status voice-status success";
           addToHistory(data.text);
+        });
+
+        socket.on("voice_rejected", (data) => {
+          document.getElementById("voicePartial").textContent = "...";
+          const bio = data.biometry || {};
+          const score = bio.score !== undefined ? Number(bio.score).toFixed(3) : "?";
+          const thr = bio.threshold !== undefined ? Number(bio.threshold).toFixed(3) : "?";
+          const reason = bio.reason ? ` (${bio.reason})` : "";
+          voiceStatus.textContent =
+            (data.message || "Identidade da voz nao confere.") +
+            ` Score=${score}, limiar=${thr}${reason}.`;
+          voiceStatus.className = "status voice-status error";
         });
 
         socket.on("voice_cleared", (data) => {

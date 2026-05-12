@@ -183,6 +183,18 @@ CREATE TABLE IF NOT EXISTS comando_voz (
     KEY idx_comando_voz_colaborador (colaborador_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Voiceprints (Resemblyzer / GE2E, 256-D float32) — 2o fator pos-face.
+CREATE TABLE IF NOT EXISTS embedding_voz (
+    id             INT         PRIMARY KEY AUTO_INCREMENT,
+    colaborador_id VARCHAR(50) NOT NULL,
+    vetor          LONGBLOB    NOT NULL,
+    dimensao       INT         NOT NULL,
+    dtype          VARCHAR(16) NOT NULL,
+    criado_em      DATETIME    NOT NULL,
+    FOREIGN KEY (colaborador_id) REFERENCES colaborador (id),
+    KEY idx_emb_voz_colaborador (colaborador_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS log_auditoria (
     id        INT          PRIMARY KEY AUTO_INCREMENT,
     data_hora DATETIME     NOT NULL,

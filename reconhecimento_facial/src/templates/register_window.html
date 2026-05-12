@@ -120,6 +120,14 @@
       const voicePhrasesList = document.getElementById("voicePhrasesList");
 
       const capturedImages = [];
+      let voiceBiometryConfig = {
+        min_samples: 3,
+        min_seconds: 1.5,
+        enforced: true,
+        threshold: 0.7,
+      };
+      const voiceCaptureSeconds = 5;
+      let voiceCaptureBusy = false;
 
       async function loadPrivacyNotice() {
         try {
@@ -341,6 +349,155 @@
         window.open("/voice-phrases/export-json", "_blank");
       }
 
+      // === Captura de PCM16 mono 16 kHz para enrollment de voz ===
+      async function captureVoicePcm(durationSeconds) {
+        const ac = new AudioContext({ sampleRate: 16000 });
+        if (ac.state === "suspended") {
+          await ac.resume();
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            sampleRate: { ideal: 16000 },
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
+          video: false,
+        });
+
+        try {
+          await ac.audioWorklet.addModule("/static/audio-processor.js");
+          const source = ac.createMediaStreamSource(stream);
+          const processor = new AudioWorkletNode(ac, "pcm16-processor");
+
+          const chunks = [];
+          let totalBytes = 0;
+          processor.port.onmessage = (event) => {
+            const buf = event.data;
+            chunks.push(new Uint8Array(buf));
+            totalBytes += buf.byteLength;
+          };
+          source.connect(processor);
+
+          await new Promise((resolve) => setTimeout(resolve, durationSeconds * 1000));
+
+          source.disconnect();
+          processor.disconnect();
+
+          const merged = new Uint8Array(totalBytes);
+          let offset = 0;
+          for (const c of chunks) {
+            merged.set(c, offset);
+            offset += c.byteLength;
+          }
+          return merged;
+        } finally {
+          stream.getTracks().forEach((t) => t.stop());
+          try { await ac.close(); } catch (_) {}
+        }
+      }
+
+      function bytesToBase64(bytes) {
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode.apply(
+            null,
+            bytes.subarray(i, i + chunk)
+          );
+        }
+        return btoa(binary);
+      }
+
+      async function enrollVoiceSample(employeeId, button, statusEl) {
+        if (voiceCaptureBusy) {
+          statusEl.textContent = "Aguarde a captura anterior terminar.";
+          statusEl.className = "status warning";
+          return;
+        }
+        voiceCaptureBusy = true;
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        try {
+          for (let i = voiceCaptureSeconds; i > 0; i--) {
+            statusEl.textContent = `Fale agora! Gravando... ${i}s`;
+            statusEl.className = "status info";
+            button.textContent = `Gravando ${i}s...`;
+            await new Promise((r) => setTimeout(r, 1000));
+            // Iniciamos a captura no primeiro tick para sincronizar com a contagem.
+            if (i === voiceCaptureSeconds) {
+              // dispara captura assincrona em paralelo com a UI countdown
+              window.__voiceCapturePromise = captureVoicePcm(voiceCaptureSeconds);
+            }
+          }
+          statusEl.textContent = "Processando audio...";
+          statusEl.className = "status info";
+          const pcmBytes = await window.__voiceCapturePromise;
+          window.__voiceCapturePromise = null;
+
+          if (!pcmBytes || pcmBytes.length === 0) {
+            statusEl.textContent = "Falha ao capturar audio.";
+            statusEl.className = "status error";
+            return;
+          }
+
+          const pcm_base64 = bytesToBase64(pcmBytes);
+          const response = await fetch("/voice-biometry/enroll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id: employeeId, pcm_base64 }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "enrolled") {
+            statusEl.textContent = data.message || "Falha ao salvar voiceprint.";
+            statusEl.className = "status error";
+            return;
+          }
+          statusEl.textContent =
+            `Voiceprint cadastrado (${data.duration_seconds}s). ` +
+            `Total: ${data.total_samples} ${data.ready ? "(pronto)" : "(faltam amostras)"}.`;
+          statusEl.className = "status success";
+          loadUsers();
+        } catch (error) {
+          statusEl.textContent = "Erro ao gravar voz: " + error.message;
+          statusEl.className = "status error";
+        } finally {
+          voiceCaptureBusy = false;
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+
+      async function clearVoiceSamples(employeeId, statusEl) {
+        const ok = window.confirm(
+          "Remover todos os voiceprints deste colaborador? " +
+          "Sera necessario recadastrar pelo menos " +
+          voiceBiometryConfig.min_samples + " amostras."
+        );
+        if (!ok) {
+          return;
+        }
+        try {
+          const response = await fetch("/voice-biometry/clear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id: employeeId }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "cleared") {
+            statusEl.textContent = data.message || "Falha ao limpar voiceprints.";
+            statusEl.className = "status error";
+            return;
+          }
+          statusEl.textContent = `Removidos ${data.removed} voiceprint(s).`;
+          statusEl.className = "status warning";
+          loadUsers();
+        } catch (error) {
+          statusEl.textContent = "Erro ao limpar voz: " + error.message;
+          statusEl.className = "status error";
+        }
+      }
+
       async function loadUsers() {
         try {
           setUsersStatus("Carregando usuarios...", "info");
@@ -353,6 +510,14 @@
           }
 
           const employees = data.employees || [];
+          if (data.voice_biometry) {
+            voiceBiometryConfig = {
+              min_samples: Number(data.voice_biometry.min_samples || 3),
+              min_seconds: Number(data.voice_biometry.min_seconds || 1.5),
+              enforced: Boolean(data.voice_biometry.enforced),
+              threshold: Number(data.voice_biometry.threshold || 0.7),
+            };
+          }
           usersList.innerHTML = "";
 
           if (employees.length === 0) {
@@ -372,6 +537,7 @@
               <strong>ID: ${employee.id}</strong>
               <p>Nome atual: ${employee.name}</p>
               <p>Amostras: ${employee.sample_count}</p>
+              <p>Voiceprints: ${employee.voiceprint_count || 0} / ${employee.voiceprint_min_samples || voiceBiometryConfig.min_samples} ${employee.voiceprint_ready ? "<span style='color:#2e7d32'>(pronto)</span>" : "<span style='color:#c62828'>(faltam amostras)</span>"}</p>
             `;
 
             const controls = document.createElement("div");
@@ -399,10 +565,32 @@
               window.open(`/lgpd/export/${encodeURIComponent(employee.id)}`, "_blank");
             });
 
+            const voiceStatus = document.createElement("span");
+            voiceStatus.className = "status info";
+            voiceStatus.style.flexBasis = "100%";
+            voiceStatus.textContent = `Biometria de voz: clique para gravar uma amostra de ~${voiceCaptureSeconds}s.`;
+
+            const voiceEnrollButton = document.createElement("button");
+            voiceEnrollButton.className = "btn success";
+            voiceEnrollButton.textContent = `Gravar voz (${voiceCaptureSeconds}s)`;
+            voiceEnrollButton.addEventListener("click", () =>
+              enrollVoiceSample(employee.id, voiceEnrollButton, voiceStatus)
+            );
+
+            const voiceClearButton = document.createElement("button");
+            voiceClearButton.className = "btn danger";
+            voiceClearButton.textContent = "Limpar voz";
+            voiceClearButton.addEventListener("click", () =>
+              clearVoiceSamples(employee.id, voiceStatus)
+            );
+
             controls.appendChild(nameInput);
             controls.appendChild(updateButton);
             controls.appendChild(deleteButton);
             controls.appendChild(exportButton);
+            controls.appendChild(voiceEnrollButton);
+            controls.appendChild(voiceClearButton);
+            controls.appendChild(voiceStatus);
 
             item.appendChild(meta);
             item.appendChild(controls);

@@ -41,7 +41,20 @@ def employees_list():
         item["sample_count"] = count
         item["embedding_count"] = db.count_face_embeddings(item["id"])
         item["consent_valid"] = has_valid_consent(item["id"])
-    return jsonify({"status": "ok", "employees": employees})
+        voiceprint_count = db.count_voice_embeddings(item["id"])
+        item["voiceprint_count"] = voiceprint_count
+        item["voiceprint_min_samples"] = config.VOICE_BIOMETRY_MIN_ENROLL_SAMPLES
+        item["voiceprint_ready"] = voiceprint_count >= config.VOICE_BIOMETRY_MIN_ENROLL_SAMPLES
+    return jsonify({
+        "status": "ok",
+        "employees": employees,
+        "voice_biometry": {
+            "enforced": config.VOICE_BIOMETRY_ENFORCE,
+            "min_samples": config.VOICE_BIOMETRY_MIN_ENROLL_SAMPLES,
+            "min_seconds": config.VOICE_BIOMETRY_MIN_SECONDS,
+            "threshold": config.VOICE_BIOMETRY_THRESHOLD,
+        },
+    })
 
 @bp.post("/employees/update")
 @require_admin_profile

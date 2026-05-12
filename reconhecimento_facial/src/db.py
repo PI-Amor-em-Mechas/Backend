@@ -61,6 +61,7 @@ def init_db() -> None:
         "consentimento",
         "log_auditoria",
         "embedding_facial",
+        "embedding_voz",
     }
     try:
         with _conn_ctx() as conn:
@@ -172,6 +173,10 @@ def anonymize_employee(employee_id: str) -> bool:
             )
             cur.execute(
                 "DELETE FROM embedding_facial WHERE colaborador_id = %s",
+                (employee_id,),
+            )
+            cur.execute(
+                "DELETE FROM embedding_voz WHERE colaborador_id = %s",
                 (employee_id,),
             )
         conn.commit()
@@ -500,6 +505,66 @@ def clear_face_embeddings() -> int:
     with _conn_ctx() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM embedding_facial")
+            rowcount = cur.rowcount
+        conn.commit()
+    return int(rowcount)
+
+
+# ---------------------------------------------------------------------------
+# embedding_voz (voice biometrics — Resemblyzer / GE2E)
+# ---------------------------------------------------------------------------
+
+def add_voice_embedding(
+    employee_id: str, vec_bytes: bytes, dim: int, dtype: str
+) -> int:
+    now = _utc_now_iso()
+    sql = (
+        "INSERT INTO embedding_voz (colaborador_id, vetor, dimensao, dtype, criado_em) "
+        "VALUES (%s, %s, %s, %s, %s)"
+    )
+    with _conn_ctx() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, (employee_id, vec_bytes, int(dim), dtype, now))
+            new_id = cur.lastrowid
+        conn.commit()
+    return int(new_id)
+
+
+def list_voice_embeddings(employee_id: str | None = None) -> list[dict[str, Any]]:
+    """Retorna voiceprints, ignorando colaboradores anonimizados."""
+    base = (
+        "SELECT ev.id, ev.colaborador_id AS employee_id, ev.vetor AS vec, "
+        "ev.dimensao AS dim, ev.dtype, ev.criado_em AS created_at "
+        "FROM embedding_voz ev "
+        "INNER JOIN colaborador c ON c.id = ev.colaborador_id "
+        "WHERE c.anonimizado_em IS NULL"
+    )
+    with _conn_ctx() as conn:
+        with conn.cursor() as cur:
+            if employee_id:
+                cur.execute(base + " AND ev.colaborador_id = %s", (employee_id,))
+            else:
+                cur.execute(base)
+            rows = cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+def count_voice_embeddings(employee_id: str) -> int:
+    sql = "SELECT COUNT(*) AS c FROM embedding_voz WHERE colaborador_id = %s"
+    with _conn_ctx() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, (employee_id,))
+            row = cur.fetchone()
+    return int(row["c"]) if row else 0
+
+
+def delete_voice_embeddings(employee_id: str) -> int:
+    with _conn_ctx() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM embedding_voz WHERE colaborador_id = %s",
+                (employee_id,),
+            )
             rowcount = cur.rowcount
         conn.commit()
     return int(rowcount)

@@ -229,6 +229,22 @@ CREATE TABLE IF NOT EXISTS comando_voz (
     KEY idx_comando_voz_colaborador (colaborador_id)
 ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Voiceprints (d-vectors do Resemblyzer / GE2E, 256-D float32 serializado).
+-- Usados como 2o fator biometrico apos a verificacao facial.
+CREATE TABLE IF NOT EXISTS embedding_voz (
+    id             INT         PRIMARY KEY AUTO_INCREMENT,
+    colaborador_id VARCHAR(50) NOT NULL,
+    vetor          LONGBLOB    NOT NULL,   -- float32 serializado (256 * 4 bytes)
+    dimensao       INT         NOT NULL,   -- dimensao do vetor (256)
+    dtype          VARCHAR(16) NOT NULL,   -- 'float32'
+    criado_em      DATETIME    NOT NULL,
+    CONSTRAINT chk_emb_voz_dimensao CHECK (dimensao > 0),
+    CONSTRAINT fk_emb_voz_colaborador
+        FOREIGN KEY (colaborador_id) REFERENCES colaborador (id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    KEY idx_emb_voz_colaborador (colaborador_id)
+) ENGINE=InnoDB ROW_FORMAT=DYNAMIC DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Trilha de auditoria para acoes sensiveis (login, cadastro, exclusao, LGPD).
 CREATE TABLE IF NOT EXISTS log_auditoria (
     id        INT          PRIMARY KEY AUTO_INCREMENT,
