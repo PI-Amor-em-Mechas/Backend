@@ -74,10 +74,14 @@
       }
 
       function openRecognitionWindow() {
+        const isMobile = window.innerWidth <= 768;
+        const features = isMobile
+          ? ""
+          : "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no";
         const popup = window.open(
           "/recognition-window",
-          "face-recognition-window",
-          "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no"
+          isMobile ? "_blank" : "face-recognition-window",
+          features
         );
 
         if (popup) {
@@ -93,10 +97,14 @@
           return;
         }
 
+        const isMobile = window.innerWidth <= 768;
+        const features = isMobile
+          ? ""
+          : "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no";
         const popup = window.open(
           "/register-window",
-          "face-register-window",
-          "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no"
+          isMobile ? "_blank" : "face-register-window",
+          features
         );
 
         if (popup) {

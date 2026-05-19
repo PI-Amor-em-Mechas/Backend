@@ -277,6 +277,10 @@
         confirmButton.disabled = true;
         cancelButton.disabled = true;
 
+        // Esconde o toast e para reconhecimento imediatamente ao clicar
+        pauseRecognition();
+        hideIdentity();
+
         try {
           const response = await fetch("/confirm", {
             method: "POST",
@@ -287,6 +291,7 @@
 
           if (data.status === "saved") {
             setStatus(`${data.message} Tipo: ${data.punch_type}.`, "success");
+            pendingToken = null;
             if (confirm && data.voice_token) {
               startVoiceMode(data.voice_token, data.employee_id, data.name);
               return;
@@ -296,9 +301,11 @@
           }
 
           pendingToken = null;
-          hideIdentity();
+          resumeRecognition();
         } catch (error) {
           setStatus("Erro ao confirmar: " + error.message, "error");
+          pendingToken = null;
+          resumeRecognition();
         } finally {
           confirmButton.disabled = false;
           cancelButton.disabled = false;
@@ -323,6 +330,37 @@
       let audioContext = null;
       let micStream = null;
       let ttsAudio = null;
+
+      // Converte o resultado tecnico da biometria em texto amigavel.
+      // bio = { score, threshold, reason, enrolled_samples }
+      function formatBiometryFriendly(bio, isRejection) {
+        bio = bio || {};
+        const score = Number(bio.score || 0);
+        const threshold = Number(bio.threshold || 0);
+        const reason = String(bio.reason || "");
+        const enrolled = Number(bio.enrolled_samples || 0);
+
+        // Casos especiais por motivo (reason vindo do voice_engine).
+        if (reason === "not_enrolled" || enrolled === 0) {
+          return "voz nao cadastrada (use o cadastro para gravar amostras).";
+        }
+        if (reason === "audio_too_short") {
+          return "amostra muito curta — fale por mais alguns segundos.";
+        }
+        if (reason === "verification_error") {
+          return "nao foi possivel verificar a voz desta vez.";
+        }
+
+        // Confiabilidade percentual a partir do score (cosseno em [-1,1] -> [0,100]).
+        const confPct = Math.max(0, Math.min(100, Math.round(((score + 1) / 2) * 100)));
+        let level = "muito alta";
+        if (confPct < 60) level = "baixa";
+        else if (confPct < 75) level = "media";
+        else if (confPct < 90) level = "alta";
+        const icon = confPct >= Math.round(((threshold + 1) / 2) * 100) ? "🔊" : "⚠️";
+        const verdict = isRejection ? "abaixo do minimo" : "voz reconhecida";
+        return `${icon} confiabilidade ${level} (${confPct}%) — ${verdict}.`;
+      }
 
       function speakWelcome(employeeName) {
         // Usa pyttsx3 no servidor para gerar WAV e reproduz no navegador.
@@ -451,20 +489,17 @@
         socket.on("voice_saved", (data) => {
           document.getElementById("voiceAccumulated").textContent = "-";
           document.getElementById("voicePartial").textContent = "...";
-          voiceStatus.textContent = `Salvo: "${data.text}"`;
+          voiceStatus.textContent =
+            `Salvo: "${data.text}" — ${formatBiometryFriendly(data.biometry)}`;
           voiceStatus.className = "status voice-status success";
           addToHistory(data.text);
         });
 
         socket.on("voice_rejected", (data) => {
           document.getElementById("voicePartial").textContent = "...";
-          const bio = data.biometry || {};
-          const score = bio.score !== undefined ? Number(bio.score).toFixed(3) : "?";
-          const thr = bio.threshold !== undefined ? Number(bio.threshold).toFixed(3) : "?";
-          const reason = bio.reason ? ` (${bio.reason})` : "";
           voiceStatus.textContent =
             (data.message || "Identidade da voz nao confere.") +
-            ` Score=${score}, limiar=${thr}${reason}.`;
+            " " + formatBiometryFriendly(data.biometry, true);
           voiceStatus.className = "status voice-status error";
         });
 

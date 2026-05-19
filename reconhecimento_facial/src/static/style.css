@@ -237,14 +237,10 @@ h1 {
   background: #fde8e8;
 }
 
-@media (max-width: 640px) {
-  .home-actions {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .recognition-body {
@@ -309,40 +305,69 @@ h1 {
 
 .identity-toast {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
-  width: min(430px, calc(100vw - 36px));
+  right: clamp(8px, 2vw, 18px);
+  bottom: clamp(8px, 2vh, 18px);
+  width: clamp(280px, 35vw, 480px);
+  max-width: calc(100vw - 16px);
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 12px;
-  padding: 12px;
+  grid-template-columns: clamp(80px, 10vw, 140px) 1fr;
+  gap: clamp(8px, 1.5vw, 14px);
+  padding: clamp(10px, 1.5vw, 16px);
   background: rgba(33, 10, 23, 0.95);
   color: #fff5fa;
   border: 1px solid #8d2d5f;
-  border-radius: 14px;
+  border-radius: clamp(10px, 1.5vw, 16px);
   box-shadow: 0 18px 36px rgba(8, 2, 6, 0.45);
   backdrop-filter: blur(2px);
+  z-index: 1000;
 }
 
 .identity-toast img {
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: clamp(8px, 1vw, 12px);
   border: 1px solid #ba4f84;
+}
+
+.identity-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
 }
 
 .identity-content h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 1.2vw, 1.15rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .identity-content p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
+  font-size: clamp(0.8rem, 1vw, 0.95rem);
 }
 
 .identity-message {
   color: #f5bed9;
+}
+
+.identity-toast.toast-exit {
+  animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(40px);
+  }
 }
 
 .register-panel {
@@ -477,17 +502,155 @@ h1 {
   resize: vertical;
 }
 
+@media (max-width: 900px) {
+  .video-panel {
+    border-radius: 10px;
+  }
+
+  .register-form {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-main-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-toast {
+    width: clamp(260px, 45vw, 380px);
+  }
+}
+
 @media (max-width: 640px) {
+  .page {
+    padding: 12px;
+  }
+
   .panel {
-    padding: 18px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .home-actions {
+    grid-template-columns: 1fr;
   }
 
   .btn {
     width: 100%;
+    padding: 12px 16px;
   }
 
   .actions {
     flex-direction: column;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-profile {
+    justify-content: flex-end;
+  }
+
+  .identity-toast {
+    right: 6px;
+    bottom: 6px;
+    left: 6px;
+    width: auto;
+    max-width: none;
+    grid-template-columns: clamp(64px, 18vw, 90px) 1fr;
+  }
+
+  .recognition-page {
+    padding: 8px;
+  }
+
+  .video-header {
+    padding: 10px 12px;
+  }
+
+  .video-header h1 {
+    font-size: 1.1rem;
+  }
+
+  #cameraFeed {
+    min-height: 220px;
+    max-height: calc(100vh - 200px);
+  }
+
+  .overlay-status {
+    top: 8px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+    font-size: 0.85rem;
+    padding: 8px 10px;
+  }
+
+  .capture-actions {
+    padding: 10px 12px 0;
+    flex-direction: column;
+  }
+
+  .capture-title {
+    margin: 10px 12px 6px;
+  }
+
+  .preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    padding: 0 12px 12px;
+  }
+
+  .users-section {
+    padding: 0 12px 12px;
+  }
+
+  .users-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-controls {
+    flex-direction: column;
+  }
+
+  .user-controls input,
+  .voice-bulk-input,
+  .voice-train-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .consent-label {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .panel {
+    padding: 12px;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  .login-card {
+    padding: 24px 16px 20px;
+    border-radius: 14px;
+  }
+
+  .login-icon-circle {
+    width: 68px;
+    height: 68px;
+  }
+
+  .login-icon-circle svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .login-title {
+    font-size: 1.2rem;
   }
 
   .identity-toast {
@@ -495,8 +658,9 @@ h1 {
   }
 
   .identity-toast img {
-    width: 100%;
-    height: 180px;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    max-height: 30vh;
   }
 
   .voice-main-actions {

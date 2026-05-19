@@ -304,6 +304,22 @@ Abra no navegador:
 http://127.0.0.1:5000
 ```
 
+## Interface responsiva
+
+A interface web e totalmente responsiva, adaptando-se a desktops, tablets e
+smartphones:
+
+- **Layout fluido** com `clamp()`, `min()` e unidades relativas (vw/vh) em
+  todos os componentes — paineis, botoes, tipografia e espacamentos escalam
+  proporcionalmente ao viewport.
+- **Breakpoints**: `900px` (tablet), `640px` (mobile), `400px` (telas pequenas).
+- **Toast de identidade** (`.identity-toast`): usa grid proporcional com imagem
+  e texto que se ajustam ao tamanho da tela; em mobile empilha verticalmente.
+- **Popups de reconhecimento/cadastro**: em dispositivos moveis (<=768px)
+  abrem como aba nova (`_blank`) ao inves de popup com dimensoes fixas.
+- **Transicao facial -> voz**: apos a confirmacao de identidade, o toast sai
+  com animacao e a tela inteira transiciona para o painel de biometria vocal.
+
 ## Perfis de acesso
 
 Na tela de login, selecione o perfil:
