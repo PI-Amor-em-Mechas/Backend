@@ -1,21 +1,23 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.service.paciente;
 
-
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
-import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.endereco.Endereco;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente.PacienteMapper;
-import br.com.amorEmMechas_Formulario.api.para.formulario.repository.dadosMedicos.DadosMedicosRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.endereco.EnderecoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -24,48 +26,91 @@ public class PacienteService {
     private final PacienteRepository repository;
     private final PacienteMapper mapper;
     private final EnderecoRepository enderecoRepository;
-    private final DadosMedicosRepository dadosMedicosRepository;
+    private final ArquivoRepository arquivoRepository;
     private final FilhoRepository filhoRepository;
+    private final SolicitanteRepository solicitanteRepository;
 
-    public PacienteService(DadosMedicosRepository dadosMedicosRepository,
-                           EnderecoRepository enderecoRepository,
-                           FilhoRepository filhoRepository,
-                           PacienteMapper mapper,
-                           PacienteRepository repository) {
-        this.dadosMedicosRepository = dadosMedicosRepository;
+
+    public PacienteService(ArquivoRepository arquivoRepository, PacienteRepository repository, PacienteMapper mapper, EnderecoRepository enderecoRepository, FilhoRepository filhoRepository, SolicitanteRepository solicitanteRepository) {
+        this.arquivoRepository = arquivoRepository;
+        this.repository = repository;
+        this.mapper = mapper;
         this.enderecoRepository = enderecoRepository;
         this.filhoRepository = filhoRepository;
-        this.mapper = mapper;
-        this.repository = repository;
+        this.solicitanteRepository = solicitanteRepository;
     }
 
     public PacienteResponseDto create(PacienteRequestDto dto) {
+
         Endereco endereco = enderecoRepository.findById(dto.getEnderecoId())
-                .orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + dto.getEnderecoId() + " Não existe"));
-        DadosMedicos dadosMedicos = dadosMedicosRepository.findById(dto.getDadosMedicosId())
-                .orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + dto.getDadosMedicosId() + " Não existe"));
+                .orElseThrow(() ->
+                        new IdNotFoundException(
+                                "ID ENDERECO: "
+                                        + dto.getEnderecoId()
+                                        + " Não existe"
+                        )
+                );
+
+        Solicitante solicitante = solicitanteRepository
+                .findById(dto.getSolicitanteId())
+                .orElseThrow(() ->
+                        new IdNotFoundException(
+                                "ID SOLICITANTE: "
+                                        + dto.getSolicitanteId()
+                                        + " Não Encontrado"
+                        )
+                );
+
         dto.setDtPedido(LocalDate.now());
 
         Paciente paciente = mapper.toEntity(dto);
-        paciente.setEndereco(endereco);
-        paciente.setDadosMedicos(dadosMedicos);
-        Paciente saved = repository.save(paciente);
 
-        if (dto.getTemFilhos() != null && dto.getTemFilhos() && dto.getIdadesFilhos() != null) {
-            List<Filho> filhos = dto.getIdadesFilhos().stream()
-                    .map(idade -> {
-                        Filho f = new Filho();
-                        f.setIdade(idade);
-                        f.setPaciente(saved);
-                        return filhoRepository.save(f);
-                    })
-                    .toList();
-            saved.setFilhos(filhos);
+        paciente.setEndereco(endereco);
+        paciente.setSolicitante(solicitante);
+
+        // ✅ CABELO ANTES (corrigido e mais limpo)
+        if (dto.getCabeloAntesId() != null) {
+
+            Arquivo arquivo = arquivoRepository
+                    .findById(dto.getCabeloAntesId().longValue())
+                    .orElseThrow(() ->
+                            new IdNotFoundException(
+                                    "ID ARQUIVO (CABELO ANTES): "
+                                            + dto.getCabeloAntesId()
+                                            + " Não Encontrado"
+                            )
+                    );
+
+            paciente.setCabeloAntes(arquivo);
         }
 
-        // 🔹 recalcular qtdFilhos antes de retornar
-        saved.setQtdFilhos(saved.getFilhos() != null ? saved.getFilhos().size() : 0);
-        repository.save(saved);
+        // ✅ FILHOS (corrigido null safety)
+        if (Boolean.TRUE.equals(dto.getTemFilhos())
+                && dto.getIdadesFilhos() != null
+                && !dto.getIdadesFilhos().isEmpty()) {
+
+            List<Filho> filhos = dto.getIdadesFilhos()
+                    .stream()
+                    .map(idade -> {
+
+                        Filho f = new Filho();
+                        f.setIdade(idade);
+                        f.setPaciente(paciente);
+
+                        return f;
+                    })
+                    .toList();
+
+            paciente.setFilhos(new ArrayList<>(filhos));
+
+        } else {
+            paciente.setFilhos(new ArrayList<>());
+        }
+
+        // ✅ quantidade sempre consistente
+        paciente.setQtdFilhos(paciente.getFilhos().size());
+
+        Paciente saved = repository.save(paciente);
 
         return mapper.toResponse(saved);
     }
@@ -85,11 +130,7 @@ public class PacienteService {
                     .orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + pacienteDTO.getEnderecoId() + " Não Encontrado"));
             paciente.setEndereco(endereco);
         }
-        if (pacienteDTO.getDadosMedicosId() != null) {
-            DadosMedicos dadosMedicos = dadosMedicosRepository.findById(pacienteDTO.getDadosMedicosId())
-                    .orElseThrow(() -> new IdNotFoundException("ID DADOS MÉDICOS: " + pacienteDTO.getDadosMedicosId() + " Não Encontrado"));
-            paciente.setDadosMedicos(dadosMedicos);
-        }
+
         if (pacienteDTO.getTemFilhos() != null) {
             paciente.setTemFilhos(pacienteDTO.getTemFilhos());
             if (pacienteDTO.getTemFilhos() && pacienteDTO.getIdadesFilhos() != null) {
@@ -103,6 +144,21 @@ public class PacienteService {
                         .toList();
                 paciente.setFilhos(filhos);
             }
+        }
+
+        if (pacienteDTO.getCabeloAntesId() != null) {
+
+            Arquivo arquivo = arquivoRepository
+                    .findById(pacienteDTO.getCabeloAntesId().longValue())
+                    .orElseThrow(() ->
+                            new IdNotFoundException(
+                                    "ID ARQUIVO: "
+                                            + pacienteDTO.getCabeloAntesId()
+                                            + " Não Encontrado"
+                            )
+                    );
+
+            paciente.setCabeloAntes(arquivo);
         }
 
         // 🔹 recalcular qtdFilhos antes de salvar

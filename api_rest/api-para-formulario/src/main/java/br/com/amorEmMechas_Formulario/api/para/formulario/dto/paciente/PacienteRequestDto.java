@@ -1,9 +1,5 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente;
 
-import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosRequestDto;
-import br.com.amorEmMechas_Formulario.api.para.formulario.dto.endereco.EnderecoRequestDto;
-import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequestDto;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -41,22 +37,19 @@ public class PacienteRequestDto {
     @NotBlank(message = "CPF não pode estar vazio")
     private String cpf;
 
-    private String cabeloAntes;
-
-
+    private Integer cabeloAntesId;
 
 
     @NotNull(message = "Endereço não pode ser nulo")
     private Integer enderecoId;
 
 
-    @NotNull(message = "Dados médicos não podem ser nulos")
-    private Integer dadosMedicosId;
-
     @NotNull(message = "Quantidade de filhos não podem ser nulos")
     private Integer qtdFilhos;
 
     private List<Integer> idadesFilhos;
+
+    private Integer solicitanteId;
 
 
     public String getNomeCompleto() {
@@ -131,20 +124,12 @@ public class PacienteRequestDto {
         this.cpf = cpf;
     }
 
-    public String getCabeloAntes() {
-        return cabeloAntes;
+    public Integer getCabeloAntesId() {
+        return cabeloAntesId;
     }
 
-    public void setCabeloAntes(String cabeloAntes) {
-        this.cabeloAntes = cabeloAntes;
-    }
-
-    public Integer getDadosMedicosId() {
-        return dadosMedicosId;
-    }
-
-    public void setDadosMedicosId(Integer dadosMedicosId) {
-        this.dadosMedicosId = dadosMedicosId;
+    public void setCabeloAntesId(Integer cabeloAntesId) {
+        this.cabeloAntesId = cabeloAntesId;
     }
 
     public Integer getEnderecoId() {
@@ -170,5 +155,13 @@ public class PacienteRequestDto {
 
     public void setQtdFilhos(Integer qtdFilhos) {
         this.qtdFilhos = qtdFilhos;
+    }
+
+    public Integer getSolicitanteId() {
+        return solicitanteId;
+    }
+
+    public void setSolicitanteId(Integer solicitanteId) {
+        this.solicitanteId = solicitanteId;
     }
 }

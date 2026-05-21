@@ -1,13 +1,12 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.config;
 
-import br.com.amorEmMechas_Formulario.api.para.formulario.service.usuario.UsuarioDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,9 +15,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
-    @Autowired
-    private UsuarioDetailsService usuarioDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -33,54 +29,42 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-
-            .csrf(csrf -> csrf.disable())
-
-
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/auth/login",
-                    "/auth/logout",
-                    "/auth/registro",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/v3/api-docs/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-            )
+                .csrf(csrf -> csrf.disable())
+                // Importante: desabilitar frames para o Swagger UI se necessário
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+                .authorizeHttpRequests(auth -> auth
+                        // Libera explicitamente todos os recursos do Swagger e Auth
+                        .requestMatchers(
+                                "/auth/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/webjars/**",
+                                "/favicon.ico"
+                        ).permitAll()
 
 
-            .formLogin(form -> form.disable())
 
+                        .requestMatchers("/arquivos/**").permitAll()
 
-            .logout(logout -> logout
-                .logoutUrl("/auth/logout")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .logoutSuccessHandler((req, res, authentication) -> {
-                    res.setStatus(200);
-                    res.setContentType("application/json");
-                    res.setCharacterEncoding("UTF-8");
-                    res.getWriter().write("{\"mensagem\": \"Logout realizado com sucesso\"}");
-                })
-                .permitAll()
-            )
-
-
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-            )
-
-
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((req, res, authException) -> {
-                    res.setStatus(401);
-                    res.setContentType("application/json");
-                    res.setCharacterEncoding("UTF-8");
-                    res.getWriter().write("{\"mensagem\": \"Não autenticado. Faça login em /auth/login\"}");
-                })
-            );
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+                );
 
         return http.build();
     }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers(
+                "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+                "/webjars/**"
+        );
+    }
+
+
 }

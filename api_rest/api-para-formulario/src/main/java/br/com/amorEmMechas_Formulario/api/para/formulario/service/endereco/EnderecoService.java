@@ -15,8 +15,6 @@ import java.util.List;
 public class EnderecoService {
 
 
-
-
     private EnderecoRepository repository;
     private EnderecoMapper mapper;
 

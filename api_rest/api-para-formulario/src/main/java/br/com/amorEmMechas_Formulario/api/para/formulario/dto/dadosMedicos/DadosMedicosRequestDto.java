@@ -22,8 +22,10 @@ public class DadosMedicosRequestDto {
     @NotBlank(message = "Tipo de atendimento não pode estar vazio")
     private String tipoAtendimento;
 
-    @NotBlank(message = "Relatório médico não pode ser vazio")
-    private String relatorioMedicoBase64;
+    private Integer pacienteId;
+
+    @NotNull(message = "Relatório médico não pode ser nulo")
+    private Integer relatorioMedicoId;
 
     public String getMotivo() {
         return motivo;
@@ -65,11 +67,20 @@ public class DadosMedicosRequestDto {
         this.tipoAtendimento = tipoAtendimento;
     }
 
-    public String getRelatorioMedicoBase64() {
-        return relatorioMedicoBase64;
+    public Integer getRelatorioMedicoId() {
+        return relatorioMedicoId;
     }
 
-    public void setRelatorioMedicoBase64(String relatorioMedicoBase64) {
-        this.relatorioMedicoBase64 = relatorioMedicoBase64;
+    public void setRelatorioMedicoId(Integer relatorioMedicoId) {
+        this.relatorioMedicoId = relatorioMedicoId;
+    }
+
+
+    public Integer getPacienteId() {
+        return pacienteId;
+    }
+
+    public void setPacienteId(Integer pacienteId) {
+        this.pacienteId = pacienteId;
     }
 }

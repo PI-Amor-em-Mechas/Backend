@@ -14,7 +14,7 @@ public class PacienteResponseDto {
     private String nomeCompleto;
     private String email;
     private LocalDate dtPedido;
-    private String cabeloAntes;
+    private Integer cabeloAntesId;
     private String cel;
     private LocalDate dtNasc;
     private String estadoCivil;
@@ -23,7 +23,7 @@ public class PacienteResponseDto {
     private String cpf;
 
     private EnderecoResponseDto endereco;
-    private DadosMedicosResponseDto dadosMedicos;
+
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<FilhoResponseDto> filhos;
@@ -63,12 +63,12 @@ public class PacienteResponseDto {
         this.dtPedido = dtPedido;
     }
 
-    public String getCabeloAntes() {
-        return cabeloAntes;
+    public Integer getCabeloAntesId() {
+        return cabeloAntesId;
     }
 
-    public void setCabeloAntes(String cabeloAntes) {
-        this.cabeloAntes = cabeloAntes;
+    public void setCabeloAntesId(Integer cabeloAntesId) {
+        this.cabeloAntesId = cabeloAntesId;
     }
 
     public String getCel() {
@@ -127,13 +127,7 @@ public class PacienteResponseDto {
         this.endereco = endereco;
     }
 
-    public DadosMedicosResponseDto getDadosMedicos() {
-        return dadosMedicos;
-    }
 
-    public void setDadosMedicos(DadosMedicosResponseDto dadosMedicos) {
-        this.dadosMedicos = dadosMedicos;
-    }
 
     public List<FilhoResponseDto> getFilhos() {
         return filhos;

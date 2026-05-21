@@ -12,14 +12,12 @@ import org.springframework.stereotype.Component;
 public class PacienteMapper {
 
     private final EnderecoMapper enderecoMapper;
-    private final DadosMedicosMapper dadosMedicosMapper;
     private final FilhoMapper filhoMapper;
 
     public PacienteMapper(EnderecoMapper enderecoMapper,
                           DadosMedicosMapper dadosMedicosMapper,
                           FilhoMapper filhoMapper) {
         this.enderecoMapper = enderecoMapper;
-        this.dadosMedicosMapper = dadosMedicosMapper;
         this.filhoMapper = filhoMapper;
     }
 
@@ -37,10 +35,6 @@ public class PacienteMapper {
         entity.setTemFilhos(dto.getTemFilhos());
         entity.setQtdPessoasEmCasa(dto.getQtdPessoasEmCasa());
 
-        if (dto.getCabeloAntes() != null) {
-            entity.setCabeloAntes(dto.getCabeloAntes().getBytes());
-        }
-
         return entity;
     }
 
@@ -48,6 +42,7 @@ public class PacienteMapper {
         if (paciente == null) return null;
 
         PacienteResponseDto dto = new PacienteResponseDto();
+
         dto.setId(paciente.getId());
         dto.setNomeCompleto(paciente.getNomeCompleto());
         dto.setEmail(paciente.getEmail());
@@ -59,18 +54,12 @@ public class PacienteMapper {
         dto.setTemFilhos(paciente.getTemFilhos());
         dto.setQtdPessoasEmCasa(paciente.getQtdPessoasEmCasa());
 
-        if (paciente.getCabeloAntes() != null) {
-            dto.setCabeloAntes(new String(paciente.getCabeloAntes()));
-        } else {
-            dto.setCabeloAntes("");
-        }
-
+        // ENDEREÇO
         if (paciente.getEndereco() != null) {
             dto.setEndereco(enderecoMapper.toResponse(paciente.getEndereco()));
         }
-        if (paciente.getDadosMedicos() != null) {
-            dto.setDadosMedicos(dadosMedicosMapper.toResponse(paciente.getDadosMedicos()));
-        }
+
+        // FILHOS
         if (paciente.getFilhos() != null) {
             dto.setFilhos(filhoMapper.toResponseList(paciente.getFilhos()));
             dto.setQtdFilho(paciente.getFilhos().size());
@@ -78,6 +67,16 @@ public class PacienteMapper {
             dto.setQtdFilho(0);
         }
 
+        // 🔥 AQUI ESTÁ O QUE ESTAVA FALTANDO
+        if (paciente.getCabeloAntes() != null) {
+            dto.setCabeloAntesId(
+                    paciente.getCabeloAntes().getId()
+            );
+        } else {
+            dto.setCabeloAntesId(null);
+        }
+
         return dto;
     }
 }
+
