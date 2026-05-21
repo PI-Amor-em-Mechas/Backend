@@ -2,7 +2,12 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho;
 
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "Filho")
@@ -16,9 +21,9 @@ public class Filho {
     private Integer idade;
 
     @ManyToOne
-    @JoinColumn(name = "fkPaciente" )
+    @JoinColumn(name = "paciente_id" )
+    @JsonIgnore
     private Paciente paciente;
-
 
     public Integer getId() {
         return id;
@@ -43,4 +48,6 @@ public class Filho {
     public void setIdade(Integer idade) {
         this.idade = idade;
     }
+
+
 }

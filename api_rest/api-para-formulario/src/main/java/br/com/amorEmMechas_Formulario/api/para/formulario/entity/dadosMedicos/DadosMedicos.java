@@ -12,7 +12,6 @@ public class DadosMedicos {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
     private String motivo;
     private String tipoCancer;
     private String justificativa;

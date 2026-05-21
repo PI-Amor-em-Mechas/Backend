@@ -1,7 +1,6 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.entity.avaliacao;
 
 
-import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import jakarta.persistence.*;
 
@@ -16,7 +15,7 @@ public class Avaliacao {
     private Integer id;
 
     @OneToOne
-    @JoinColumn(name = "fkSolicitante")
+    @JoinColumn(name = "solicitante_id")
     private Solicitante solicitante;
 
     private Integer notaFormulario;
