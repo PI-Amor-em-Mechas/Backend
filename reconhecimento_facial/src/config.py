@@ -109,7 +109,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 ADMIN_PROFILE_PASSWORD = os.getenv("ADMIN_PROFILE_PASSWORD", "admin123")
 
 # ---- Banco de dados (MariaDB / MySQL) ----
-DB_HOST = os.getenv("DB_HOST", "172.20.208.128")
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")

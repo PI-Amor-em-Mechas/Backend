@@ -2,11 +2,12 @@
 
 Executar (PowerShell, a partir da raiz do projeto):
 
-    $env:DB_USER="mechas"; $env:DB_PASSWORD="mechas123"; $env:DB_HOST="172.20.208.128"; $env:DB_PORT="3306"; $env:DB_NAME="amor_em_mechas"; .\venv\Scripts\python.exe -m src.web_app
+    $env:DB_USER="mechas"; $env:DB_PASSWORD="mechas123"; $env:DB_HOST="127.0.0.1"; $env:DB_PORT="3306"; $env:DB_NAME="amor_em_mechas"; $env:HOST="127.0.0.0"; $env:PORT="5000"; .\\venv\\Scripts\\python.exe -m src.web_app
 """
 from __future__ import annotations
 
 import logging
+import os
 import socket
 import threading
 from datetime import datetime, timedelta, timezone
@@ -459,15 +460,37 @@ def main() -> None:
 
     LOGGER.info("SocketIO async_mode: %s", sio.async_mode)
 
-    host = "127.0.0.1"
-    port = 5000
-    while True:
+    host = os.getenv("HOST", "127.0.0.1")
+    try:
+        port = int(os.getenv("PORT", "5000"))
+    except ValueError:
+        raise SystemExit("PORT invalida. Use um numero inteiro, ex: PORT=5000")
+
+    auto_port_fallback = os.getenv("AUTO_PORT_FALLBACK", "false").lower() in {
+        "1", "true", "yes",
+    }
+
+    if auto_port_fallback:
+        max_tries = 20
+        tries = 0
+        while True:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                if sock.connect_ex((host, port)) != 0:
+                    break
+            tries += 1
+            if tries >= max_tries:
+                raise SystemExit("Nao foi possivel encontrar porta livre para iniciar o servidor")
+            LOGGER.warning("Porta %s em uso. Tentando %s...", port, port + 1)
+            port += 1
+    else:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if sock.connect_ex((host, port)) != 0:
-                break
-        LOGGER.warning("Porta %s em uso. Tentando %s...", port, port + 1)
-        port += 1
+            if sock.connect_ex((host, port)) == 0:
+                raise SystemExit(
+                    f"Porta {port} em uso em {host}. "
+                    "Libere a porta ou ajuste HOST/PORT antes de iniciar."
+                )
 
     LOGGER.info("Servidor iniciando em http://%s:%s", host, port)
     sio.run(app, host=host, port=port, debug=False, allow_unsafe_werkzeug=True)
