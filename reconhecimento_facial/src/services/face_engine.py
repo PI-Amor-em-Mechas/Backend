@@ -204,6 +204,12 @@ def _ensure_index() -> None:
         if _emb_dirty:
             _load_index()
 
+def warm_up_models() -> None:
+    """Carrega YuNet, SFace e o indice de embeddings antes do primeiro uso."""
+    _get_detector((config.FRAME_WIDTH, config.FRAME_HEIGHT))
+    _get_recognizer()
+    _ensure_index()
+
 @dataclass
 class MatchResult:
     employee_id: str | None

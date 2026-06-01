@@ -70,6 +70,7 @@ def _install_db_stubs(monkeypatch) -> None:
         "add_face_embedding": lambda *a, **k: 1,
         "list_face_embeddings": lambda: [],
         "count_face_embeddings": lambda *a, **k: 0,
+        "count_voice_embeddings": lambda *a, **k: 0,
         "delete_face_embeddings": lambda *a, **k: 0,
         "clear_face_embeddings": lambda: 0,
     }

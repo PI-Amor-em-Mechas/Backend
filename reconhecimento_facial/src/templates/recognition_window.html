@@ -17,7 +17,7 @@
         </div>
         <header class="video-header">
           <h1>Reconhecimento em Tempo Real</h1>
-          <p>Mantenha o rosto centralizado. A confirmacao de identidade aparece no canto inferior direito.</p>
+          <p id="recognitionHint">Mantenha o rosto centralizado. O sistema avisa quando estiver pronto para confirmar.</p>
         </header>
 
         <video id="cameraFeed" autoplay muted playsinline></video>
@@ -55,11 +55,11 @@
 
       <div class="voice-display">
         <div class="voice-block">
-          <label>Texto acumulado:</label>
+          <p id="voiceAccumulatedLabel" class="voice-label">Texto acumulado:</p>
           <p id="voiceAccumulated" class="voice-text">-</p>
         </div>
         <div class="voice-block voice-block-partial">
-          <label>Reconhecendo agora:</label>
+          <p id="voicePartialLabel" class="voice-label">Reconhecendo agora:</p>
           <p id="voicePartial" class="voice-text partial">...</p>
         </div>
       </div>
@@ -102,24 +102,64 @@
       const confirmActions = document.getElementById("confirmActions");
       const confirmButton = document.getElementById("confirmButton");
       const cancelButton = document.getElementById("cancelButton");
+      const recognitionHint = document.getElementById("recognitionHint");
 
       let recognitionTimer = null;
       let requestInFlight = false;
       let pendingToken = null;
-      let trainingInProgress = false;
+      let recognitionDelay = 1200;
+      let noFaceCount = 0;
+      let unknownCount = 0;
+      let errorCount = 0;
+      let lastStatus = "booting";
+
+      const RECOGNITION_FAST_MS = 900;
+      const RECOGNITION_NORMAL_MS = 1400;
+      const RECOGNITION_SLOW_MS = 2400;
+      const RECOGNITION_ERROR_MS = 3600;
+
+      const statusHints = {
+        booting: "Preparando câmera e reconhecimento...",
+        ready: "Olhe para a câmera e mantenha o rosto dentro do quadro.",
+        checking: "Verificando identidade...",
+        recognized: "Identidade confirmada. Revise e confirme o registro.",
+        no_face: "Aproxime-se da câmera e mantenha o rosto centralizado.",
+        unknown: "Tente olhar de frente e melhorar a iluminação. Se continuar, atualize o cadastro.",
+        cooldown: "Registro recente encontrado. Aguarde alguns segundos antes de tentar novamente.",
+        error: "Não foi possível verificar agora. O sistema tentará novamente em instantes.",
+        voice: "Ponto registrado. O comando de voz é opcional."
+      };
 
       function setStatus(message, type) {
         statusBox.textContent = message;
         statusBox.className = "status overlay-status " + (type || "");
       }
 
+      function setRecognitionState(state, message, type) {
+        lastStatus = state;
+        recognitionHint.textContent = statusHints[state] || statusHints.ready;
+        setStatus(message, type);
+      }
+
+      function scheduleRecognition(delay) {
+        pauseRecognition();
+        recognitionDelay = delay || recognitionDelay;
+        recognitionTimer = window.setTimeout(recognizeFrame, recognitionDelay);
+      }
+
+      function scheduleNextRecognition() {
+        if (!pendingToken) {
+          scheduleRecognition(recognitionDelay);
+        }
+      }
+
       function showIdentity(data, withActions) {
         identityPhoto.src = data.image || "";
-        identityName.textContent = data.name || "Nao reconhecido";
+        identityName.textContent = data.name || "Não reconhecido";
         identityMeta.textContent = data.employee_id
-          ? `ID: ${data.employee_id} | Confianca: ${Number(data.confidence || 0).toFixed(1)}`
+          ? `ID: ${data.employee_id} | Confiança: ${Number(data.confidence || 0).toFixed(1)}`
           : data.confidence !== undefined
-          ? `Confianca: ${Number(data.confidence || 0).toFixed(1)}`
+          ? `Confiança: ${Number(data.confidence || 0).toFixed(1)}`
           : "";
         identityMessage.textContent = data.message || "";
 
@@ -139,14 +179,14 @@
 
       function pauseRecognition() {
         if (recognitionTimer) {
-          window.clearInterval(recognitionTimer);
+          window.clearTimeout(recognitionTimer);
           recognitionTimer = null;
         }
       }
 
       function resumeRecognition() {
         if (!recognitionTimer) {
-          recognitionTimer = window.setInterval(recognizeFrame, 1200);
+          scheduleRecognition(recognitionDelay);
         }
       }
 
@@ -162,42 +202,10 @@
           });
           video.srcObject = stream;
           await video.play();
-          setStatus("Camera pronta. Aguardando reconhecimento...", "success");
+          setRecognitionState("ready", "Câmera pronta. Posicione o rosto para começar.", "success");
           resumeRecognition();
         } catch (error) {
-          setStatus("Nao foi possivel acessar a camera: " + error.message, "error");
-        }
-      }
-
-      async function retrainAndRestartRecognition() {
-        if (trainingInProgress) {
-          return;
-        }
-
-        trainingInProgress = true;
-        pauseRecognition();
-        hideIdentity();
-        setStatus("Pessoa nao reconhecida. Treinando modelo e reiniciando reconhecimento...", "warning");
-
-        try {
-          const response = await fetch("/train-model", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          });
-          const data = await response.json();
-
-          if (data.status === "trained") {
-            setStatus("Treino concluido. Reconhecimento retomado.", "success");
-          } else {
-            setStatus(data.message || "Treino finalizado com aviso.", "warning");
-          }
-        } catch (error) {
-          setStatus("Erro ao treinar modelo: " + error.message, "error");
-        } finally {
-          trainingInProgress = false;
-          pendingToken = null;
-          resumeRecognition();
+          setRecognitionState("error", "Não foi possível acessar a câmera: " + error.message, "error");
         }
       }
 
@@ -218,16 +226,19 @@
       }
 
       async function recognizeFrame() {
-        if (requestInFlight || pendingToken || trainingInProgress) {
+        if (requestInFlight || pendingToken) {
           return;
         }
 
         const image = captureFrame();
         if (!image) {
+          setRecognitionState("ready", "Preparando imagem da câmera...", "info");
+          scheduleRecognition(RECOGNITION_NORMAL_MS);
           return;
         }
 
         requestInFlight = true;
+        setRecognitionState("checking", "Verificando identidade...", "info");
 
         try {
           const response = await fetch("/recognize-frame", {
@@ -239,33 +250,59 @@
 
           if (data.status === "recognized") {
             pendingToken = data.token;
+            noFaceCount = 0;
+            unknownCount = 0;
+            errorCount = 0;
+            recognitionDelay = RECOGNITION_FAST_MS;
             showIdentity(data, true);
-            setStatus("Pessoa reconhecida. Confirme para registrar.", "success");
+            setRecognitionState("recognized", "Identidade confirmada. Confirme para registrar.", "success");
             return;
           }
 
           if (data.status === "cooldown") {
+            noFaceCount = 0;
+            unknownCount = 0;
+            errorCount = 0;
+            recognitionDelay = RECOGNITION_SLOW_MS;
             showIdentity(data, false);
-            setStatus(data.message, "warning");
+            setRecognitionState("cooldown", data.message, "warning");
             return;
           }
 
           if (data.status === "unknown") {
-            await retrainAndRestartRecognition();
+            noFaceCount = 0;
+            unknownCount += 1;
+            errorCount = 0;
+            recognitionDelay = unknownCount >= 3 ? RECOGNITION_SLOW_MS : RECOGNITION_NORMAL_MS;
+            showIdentity(data, false);
+            setRecognitionState(
+              "unknown",
+              data.guidance || "Cadastro facial não encontrado. Tente novamente ou atualize o cadastro.",
+              "warning"
+            );
             return;
           }
 
           if (data.status === "no_face") {
+            noFaceCount += 1;
+            unknownCount = 0;
+            errorCount = 0;
+            recognitionDelay = noFaceCount >= 3 ? RECOGNITION_SLOW_MS : RECOGNITION_NORMAL_MS;
             hideIdentity();
-            setStatus("Nenhuma face detectada no quadro atual.", "info");
+            setRecognitionState("no_face", data.message || "Aproxime-se da câmera e centralize o rosto.", "info");
             return;
           }
 
-          setStatus(data.message || "Falha no reconhecimento.", "error");
+          errorCount += 1;
+          recognitionDelay = errorCount >= 2 ? RECOGNITION_ERROR_MS : RECOGNITION_SLOW_MS;
+          setRecognitionState("error", data.message || "Não foi possível verificar agora.", "error");
         } catch (error) {
-          setStatus("Erro no reconhecimento: " + error.message, "error");
+          errorCount += 1;
+          recognitionDelay = errorCount >= 2 ? RECOGNITION_ERROR_MS : RECOGNITION_SLOW_MS;
+          setRecognitionState("error", "Falha de comunicação. Tentando novamente em instantes.", "error");
         } finally {
           requestInFlight = false;
+          scheduleNextRecognition();
         }
       }
 
@@ -290,20 +327,20 @@
           const data = await response.json();
 
           if (data.status === "saved") {
-            setStatus(`${data.message} Tipo: ${data.punch_type}.`, "success");
+            setRecognitionState("voice", `${data.message} Registro: ${data.punch_type}.`, "success");
             pendingToken = null;
             if (confirm && data.voice_token) {
               startVoiceMode(data.voice_token, data.employee_id, data.name);
               return;
             }
           } else {
-            setStatus(data.message || "Operacao concluida.", "warning");
+            setRecognitionState("ready", data.message || "Operação concluída.", "warning");
           }
 
           pendingToken = null;
           resumeRecognition();
         } catch (error) {
-          setStatus("Erro ao confirmar: " + error.message, "error");
+          setRecognitionState("error", "Não foi possível confirmar agora. Tente novamente.", "error");
           pendingToken = null;
           resumeRecognition();
         } finally {
@@ -342,13 +379,13 @@
 
         // Casos especiais por motivo (reason vindo do voice_engine).
         if (reason === "not_enrolled" || enrolled === 0) {
-          return "voz nao cadastrada (use o cadastro para gravar amostras).";
+          return "voz ainda não cadastrada. Grave amostras no cadastro para ativar a confirmação.";
         }
         if (reason === "audio_too_short") {
           return "amostra muito curta — fale por mais alguns segundos.";
         }
         if (reason === "verification_error") {
-          return "nao foi possivel verificar a voz desta vez.";
+          return "não foi possível verificar a voz desta vez.";
         }
 
         // Confiabilidade percentual a partir do score (cosseno em [-1,1] -> [0,100]).
@@ -395,7 +432,7 @@
             ttsAudio = new Audio(url);
             ttsAudio.addEventListener("ended", () => URL.revokeObjectURL(url));
             ttsAudio.play().catch((err) => {
-              console.warn("Nao foi possivel reproduzir TTS:", err);
+              console.warn("Não foi possível reproduzir TTS:", err);
             });
           })
           .catch((err) => {
@@ -429,7 +466,7 @@
         }, 350);
 
         document.getElementById("voiceUserInfo").textContent =
-          `Usuario: ${employeeName} (ID: ${employeeId})`;
+          `Usuário: ${employeeName} (ID: ${employeeId})`;
 
         // Saudacao TTS chamando o usuario pelo nome.
         speakWelcome(employeeName);
@@ -466,13 +503,13 @@
           const phrases = Number(data?.phrases || 0);
           const enrolled = Number(data?.voice_enrolled || 0);
           const enforced = Boolean(data?.biometry_enforced);
-          let msg = `Microfone ativo. Fale agora. Frases treinadas: ${phrases}. Voiceprints: ${enrolled}.`;
+          let msg = `Microfone ativo. Fale seu comando quando quiser. Frases cadastradas: ${phrases}. Amostras de voz: ${enrolled}.`;
           let cls = "status voice-status success";
           if (enforced && enrolled === 0) {
-            msg += " ATENCAO: biometria de voz exigida e voce nao tem voiceprint cadastrado — comandos serao rejeitados.";
+            msg += " Atenção: sua voz ainda não foi cadastrada; comandos podem ser recusados.";
             cls = "status voice-status error";
           } else if (!enforced) {
-            msg += " (modo monitoramento — biometria nao bloqueia)";
+            msg += " A verificação de voz está em modo de monitoramento.";
           }
           voiceStatus.textContent = msg;
           voiceStatus.className = cls;
@@ -498,7 +535,7 @@
         socket.on("voice_rejected", (data) => {
           document.getElementById("voicePartial").textContent = "...";
           voiceStatus.textContent =
-            (data.message || "Identidade da voz nao confere.") +
+            (data.message || "A voz não corresponde ao cadastro.") +
             " " + formatBiometryFriendly(data.biometry, true);
           voiceStatus.className = "status voice-status error";
         });

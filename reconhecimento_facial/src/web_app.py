@@ -2,7 +2,7 @@
 
 Executar (PowerShell, a partir da raiz do projeto):
 
-    $env:DB_USER="mechas"; $env:DB_PASSWORD="mechas123"; $env:DB_HOST="127.0.0.1"; $env:DB_PORT="3306"; $env:DB_NAME="amor_em_mechas"; $env:HOST="127.0.0.0"; $env:PORT="5000"; .\\venv\\Scripts\\python.exe -m src.web_app
+    $env:DB_USER="mechas"; $env:DB_PASSWORD="mechas123"; $env:DB_HOST="127.0.0.1"; $env:DB_PORT="3306"; $env:DB_NAME="amor_em_mechas"; $env:HOST="127.0.0.1"; $env:PORT="5000"; .\\venv\\Scripts\\python.exe -m src.web_app
 """
 from __future__ import annotations
 
@@ -131,6 +131,37 @@ def _configure_logging() -> None:
         level=level,
         format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
     )
+
+def _preload_models() -> None:
+    if not config.PRELOAD_MODELS:
+        LOGGER.info("Preload de modelos desativado por configuracao.")
+        return
+
+    LOGGER.info("Pre-carregando modelos de reconhecimento...")
+    try:
+        from .services.face_engine import warm_up_models as warm_up_face_models
+
+        warm_up_face_models()
+        LOGGER.info("Modelos faciais prontos.")
+    except Exception:
+        LOGGER.exception("Falha ao pre-carregar modelos faciais")
+
+    try:
+        from .voice.vosk_engine import get_model as warm_up_vosk_model
+
+        warm_up_vosk_model()
+        LOGGER.info("Modelo de voz Vosk pronto.")
+    except Exception:
+        LOGGER.exception("Falha ao pre-carregar modelo Vosk")
+
+    if config.PRELOAD_VOICE_BIOMETRY_ENCODER:
+        try:
+            from .services.voice_engine import warm_up_encoder
+
+            warm_up_encoder()
+            LOGGER.info("Encoder de biometria de voz pronto.")
+        except Exception:
+            LOGGER.exception("Falha ao pre-carregar encoder de biometria de voz")
 
 def create_app() -> tuple[Flask, SocketIO]:
     global socketio
@@ -439,33 +470,22 @@ def _start_retention_scheduler() -> None:
     thread = threading.Thread(target=_loop, name="lgpd-retention", daemon=True)
     thread.start()
 
-def main() -> None:
-    _configure_logging()
-    config.ensure_directories()
-    db.init_db()
-
-    if not config.ADMIN_PROFILE_PASSWORD:
-        LOGGER.warning(
-            "ADMIN_PROFILE_PASSWORD nao definido. Login admin esta desabilitado. "
-            "Defina a variavel de ambiente ADMIN_PROFILE_PASSWORD."
+def _resolve_bind_config() -> tuple[str, int]:
+    host = os.getenv("HOST", "127.0.0.1").strip() or "127.0.0.1"
+    if host == "127.0.0.0":
+        raise SystemExit(
+            "HOST=127.0.0.0 nao e um endereco valido para iniciar o servidor. "
+            "Use HOST=127.0.0.1 para acesso local ou HOST=0.0.0.0 para aceitar conexoes da rede."
         )
 
-    app, sio = create_app()
-
-    try:
-        apply_retention_policy()
-    except Exception:
-        LOGGER.exception("Falha ao aplicar politica de retencao LGPD no boot")
-    _start_retention_scheduler()
-
-    LOGGER.info("SocketIO async_mode: %s", sio.async_mode)
-
-    host = os.getenv("HOST", "127.0.0.1")
     try:
         port = int(os.getenv("PORT", "5000"))
     except ValueError:
         raise SystemExit("PORT invalida. Use um numero inteiro, ex: PORT=5000")
 
+    return host, port
+
+def _ensure_port_available(host: str, port: int) -> int:
     auto_port_fallback = os.getenv("AUTO_PORT_FALLBACK", "false").lower() in {
         "1", "true", "yes",
     }
@@ -477,20 +497,47 @@ def main() -> None:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 if sock.connect_ex((host, port)) != 0:
-                    break
+                    return port
             tries += 1
             if tries >= max_tries:
                 raise SystemExit("Nao foi possivel encontrar porta livre para iniciar o servidor")
             LOGGER.warning("Porta %s em uso. Tentando %s...", port, port + 1)
             port += 1
-    else:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if sock.connect_ex((host, port)) == 0:
-                raise SystemExit(
-                    f"Porta {port} em uso em {host}. "
-                    "Libere a porta ou ajuste HOST/PORT antes de iniciar."
-                )
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if sock.connect_ex((host, port)) == 0:
+            raise SystemExit(
+                f"Porta {port} em uso em {host}. "
+                "Libere a porta ou ajuste HOST/PORT antes de iniciar."
+            )
+    return port
+
+def main() -> None:
+    _configure_logging()
+    host, port = _resolve_bind_config()
+    port = _ensure_port_available(host, port)
+
+    config.ensure_directories()
+    db.init_db()
+
+    if not config.ADMIN_PROFILE_PASSWORD:
+        LOGGER.warning(
+            "ADMIN_PROFILE_PASSWORD nao definido. Login admin esta desabilitado. "
+            "Defina a variavel de ambiente ADMIN_PROFILE_PASSWORD."
+        )
+
+    _preload_models()
+
+    app, sio = create_app()
+
+    try:
+        apply_retention_policy()
+    except Exception:
+        LOGGER.exception("Falha ao aplicar politica de retencao LGPD no boot")
+    _start_retention_scheduler()
+
+    LOGGER.info("SocketIO async_mode: %s", sio.async_mode)
 
     LOGGER.info("Servidor iniciando em http://%s:%s", host, port)
     sio.run(app, host=host, port=port, debug=False, allow_unsafe_werkzeug=True)

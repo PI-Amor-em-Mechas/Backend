@@ -22,6 +22,11 @@ VOSK_MODEL_PATH = DATA_DIR / "vosk-model"
 VOICE_PHRASES_PATH = DATA_DIR / "voice_phrases.json"
 VOICE_SAMPLE_RATE = 16000
 VOICE_MAX_PHRASES = int(os.getenv("VOICE_MAX_PHRASES", "0"))
+# Quando ativo, o Vosk fica limitado as frases treinadas. Recomendado para
+# comandos fechados; desative para ditado livre.
+VOICE_RECOGNIZER_USE_GRAMMAR = os.getenv(
+    "VOICE_RECOGNIZER_USE_GRAMMAR", "true"
+).lower() in {"1", "true", "yes"}
 
 # ---- Biometria de voz (Resemblyzer / GE2E) — 2o fator pos-face ----
 # Threshold de similaridade de cosseno para aceitar o falante (0..1).
@@ -105,6 +110,12 @@ PUNCH_DUPLICATE_WINDOW_SECONDS = 60
 SAVE_PUNCH_IMAGE = os.getenv("SAVE_PUNCH_IMAGE", "false").lower() in {"1", "true", "yes"}
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+# Pre-carrega modelos no boot para evitar lentidao na primeira tentativa de uso.
+PRELOAD_MODELS = os.getenv("PRELOAD_MODELS", "true").lower() in {"1", "true", "yes"}
+PRELOAD_VOICE_BIOMETRY_ENCODER = os.getenv(
+    "PRELOAD_VOICE_BIOMETRY_ENCODER", "false"
+).lower() in {"1", "true", "yes"}
 
 ADMIN_PROFILE_PASSWORD = os.getenv("ADMIN_PROFILE_PASSWORD", "admin123")
 

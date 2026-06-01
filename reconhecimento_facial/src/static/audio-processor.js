@@ -8,7 +8,7 @@ class PCM16Processor extends AudioWorkletProcessor {
     this._targetRate = 16000;
     this._resampleRatio = sampleRate / this._targetRate;
     this._phase = 0;
-    this._buffer = new Float32Array(8192);
+    this._buffer = new Float32Array(2048);
     this._pos = 0;
   }
 

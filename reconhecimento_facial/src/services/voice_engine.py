@@ -61,6 +61,11 @@ def _get_encoder() -> Any:
     return _encoder
 
 
+def warm_up_encoder() -> None:
+    """Carrega o encoder de biometria de voz antes do primeiro comando."""
+    _get_encoder()
+
+
 def pcm16_to_float32(pcm_bytes: bytes) -> np.ndarray:
     """Converte PCM16-LE mono em float32 normalizado [-1, 1]."""
     if not pcm_bytes:

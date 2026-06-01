@@ -831,7 +831,8 @@ h1 {
   padding: 14px 16px;
 }
 
-.voice-block label {
+.voice-label {
+  margin: 0;
   font-size: 0.85rem;
   color: #f7d9e8;
   text-transform: uppercase;

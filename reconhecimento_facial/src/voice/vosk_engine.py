@@ -30,16 +30,19 @@ def create_recognizer(
 ) -> KaldiRecognizer:
     """Cria um novo KaldiRecognizer vinculado ao modelo global.
 
-    Se `phrases` for informado, aplica gramatica local para melhorar comandos de dominio.
+    Por padrao usa ditado livre. Se VOICE_RECOGNIZER_USE_GRAMMAR=True, limita
+    o reconhecimento as frases treinadas para cenarios de comandos fechados.
     """
-    if phrases:
+    if config.VOICE_RECOGNIZER_USE_GRAMMAR and phrases:
         grammar = [p for p in phrases if p]
         if "salvar" not in grammar:
             grammar.append("salvar")
         if "apagar" not in grammar:
             grammar.append("apagar")
+        LOGGER.info("Criando reconhecedor Vosk com gramatica restrita (%d frases).", len(grammar))
         return KaldiRecognizer(get_model(), sample_rate, json.dumps(grammar, ensure_ascii=False))
 
+    LOGGER.info("Criando reconhecedor Vosk em modo ditado livre.")
     return KaldiRecognizer(get_model(), sample_rate)
 
 def feed_audio(recognizer: KaldiRecognizer, data: bytes) -> tuple[str | None, str | None]:
