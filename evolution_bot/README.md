@@ -48,8 +48,55 @@ mvn spring-boot:run
 - `POST /api/attendance/resume/{phoneNumber}` - devolve para bot
 - `POST /api/attendance/send` - envio ativo de mensagem
 
-## Próximos passos
+## To Do - Implementação Real
 
-- Refinar parsing dos payloads conforme eventos habilitados na sua instância Evolution.
-- Adicionar autenticação para endpoints internos (`/api/attendance/**`).
-- Criar fila para envios e reprocessamento de falhas.
+### Fase 1 - Ambiente e execução local
+
+- [ ] Instalar Docker Desktop e validar comando `docker --version`.
+- [ ] Subir MySQL com `docker compose up -d`.
+- [ ] Confirmar conexão na porta 3306.
+- [ ] Subir aplicação com `mvn spring-boot:run` sem erros de Flyway/JPA.
+
+### Fase 2 - Configuração de integração Evolution API
+
+- [ ] Preencher `EVOLUTION_BASE_URL`.
+- [ ] Preencher `EVOLUTION_API_KEY`.
+- [ ] Preencher `EVOLUTION_INSTANCE`.
+- [ ] Preencher `EVOLUTION_WEBHOOK_TOKEN`.
+- [ ] Configurar webhook da Evolution para `POST /webhooks/evolution` com header `x-webhook-token`.
+- [ ] Validar recebimento de eventos reais (mensagem inbound).
+
+### Fase 3 - Fluxo de atendimento
+
+- [ ] Revisar intenções de negócio (financeiro, suporte, comercial).
+- [ ] Ajustar respostas automáticas para tom da marca.
+- [ ] Definir critérios claros para `handoff` para humano.
+- [ ] Validar fluxo completo: inbound -> resposta bot -> handoff -> resume.
+
+### Fase 4 - Segurança e governança
+
+- [ ] Proteger endpoints internos `/api/attendance/**` com autenticação.
+- [ ] Implementar mascaramento de dados sensíveis em logs.
+- [ ] Definir política de retenção de mensagens (LGPD).
+- [ ] Separar variáveis por ambiente (dev, homolog, prod).
+
+### Fase 5 - Resiliência e observabilidade
+
+- [ ] Adicionar timeout e retry para chamadas da Evolution API.
+- [ ] Melhorar chave de idempotência para evitar duplicidade de processamento.
+- [ ] Criar logs estruturados com `conversationId` e `messageId`.
+- [ ] Expor endpoint de healthcheck (`/actuator/health`).
+
+### Fase 6 - Qualidade e testes
+
+- [ ] Criar testes de integração para webhook.
+- [ ] Criar testes para endpoints de handoff/resume.
+- [ ] Criar teste para envio ativo (`/api/attendance/send`).
+- [ ] Rodar build + testes automaticamente antes de merge.
+
+### Fase 7 - Deploy e operação
+
+- [ ] Definir pipeline de CI/CD.
+- [ ] Publicar ambiente de produção com segredos seguros.
+- [ ] Executar smoke test pós deploy.
+- [ ] Configurar monitoramento de erro e disponibilidade.
