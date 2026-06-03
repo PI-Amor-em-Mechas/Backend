@@ -8,9 +8,11 @@ public class DadosMedicosResponseDto {
     private String motivo;
     private String tipoCancer;
     private String justificativa;
-    private String RelatorioMedicoBase64;
+
     private LocalDate dtInicioTratamento;
     private String tipoAtendimento;
+    private Integer pacienteId;
+    private Integer relatorioMedicoId;
 
     public Integer getId() {
         return id;
@@ -60,11 +62,19 @@ public class DadosMedicosResponseDto {
         this.tipoAtendimento = tipoAtendimento;
     }
 
-    public String getRelatorioMedicoBase64() {
-        return RelatorioMedicoBase64;
+    public Integer getRelatorioMedicoId() {
+        return relatorioMedicoId;
     }
 
-    public void setRelatorioMedicoBase64(String relatorioMedicoBase64) {
-        RelatorioMedicoBase64 = relatorioMedicoBase64;
+    public void setRelatorioMedicoId(Integer relatorioMedicoId) {
+        this.relatorioMedicoId = relatorioMedicoId;
+    }
+
+    public Integer getPacienteId() {
+        return pacienteId;
+    }
+
+    public void setPacienteId(Integer pacienteId) {
+        this.pacienteId = pacienteId;
     }
 }

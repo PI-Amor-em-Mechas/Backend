@@ -3,13 +3,15 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.avaliacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao.AvaliacaoRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao.AvaliacaoResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.avaliacao.Avaliacao;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
+
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.avaliacao.AvaliacaoMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.solicitante.SolicitanteMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.avaliacao.AvaliacaoRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,16 +24,15 @@ public class AvaliacaoService {
     private final SolicitanteRepository solicitanteRepository;
     private final AvaliacaoMapper mapper;
     private final SolicitanteMapper solicitanteMapper;
+    private final PacienteRepository pacienteRepository;
 
-    @Autowired
-    public AvaliacaoService(AvaliacaoRepository repository,
-                            SolicitanteRepository solicitanteRepository,
-                            AvaliacaoMapper mapper,
-                            SolicitanteMapper solicitanteMapper) {
+
+    public AvaliacaoService(AvaliacaoMapper mapper, AvaliacaoRepository repository, SolicitanteRepository solicitanteRepository, SolicitanteMapper solicitanteMapper, PacienteRepository pacienteRepository) {
+        this.mapper = mapper;
         this.repository = repository;
         this.solicitanteRepository = solicitanteRepository;
-        this.mapper = mapper;
         this.solicitanteMapper = solicitanteMapper;
+        this.pacienteRepository = pacienteRepository;
     }
 
     public AvaliacaoResponseDto create(AvaliacaoRequestDto dto) {
@@ -42,6 +43,14 @@ public class AvaliacaoService {
         avaliacao.setSolicitante(solicitante);
         avaliacao.setDtConclusao(LocalDate.now());
         Avaliacao saved = repository.save(avaliacao);
+
+        Paciente paciente = pacienteRepository
+                .findBySolicitanteId(solicitante.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Paciente não encontrado")
+                );
+
+
 
         return mapper.toResponse(saved);
     }

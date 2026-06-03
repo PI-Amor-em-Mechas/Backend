@@ -2,16 +2,17 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.paciente;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
-import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.endereco.Endereco;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente.PacienteMapper;
-import br.com.amorEmMechas_Formulario.api.para.formulario.repository.dadosMedicos.DadosMedicosRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.endereco.EnderecoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,16 +42,19 @@ class PacienteServiceTest {
     private EnderecoRepository enderecoRepository;
 
     @Mock
-    private DadosMedicosRepository dadosMedicosRepository;
+    private ArquivoRepository arquivoRepository;
 
     @Mock
     private FilhoRepository filhoRepository;
+
+    @Mock
+    private SolicitanteRepository solicitanteRepository;
 
     @InjectMocks
     private PacienteService service;
 
     private Endereco endereco;
-    private DadosMedicos dadosMedicos;
+    private Solicitante solicitante;
     private Paciente paciente;
     private PacienteRequestDto requestDto;
     private PacienteResponseDto responseDto;
@@ -60,8 +64,8 @@ class PacienteServiceTest {
         endereco = new Endereco();
         endereco.setId(10);
 
-        dadosMedicos = new DadosMedicos();
-        dadosMedicos.setId(20);
+        solicitante = new Solicitante();
+        solicitante.setId(20);
 
         paciente = new Paciente();
         paciente.setId(1);
@@ -71,7 +75,7 @@ class PacienteServiceTest {
         requestDto.setNomeCompleto("Ana");
         requestDto.setCpf("12345678900");
         requestDto.setEnderecoId(10);
-        requestDto.setDadosMedicosId(20);
+        requestDto.setSolicitanteId(20);
         requestDto.setTemFilhos(false);
         requestDto.setQtdFilhos(0);
 
@@ -83,7 +87,7 @@ class PacienteServiceTest {
     @Test
     void create_semFilhos_deveSalvarECarregarResponse() {
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.of(dadosMedicos));
+        when(solicitanteRepository.findById(20)).thenReturn(Optional.of(solicitante));
         when(mapper.toEntity(requestDto)).thenReturn(paciente);
         when(repository.save(any(Paciente.class))).thenReturn(paciente);
         when(mapper.toResponse(paciente)).thenReturn(responseDto);
@@ -93,7 +97,7 @@ class PacienteServiceTest {
         assertThat(result).isNotNull();
         assertThat(requestDto.getDtPedido()).isEqualTo(LocalDate.now());
         assertThat(paciente.getEndereco()).isEqualTo(endereco);
-        assertThat(paciente.getDadosMedicos()).isEqualTo(dadosMedicos);
+        assertThat(paciente.getSolicitante()).isEqualTo(solicitante);
         verify(repository, atLeastOnce()).save(paciente);
     }
 
@@ -103,15 +107,14 @@ class PacienteServiceTest {
         requestDto.setIdadesFilhos(List.of(3, 7));
 
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.of(dadosMedicos));
+        when(solicitanteRepository.findById(20)).thenReturn(Optional.of(solicitante));
         when(mapper.toEntity(requestDto)).thenReturn(paciente);
         when(repository.save(any(Paciente.class))).thenReturn(paciente);
-        when(filhoRepository.save(any(Filho.class))).thenAnswer(inv -> inv.getArgument(0));
         when(mapper.toResponse(paciente)).thenReturn(responseDto);
 
         service.create(requestDto);
 
-        verify(filhoRepository, times(2)).save(any(Filho.class));
+        assertThat(paciente.getFilhos()).hasSize(2);
         assertThat(paciente.getQtdFilhos()).isEqualTo(2);
     }
 
@@ -125,13 +128,13 @@ class PacienteServiceTest {
     }
 
     @Test
-    void create_quandoDadosMedicosNaoExiste_deveLancarExcecao() {
+    void create_quandoSolicitanteNaoExiste_deveLancarExcecao() {
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.empty());
+        when(solicitanteRepository.findById(20)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(requestDto))
                 .isInstanceOf(IdNotFoundException.class)
-                .hasMessageContaining("DADOS MÉDICOS");
+                .hasMessageContaining("SOLICITANTE");
     }
 
     @Test
@@ -146,7 +149,6 @@ class PacienteServiceTest {
     void update_deveAtualizarCamposInformados() {
         when(repository.findById(1)).thenReturn(Optional.of(paciente));
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.of(dadosMedicos));
         when(repository.save(any(Paciente.class))).thenReturn(paciente);
         when(mapper.toResponse(paciente)).thenReturn(responseDto);
 
@@ -157,7 +159,6 @@ class PacienteServiceTest {
         assertThat(paciente.getNomeCompleto()).isEqualTo("Beatriz");
         assertThat(paciente.getCpf()).isEqualTo("12345678900");
         assertThat(paciente.getEndereco()).isEqualTo(endereco);
-        assertThat(paciente.getDadosMedicos()).isEqualTo(dadosMedicos);
     }
 
     @Test

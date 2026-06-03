@@ -1,6 +1,8 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos;
 
 
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -17,8 +19,16 @@ public class DadosMedicos {
     private String justificativa;
     private LocalDate dtInicioTratamento;
     private String tipoAtendimento;
-    @Lob
-    private byte[] relatorioMedico;
+
+    @OneToOne
+    @JoinColumn(name = "arquivo_id")
+    private Arquivo arquivo;
+
+    @ManyToOne
+    @JoinColumn(name = "paciente_id")
+    private Paciente paciente;
+
+
 
     public LocalDate getDtInicioTratamento() {
         return dtInicioTratamento;
@@ -52,14 +62,6 @@ public class DadosMedicos {
         this.motivo = motivo;
     }
 
-    public byte[] getRelatorioMedico() {
-        return relatorioMedico;
-    }
-
-    public void setRelatorioMedico(byte[] relatorioMedico) {
-        this.relatorioMedico = relatorioMedico;
-    }
-
     public String getTipoAtendimento() {
         return tipoAtendimento;
     }
@@ -74,5 +76,21 @@ public class DadosMedicos {
 
     public void setTipoCancer(String tipoCancer) {
         this.tipoCancer = tipoCancer;
+    }
+
+    public Paciente getPaciente() {
+        return paciente;
+    }
+
+    public void setPaciente(Paciente paciente) {
+        this.paciente = paciente;
+    }
+
+    public Arquivo getArquivo() {
+        return arquivo;
+    }
+
+    public void setArquivo(Arquivo arquivo) {
+        this.arquivo = arquivo;
     }
 }

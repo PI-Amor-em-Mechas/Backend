@@ -1,10 +1,12 @@
     package br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente;
 
 
+    import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.endereco.Endereco;
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.kitAmor.KitAmor;
+    import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
     import jakarta.persistence.*;
 
     import java.time.LocalDate;
@@ -29,20 +31,20 @@
         private Integer qtdPessoasEmCasa;
         private String cpf;
 
-        @Lob
-        private byte[] cabeloAntes;
+        @OneToOne
+        @JoinColumn(name = "cabelo_antes_id")
+        private Arquivo cabeloAntes;
 
         @OneToOne(cascade = CascadeType.ALL)
         @JoinColumn(name = "endereco_id")
         private Endereco endereco;
 
-
-        @OneToOne(cascade = CascadeType.ALL)
-        @JoinColumn(name = "dados_medicos_id")
-        private DadosMedicos dadosMedicos;
-
         @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
         private List<Filho> filhos = new ArrayList<>();
+
+        @ManyToOne
+        @JoinColumn(name = "solicitante_id")
+        private Solicitante solicitante;
 
         public Integer getQtdFilhos() {
             return qtdFilhos;
@@ -52,11 +54,11 @@
             this.qtdFilhos = qtdFilhos;
         }
 
-        public byte[] getCabeloAntes() {
+        public Arquivo getCabeloAntes() {
             return cabeloAntes;
         }
 
-        public void setCabeloAntes(byte[] cabeloAntes) {
+        public void setCabeloAntes(Arquivo cabeloAntes) {
             this.cabeloAntes = cabeloAntes;
         }
 
@@ -76,13 +78,6 @@
             this.cpf = cpf;
         }
 
-        public DadosMedicos getDadosMedicos() {
-            return dadosMedicos;
-        }
-
-        public void setDadosMedicos(DadosMedicos dadosMedicos) {
-            this.dadosMedicos = dadosMedicos;
-        }
 
         public LocalDate getDtNasc() {
             return dtNasc;
@@ -164,5 +159,11 @@
             this.filhos = filhos;
         }
 
+        public Solicitante getSolicitante() {
+            return solicitante;
+        }
 
+        public void setSolicitante(Solicitante solicitante) {
+            this.solicitante = solicitante;
+        }
     }
