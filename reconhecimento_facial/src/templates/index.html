@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reconhecimento Facial</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <div class="dashboard-header">
+          <div>
+            <h1>Amor em Mechas - Ponto</h1>
+            <p class="subtitle">Painel do sistema</p>
+          </div>
+          <div class="dashboard-profile">
+            <span id="profileBadge" class="profile-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span id="profileLabel">—</span>
+            </span>
+            <button id="logoutButton" class="btn-icon" title="Sair">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="home-actions">
+          <button id="startButton" class="btn primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"/>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+            Iniciar Reconhecimento
+          </button>
+          <button id="registerButton" class="btn secondary" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+            Cadastrar Nova Pessoa
+          </button>
+        </div>
+
+        <div id="statusBox" class="status">Pronto para uso.</div>
+      </section>
+    </main>
+
+    <script>
+      const startButton = document.getElementById("startButton");
+      const registerButton = document.getElementById("registerButton");
+      const statusBox = document.getElementById("statusBox");
+      const profileLabel = document.getElementById("profileLabel");
+      const logoutButton = document.getElementById("logoutButton");
+
+      let currentProfile = null;
+
+      function setStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = "status " + (type || "");
+      }
+
+      function openRecognitionWindow() {
+        const isMobile = window.innerWidth <= 768;
+        const features = isMobile
+          ? ""
+          : "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no";
+        const popup = window.open(
+          "/recognition-window",
+          isMobile ? "_blank" : "face-recognition-window",
+          features
+        );
+
+        if (popup) {
+          setStatus("Janela de reconhecimento aberta.", "success");
+        } else {
+          setStatus("Bloqueador de popup ativo. Permita popups para este site.", "error");
+        }
+      }
+
+      function openRegisterWindow() {
+        if (currentProfile !== "admin") {
+          setStatus("Somente admin pode acessar cadastro.", "warning");
+          return;
+        }
+
+        const isMobile = window.innerWidth <= 768;
+        const features = isMobile
+          ? ""
+          : "popup=yes,width=1080,height=760,resizable=yes,scrollbars=no";
+        const popup = window.open(
+          "/register-window",
+          isMobile ? "_blank" : "face-register-window",
+          features
+        );
+
+        if (popup) {
+          setStatus("Janela de cadastro aberta.", "success");
+        } else {
+          setStatus("Bloqueador de popup ativo. Permita popups para este site.", "error");
+        }
+      }
+
+      function refreshUi() {
+        const label = currentProfile === "admin" ? "Admin" : "Padrão";
+        profileLabel.textContent = label;
+        registerButton.disabled = currentProfile !== "admin";
+      }
+
+      async function loadProfile() {
+        try {
+          const response = await fetch("/me");
+          const data = await response.json();
+          currentProfile = data.profile || null;
+          if (!currentProfile) {
+            window.location.href = "/login";
+            return;
+          }
+        } catch (error) {
+          window.location.href = "/login";
+          return;
+        }
+        refreshUi();
+      }
+
+      async function doLogout() {
+        try {
+          await fetch("/logout", { method: "POST" });
+        } catch (_) {}
+        window.location.href = "/login";
+      }
+
+      startButton.addEventListener("click", openRecognitionWindow);
+      registerButton.addEventListener("click", openRegisterWindow);
+      logoutButton.addEventListener("click", doLogout);
+
+      loadProfile();
+    </script>
+  </body>
+</html>

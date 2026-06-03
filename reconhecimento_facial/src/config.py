@@ -1,3 +1,12 @@
+"""Configuracoes centrais do Face Attendance.
+
+Segredos e parametros sensiveis podem ser sobrescritos por variaveis de
+ambiente. Nao versione `.env` ou o arquivo `data/secret_key`.
+"""
+from __future__ import annotations
+
+import os
+import secrets
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -5,10 +14,52 @@ DATA_DIR = ROOT_DIR / "data"
 DATASET_DIR = DATA_DIR / "dataset"
 MODELS_DIR = DATA_DIR / "models"
 PUNCH_IMAGES_DIR = DATA_DIR / "punch_images"
+EXPORTS_DIR = DATA_DIR / "exports"
 
-DB_PATH = DATA_DIR / "attendance.db"
 LBPH_MODEL_PATH = MODELS_DIR / "lbph_model.yml"
 LABELS_PATH = MODELS_DIR / "labels.json"
+VOSK_MODEL_PATH = DATA_DIR / "vosk-model"
+VOICE_PHRASES_PATH = DATA_DIR / "voice_phrases.json"
+VOICE_SAMPLE_RATE = 16000
+VOICE_MAX_PHRASES = int(os.getenv("VOICE_MAX_PHRASES", "0"))
+# Quando ativo, o Vosk fica limitado as frases treinadas. Recomendado para
+# comandos fechados; desative para ditado livre.
+VOICE_RECOGNIZER_USE_GRAMMAR = os.getenv(
+    "VOICE_RECOGNIZER_USE_GRAMMAR", "true"
+).lower() in {"1", "true", "yes"}
+
+# ---- Biometria de voz (Resemblyzer / GE2E) — 2o fator pos-face ----
+# Threshold de similaridade de cosseno para aceitar o falante (0..1).
+VOICE_BIOMETRY_THRESHOLD = float(os.getenv("VOICE_BIOMETRY_THRESHOLD", "0.70"))
+# Duracao minima de audio acumulado para tentar verificacao (segundos).
+VOICE_BIOMETRY_MIN_SECONDS = float(os.getenv("VOICE_BIOMETRY_MIN_SECONDS", "1.5"))
+# Buffer maximo de PCM por sessao de voz (segundos) — protege a memoria.
+VOICE_BIOMETRY_MAX_BUFFER_SECONDS = float(
+    os.getenv("VOICE_BIOMETRY_MAX_BUFFER_SECONDS", "30")
+)
+# Quantidade minima de amostras de enrollment para considerar o cadastro valido.
+VOICE_BIOMETRY_MIN_ENROLL_SAMPLES = int(
+    os.getenv("VOICE_BIOMETRY_MIN_ENROLL_SAMPLES", "3")
+)
+# Se True, exige biometria de voz para salvar comandos. Se False, somente loga.
+VOICE_BIOMETRY_ENFORCE = os.getenv(
+    "VOICE_BIOMETRY_ENFORCE", "true"
+).lower() in {"1", "true", "yes"}
+# Se True, aceita comando quando o colaborador nao tem voiceprint cadastrado
+# (modo permissivo durante adocao gradual).
+VOICE_BIOMETRY_ALLOW_UNENROLLED = os.getenv(
+    "VOICE_BIOMETRY_ALLOW_UNENROLLED", "true"
+).lower() in {"1", "true", "yes"}
+
+# ---- Text-to-Speech (Piper) ----
+# Diretorio com os modelos Piper (.onnx + .onnx.json).
+PIPER_MODELS_DIR = Path(os.getenv("PIPER_MODELS_DIR", str(DATA_DIR / "piper")))
+# Nome do modelo a usar (sem extensao) ou caminho absoluto para o .onnx.
+# Se vazio, o servico tenta auto-detectar o primeiro .onnx do PIPER_MODELS_DIR.
+PIPER_VOICE = os.getenv("PIPER_VOICE", "")
+# Engine TTS: "auto" (padrao), "piper" ou "pyttsx3".
+TTS_ENGINE = os.getenv("TTS_ENGINE", "auto").strip().lower()
+
 FACE_DETECTOR_MODEL_PATH = DATA_DIR / "face_detector.task"
 FACE_DETECTOR_MODEL_URLS = [
     (
@@ -21,7 +72,26 @@ FACE_DETECTOR_MODEL_URLS = [
     ),
 ]
 
-CAMERA_INDEX = 0
+YUNET_MODEL_PATH = MODELS_DIR / "face_detection_yunet_2023mar.onnx"
+YUNET_MODEL_URLS = [
+    "https://github.com/opencv/opencv_zoo/raw/main/models/"
+    "face_detection_yunet/face_detection_yunet_2023mar.onnx",
+]
+SFACE_MODEL_PATH = MODELS_DIR / "face_recognition_sface_2021dec.onnx"
+SFACE_MODEL_URLS = [
+    "https://github.com/opencv/opencv_zoo/raw/main/models/"
+    "face_recognition_sface/face_recognition_sface_2021dec.onnx",
+]
+
+SFACE_DISTANCE_TYPE = "cosine"
+SFACE_COSINE_THRESHOLD = float(os.getenv("SFACE_COSINE_THRESHOLD", "0.363"))
+SFACE_L2_THRESHOLD = float(os.getenv("SFACE_L2_THRESHOLD", "1.128"))
+
+YUNET_SCORE_THRESHOLD = float(os.getenv("YUNET_SCORE_THRESHOLD", "0.6"))
+YUNET_NMS_THRESHOLD = float(os.getenv("YUNET_NMS_THRESHOLD", "0.3"))
+YUNET_TOP_K = int(os.getenv("YUNET_TOP_K", "50"))
+
+CAMERA_INDEX = int(os.getenv("CAMERA_INDEX", "0"))
 FRAME_WIDTH = 960
 FRAME_HEIGHT = 540
 PROCESS_EVERY_N_FRAMES = 2
@@ -36,13 +106,64 @@ MP_MIN_DETECTION_CONFIDENCE = 0.5
 LBPH_CONFIDENCE_THRESHOLD = 65.0
 
 PUNCH_DUPLICATE_WINDOW_SECONDS = 60
-SAVE_PUNCH_IMAGE = True
 
-LOG_LEVEL = "INFO"
+SAVE_PUNCH_IMAGE = os.getenv("SAVE_PUNCH_IMAGE", "false").lower() in {"1", "true", "yes"}
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+# Pre-carrega modelos no boot para evitar lentidao na primeira tentativa de uso.
+PRELOAD_MODELS = os.getenv("PRELOAD_MODELS", "true").lower() in {"1", "true", "yes"}
+PRELOAD_VOICE_BIOMETRY_ENCODER = os.getenv(
+    "PRELOAD_VOICE_BIOMETRY_ENCODER", "false"
+).lower() in {"1", "true", "yes"}
+
+ADMIN_PROFILE_PASSWORD = os.getenv("ADMIN_PROFILE_PASSWORD", "admin123")
+
+# ---- Banco de dados (MariaDB / MySQL) ----
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_NAME = os.getenv("DB_NAME", "amor_em_mechas")
+DB_CHARSET = os.getenv("DB_CHARSET", "utf8mb4")
+
+SECRET_KEY_PATH = DATA_DIR / "secret_key"
+
+def load_or_create_secret_key() -> bytes:
+    env_value = os.getenv("FLASK_SECRET_KEY")
+    if env_value:
+        return env_value.encode("utf-8")
+
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if SECRET_KEY_PATH.exists():
+        data = SECRET_KEY_PATH.read_bytes()
+        if data:
+            return data
+
+    key = secrets.token_bytes(48)
+    SECRET_KEY_PATH.write_bytes(key)
+    try:
+        os.chmod(SECRET_KEY_PATH, 0o600)
+    except OSError:
+        pass
+    return key
+
+CONSENT_VERSION = os.getenv("CONSENT_VERSION", "1.0")
+
+DATA_RETENTION_DAYS = int(os.getenv("DATA_RETENTION_DAYS", "90"))
+
+AUDIT_LOG_RETENTION_DAYS = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", "365"))
+
+ANONYMIZED_PUNCHES_RETENTION_DAYS = int(
+    os.getenv("ANONYMIZED_PUNCHES_RETENTION_DAYS", "1825")
+)
+
+LOCAL_TIMEZONE = os.getenv("LOCAL_TIMEZONE", "America/Sao_Paulo")
 
 def ensure_directories() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     PUNCH_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    PIPER_MODELS_DIR.mkdir(parents=True, exist_ok=True)

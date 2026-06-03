@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cadastro de Pessoa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body class="recognition-body">
+    <main class="recognition-page">
+      <section class="video-panel register-panel">
+        <header class="video-header">
+          <h1>Cadastro de Nova Pessoa</h1>
+          <p>Preencha os dados, capture algumas fotos e clique em cadastrar.</p>
+        </header>
+
+        <div class="register-form">
+          <label>
+            ID da pessoa
+            <input id="employeeId" type="text" maxlength="60" placeholder="Ex.: 123" />
+          </label>
+          <label>
+            Nome da pessoa
+            <input id="employeeName" type="text" maxlength="120" placeholder="Ex.: Maria Silva" />
+          </label>
+        </div>
+
+        <div id="privacyNoticeBox" class="status info" style="white-space: pre-line;">
+          Carregando aviso de privacidade...
+        </div>
+        <label class="consent-label" style="display:flex; gap:8px; align-items:flex-start; margin:8px 0;">
+          <input id="consentCheckbox" type="checkbox" />
+          <span>
+            Declaro ter lido o aviso de privacidade e <strong>autorizo o tratamento dos dados
+            biometricos</strong> desta pessoa para a finalidade de controle de ponto, conforme
+            a LGPD (Lei 13.709/2018). O titular pode revogar o consentimento a qualquer momento.
+          </span>
+        </label>
+
+        <video id="cameraFeed" autoplay muted playsinline></video>
+        <canvas id="captureCanvas" class="hidden"></canvas>
+
+        <div class="capture-actions">
+          <button id="captureButton" class="btn secondary">Capturar Foto</button>
+          <button id="registerButton" class="btn success">Cadastrar Pessoa</button>
+          <button id="clearButton" class="btn danger">Limpar Fotos</button>
+        </div>
+
+        <div id="statusBox" class="status">Inicializando camera...</div>
+
+        <section>
+          <h2 class="capture-title">Fotos Capturadas</h2>
+          <div id="previewGrid" class="preview-grid"></div>
+        </section>
+
+        <section class="users-section">
+          <div class="users-header">
+            <h2 class="capture-title">Gerenciamento de Usuarios</h2>
+            <button id="refreshUsersButton" class="btn secondary">Atualizar Lista</button>
+          </div>
+          <div id="usersStatus" class="status info">Carregando usuarios...</div>
+          <div id="usersList" class="users-list"></div>
+        </section>
+
+        <section class="users-section">
+          <div class="users-header">
+            <h2 class="capture-title">Treino do Reconhecimento de Fala</h2>
+            <button id="refreshVoicePhrasesButton" class="btn secondary">Atualizar Frases</button>
+          </div>
+          <div id="voiceTrainStatus" class="status info">Carregando frases de treino...</div>
+
+          <div class="user-controls">
+            <input id="voicePhraseInput" type="text" maxlength="200" placeholder="Ex.: abrir chamado para ti salvar" />
+            <button id="addVoicePhraseButton" class="btn success">Adicionar Frase</button>
+          </div>
+
+          <div class="user-controls">
+            <textarea
+              id="voiceBulkInput"
+              class="voice-bulk-input"
+              rows="4"
+              placeholder="Treino em lote: uma frase por linha"
+            ></textarea>
+            <button id="bulkVoicePhraseButton" class="btn secondary">Treinar em Lote</button>
+          </div>
+
+          <div class="user-controls">
+            <input id="voiceJsonFile" type="file" accept="application/json,.json" />
+            <button id="importVoiceJsonButton" class="btn secondary">Importar JSON</button>
+            <button id="exportVoiceJsonButton" class="btn secondary">Exportar JSON</button>
+          </div>
+
+          <div id="voicePhrasesList" class="users-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const video = document.getElementById("cameraFeed");
+      const canvas = document.getElementById("captureCanvas");
+      const statusBox = document.getElementById("statusBox");
+      const employeeIdInput = document.getElementById("employeeId");
+      const employeeNameInput = document.getElementById("employeeName");
+      const captureButton = document.getElementById("captureButton");
+      const registerButton = document.getElementById("registerButton");
+      const clearButton = document.getElementById("clearButton");
+      const previewGrid = document.getElementById("previewGrid");
+      const refreshUsersButton = document.getElementById("refreshUsersButton");
+      const usersStatus = document.getElementById("usersStatus");
+      const usersList = document.getElementById("usersList");
+      const refreshVoicePhrasesButton = document.getElementById("refreshVoicePhrasesButton");
+      const voiceTrainStatus = document.getElementById("voiceTrainStatus");
+      const voicePhraseInput = document.getElementById("voicePhraseInput");
+      const addVoicePhraseButton = document.getElementById("addVoicePhraseButton");
+      const voiceBulkInput = document.getElementById("voiceBulkInput");
+      const bulkVoicePhraseButton = document.getElementById("bulkVoicePhraseButton");
+      const voiceJsonFile = document.getElementById("voiceJsonFile");
+      const importVoiceJsonButton = document.getElementById("importVoiceJsonButton");
+      const exportVoiceJsonButton = document.getElementById("exportVoiceJsonButton");
+      const voicePhrasesList = document.getElementById("voicePhrasesList");
+
+      const capturedImages = [];
+      let voiceBiometryConfig = {
+        min_samples: 3,
+        min_seconds: 1.5,
+        enforced: true,
+        threshold: 0.7,
+      };
+      const voiceCaptureSeconds = 5;
+      let voiceCaptureBusy = false;
+
+      async function loadPrivacyNotice() {
+        try {
+          const resp = await fetch("/lgpd/privacy-notice");
+          const data = await resp.json();
+          const box = document.getElementById("privacyNoticeBox");
+          if (data.status === "ok") {
+            box.textContent =
+              `Aviso de privacidade (v${data.version})\n\n${data.text}\n\n` +
+              `Retencao de imagens: ${data.retention_days} dias.`;
+          } else {
+            box.textContent = "Nao foi possivel carregar o aviso de privacidade.";
+          }
+        } catch (_) {
+          document.getElementById("privacyNoticeBox").textContent =
+            "Nao foi possivel carregar o aviso de privacidade.";
+        }
+      }
+
+      function setStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = "status " + (type || "");
+      }
+
+      function renderPreviews() {
+        previewGrid.innerHTML = "";
+
+        capturedImages.forEach((image, index) => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "preview-item";
+
+          const img = document.createElement("img");
+          img.src = image;
+          img.alt = "Foto capturada " + (index + 1);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "btn danger preview-remove";
+          removeBtn.textContent = "Remover";
+          removeBtn.addEventListener("click", () => {
+            capturedImages.splice(index, 1);
+            renderPreviews();
+            setStatus("Foto removida.", "info");
+          });
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(removeBtn);
+          previewGrid.appendChild(wrapper);
+        });
+      }
+
+      function setUsersStatus(message, type) {
+        usersStatus.textContent = message;
+        usersStatus.className = "status " + (type || "info");
+      }
+
+      function setVoiceTrainStatus(message, type) {
+        voiceTrainStatus.textContent = message;
+        voiceTrainStatus.className = "status " + (type || "info");
+      }
+
+      function renderVoicePhrases(phrases) {
+        voicePhrasesList.innerHTML = "";
+        if (!phrases || phrases.length === 0) {
+          setVoiceTrainStatus("Nenhuma frase treinada ainda.", "warning");
+          return;
+        }
+
+        setVoiceTrainStatus(`Frases de treino carregadas: ${phrases.length}.`, "success");
+
+        phrases.forEach((phrase) => {
+          const item = document.createElement("div");
+          item.className = "user-item";
+
+          const meta = document.createElement("div");
+          meta.className = "user-meta";
+          meta.innerHTML = `<p>${phrase}</p>`;
+
+          const controls = document.createElement("div");
+          controls.className = "user-controls";
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "btn danger";
+          deleteButton.textContent = "Remover";
+          deleteButton.addEventListener("click", () => removeVoicePhrase(phrase));
+
+          controls.appendChild(deleteButton);
+          item.appendChild(meta);
+          item.appendChild(controls);
+          voicePhrasesList.appendChild(item);
+        });
+      }
+
+      async function loadVoicePhrases() {
+        try {
+          setVoiceTrainStatus("Carregando frases de treino...", "info");
+          const response = await fetch("/voice-phrases");
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao carregar frases.", "error");
+            return;
+          }
+
+          renderVoicePhrases(data.phrases || []);
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao carregar frases: " + error.message, "error");
+        }
+      }
+
+      async function addVoicePhrase() {
+        const phrase = voicePhraseInput.value.trim();
+        if (!phrase) {
+          setVoiceTrainStatus("Informe uma frase para treino.", "warning");
+          return;
+        }
+
+        try {
+          const response = await fetch("/voice-phrases/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phrase }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao adicionar frase.", "error");
+            return;
+          }
+
+          voicePhraseInput.value = "";
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao adicionar frase: " + error.message, "error");
+        }
+      }
+
+      async function removeVoicePhrase(phrase) {
+        const confirmed = window.confirm("Deseja remover esta frase do treino de voz?");
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/voice-phrases/remove", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phrase }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao remover frase.", "error");
+            return;
+          }
+
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao remover frase: " + error.message, "error");
+        }
+      }
+
+      async function bulkVoicePhrases() {
+        const text = voiceBulkInput.value.trim();
+        if (!text) {
+          setVoiceTrainStatus("Informe frases em lote (uma por linha).", "warning");
+          return;
+        }
+
+        try {
+          const response = await fetch("/voice-phrases/bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha no treino em lote.", "error");
+            return;
+          }
+
+          voiceBulkInput.value = "";
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro no treino em lote: " + error.message, "error");
+        }
+      }
+
+      async function importVoiceJson() {
+        const file = voiceJsonFile.files && voiceJsonFile.files[0];
+        if (!file) {
+          setVoiceTrainStatus("Selecione um arquivo JSON para importar.", "warning");
+          return;
+        }
+
+        const form = new FormData();
+        form.append("file", file);
+
+        try {
+          const response = await fetch("/voice-phrases/import-json", {
+            method: "POST",
+            body: form,
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "ok") {
+            setVoiceTrainStatus(data.message || "Falha ao importar JSON.", "error");
+            return;
+          }
+
+          voiceJsonFile.value = "";
+          renderVoicePhrases(data.phrases || []);
+          setVoiceTrainStatus(data.message, "success");
+        } catch (error) {
+          setVoiceTrainStatus("Erro ao importar JSON: " + error.message, "error");
+        }
+      }
+
+      function exportVoiceJson() {
+        window.open("/voice-phrases/export-json", "_blank");
+      }
+
+      // === Captura de PCM16 mono 16 kHz para enrollment de voz ===
+      async function captureVoicePcm(durationSeconds) {
+        const ac = new AudioContext({ sampleRate: 16000 });
+        if (ac.state === "suspended") {
+          await ac.resume();
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            sampleRate: { ideal: 16000 },
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
+          video: false,
+        });
+
+        try {
+          await ac.audioWorklet.addModule("/static/audio-processor.js");
+          const source = ac.createMediaStreamSource(stream);
+          const processor = new AudioWorkletNode(ac, "pcm16-processor");
+
+          const chunks = [];
+          let totalBytes = 0;
+          processor.port.onmessage = (event) => {
+            const buf = event.data;
+            chunks.push(new Uint8Array(buf));
+            totalBytes += buf.byteLength;
+          };
+          source.connect(processor);
+
+          await new Promise((resolve) => setTimeout(resolve, durationSeconds * 1000));
+
+          source.disconnect();
+          processor.disconnect();
+
+          const merged = new Uint8Array(totalBytes);
+          let offset = 0;
+          for (const c of chunks) {
+            merged.set(c, offset);
+            offset += c.byteLength;
+          }
+          return merged;
+        } finally {
+          stream.getTracks().forEach((t) => t.stop());
+          try { await ac.close(); } catch (_) {}
+        }
+      }
+
+      function bytesToBase64(bytes) {
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode.apply(
+            null,
+            bytes.subarray(i, i + chunk)
+          );
+        }
+        return btoa(binary);
+      }
+
+      async function enrollVoiceSample(employeeId, button, statusEl) {
+        if (voiceCaptureBusy) {
+          statusEl.textContent = "Aguarde a captura anterior terminar.";
+          statusEl.className = "status warning";
+          return;
+        }
+        voiceCaptureBusy = true;
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        try {
+          for (let i = voiceCaptureSeconds; i > 0; i--) {
+            statusEl.textContent = `Fale agora! Gravando... ${i}s`;
+            statusEl.className = "status info";
+            button.textContent = `Gravando ${i}s...`;
+            await new Promise((r) => setTimeout(r, 1000));
+            // Iniciamos a captura no primeiro tick para sincronizar com a contagem.
+            if (i === voiceCaptureSeconds) {
+              // dispara captura assincrona em paralelo com a UI countdown
+              window.__voiceCapturePromise = captureVoicePcm(voiceCaptureSeconds);
+            }
+          }
+          statusEl.textContent = "Processando audio...";
+          statusEl.className = "status info";
+          const pcmBytes = await window.__voiceCapturePromise;
+          window.__voiceCapturePromise = null;
+
+          if (!pcmBytes || pcmBytes.length === 0) {
+            statusEl.textContent = "Falha ao capturar audio.";
+            statusEl.className = "status error";
+            return;
+          }
+
+          const pcm_base64 = bytesToBase64(pcmBytes);
+          const response = await fetch("/voice-biometry/enroll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id: employeeId, pcm_base64 }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "enrolled") {
+            statusEl.textContent = data.message || "Falha ao salvar voiceprint.";
+            statusEl.className = "status error";
+            return;
+          }
+          statusEl.textContent =
+            `Voiceprint cadastrado (${data.duration_seconds}s). ` +
+            `Total: ${data.total_samples} ${data.ready ? "(pronto)" : "(faltam amostras)"}.`;
+          statusEl.className = "status success";
+          loadUsers();
+        } catch (error) {
+          statusEl.textContent = "Erro ao gravar voz: " + error.message;
+          statusEl.className = "status error";
+        } finally {
+          voiceCaptureBusy = false;
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+
+      async function clearVoiceSamples(employeeId, statusEl) {
+        const ok = window.confirm(
+          "Remover todos os voiceprints deste colaborador? " +
+          "Sera necessario recadastrar pelo menos " +
+          voiceBiometryConfig.min_samples + " amostras."
+        );
+        if (!ok) {
+          return;
+        }
+        try {
+          const response = await fetch("/voice-biometry/clear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id: employeeId }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.status !== "cleared") {
+            statusEl.textContent = data.message || "Falha ao limpar voiceprints.";
+            statusEl.className = "status error";
+            return;
+          }
+          statusEl.textContent = `Removidos ${data.removed} voiceprint(s).`;
+          statusEl.className = "status warning";
+          loadUsers();
+        } catch (error) {
+          statusEl.textContent = "Erro ao limpar voz: " + error.message;
+          statusEl.className = "status error";
+        }
+      }
+
+      async function loadUsers() {
+        try {
+          setUsersStatus("Carregando usuarios...", "info");
+          const response = await fetch("/employees");
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "ok") {
+            setUsersStatus(data.message || "Nao foi possivel carregar usuarios.", "error");
+            return;
+          }
+
+          const employees = data.employees || [];
+          if (data.voice_biometry) {
+            voiceBiometryConfig = {
+              min_samples: Number(data.voice_biometry.min_samples || 3),
+              min_seconds: Number(data.voice_biometry.min_seconds || 1.5),
+              enforced: Boolean(data.voice_biometry.enforced),
+              threshold: Number(data.voice_biometry.threshold || 0.7),
+            };
+          }
+          usersList.innerHTML = "";
+
+          if (employees.length === 0) {
+            setUsersStatus("Nenhum usuario cadastrado.", "warning");
+            return;
+          }
+
+          setUsersStatus("Usuarios carregados.", "success");
+
+          employees.forEach((employee) => {
+            const item = document.createElement("div");
+            item.className = "user-item";
+
+            const meta = document.createElement("div");
+            meta.className = "user-meta";
+            meta.innerHTML = `
+              <strong>ID: ${employee.id}</strong>
+              <p>Nome atual: ${employee.name}</p>
+              <p>Amostras: ${employee.sample_count}</p>
+              <p>Voiceprints: ${employee.voiceprint_count || 0} / ${employee.voiceprint_min_samples || voiceBiometryConfig.min_samples} ${employee.voiceprint_ready ? "<span style='color:#2e7d32'>(pronto)</span>" : "<span style='color:#c62828'>(faltam amostras)</span>"}</p>
+            `;
+
+            const controls = document.createElement("div");
+            controls.className = "user-controls";
+
+            const nameInput = document.createElement("input");
+            nameInput.type = "text";
+            nameInput.value = employee.name;
+            nameInput.maxLength = 120;
+
+            const updateButton = document.createElement("button");
+            updateButton.className = "btn secondary";
+            updateButton.textContent = "Salvar Nome";
+            updateButton.addEventListener("click", () => updateUserName(employee.id, nameInput.value));
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "btn danger";
+            deleteButton.textContent = "Excluir Usuario";
+            deleteButton.addEventListener("click", () => deleteUser(employee.id));
+
+            const exportButton = document.createElement("button");
+            exportButton.className = "btn secondary";
+            exportButton.textContent = "Exportar dados (LGPD)";
+            exportButton.addEventListener("click", () => {
+              window.open(`/lgpd/export/${encodeURIComponent(employee.id)}`, "_blank");
+            });
+
+            const voiceStatus = document.createElement("span");
+            voiceStatus.className = "status info";
+            voiceStatus.style.flexBasis = "100%";
+            voiceStatus.textContent = `Biometria de voz: clique para gravar uma amostra de ~${voiceCaptureSeconds}s.`;
+
+            const voiceEnrollButton = document.createElement("button");
+            voiceEnrollButton.className = "btn success";
+            voiceEnrollButton.textContent = `Gravar voz (${voiceCaptureSeconds}s)`;
+            voiceEnrollButton.addEventListener("click", () =>
+              enrollVoiceSample(employee.id, voiceEnrollButton, voiceStatus)
+            );
+
+            const voiceClearButton = document.createElement("button");
+            voiceClearButton.className = "btn danger";
+            voiceClearButton.textContent = "Limpar voz";
+            voiceClearButton.addEventListener("click", () =>
+              clearVoiceSamples(employee.id, voiceStatus)
+            );
+
+            controls.appendChild(nameInput);
+            controls.appendChild(updateButton);
+            controls.appendChild(deleteButton);
+            controls.appendChild(exportButton);
+            controls.appendChild(voiceEnrollButton);
+            controls.appendChild(voiceClearButton);
+            controls.appendChild(voiceStatus);
+
+            item.appendChild(meta);
+            item.appendChild(controls);
+            usersList.appendChild(item);
+          });
+        } catch (error) {
+          setUsersStatus("Erro ao carregar usuarios: " + error.message, "error");
+        }
+      }
+
+      async function updateUserName(employee_id, employee_name) {
+        const name = String(employee_name || "").trim();
+        if (!name) {
+          setUsersStatus("Informe um nome valido para atualizar.", "warning");
+          return;
+        }
+
+        try {
+          const response = await fetch("/employees/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id, employee_name: name }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "updated") {
+            setUsersStatus(data.message || "Falha ao atualizar usuario.", "error");
+            return;
+          }
+
+          setUsersStatus(data.message, "success");
+          loadUsers();
+        } catch (error) {
+          setUsersStatus("Erro ao atualizar usuario: " + error.message, "error");
+        }
+      }
+
+      async function deleteUser(employee_id) {
+        const confirmed = window.confirm(
+          "LGPD: excluir este usuario remove as amostras biometricas e imagens de ponto, " +
+          "revoga o consentimento e anonimiza o historico de pontos. Continuar?"
+        );
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/employees/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employee_id }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || data.status !== "deleted") {
+            setUsersStatus(data.message || "Falha ao excluir usuario.", "error");
+            return;
+          }
+
+          setUsersStatus(data.message, "success");
+          loadUsers();
+        } catch (error) {
+          setUsersStatus("Erro ao excluir usuario: " + error.message, "error");
+        }
+      }
+
+      function captureFrame() {
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+
+        if (!width || !height) {
+          return null;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: false });
+        ctx.drawImage(video, 0, 0, width, height);
+        return canvas.toDataURL("image/jpeg", 0.95);
+      }
+
+      async function initCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30 },
+            },
+            audio: false,
+          });
+
+          video.srcObject = stream;
+          await video.play();
+          setStatus("Camera pronta. Capture ao menos 3 fotos para um cadastro melhor.", "success");
+        } catch (error) {
+          setStatus("Nao foi possivel acessar a camera: " + error.message, "error");
+        }
+      }
+
+      async function registerPerson() {
+        const employee_id = employeeIdInput.value.trim();
+        const employee_name = employeeNameInput.value.trim();
+        const consent = document.getElementById("consentCheckbox").checked;
+
+        if (!employee_id || !employee_name) {
+          setStatus("Preencha ID e nome da pessoa.", "warning");
+          return;
+        }
+
+        if (capturedImages.length === 0) {
+          setStatus("Capture pelo menos uma foto antes de cadastrar.", "warning");
+          return;
+        }
+
+        if (!consent) {
+          setStatus("Confirme o consentimento LGPD antes de cadastrar.", "warning");
+          return;
+        }
+
+        captureButton.disabled = true;
+        registerButton.disabled = true;
+        clearButton.disabled = true;
+
+        try {
+          setStatus("Cadastrando pessoa e treinando modelo...", "info");
+
+          const response = await fetch("/register-person", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              employee_id,
+              employee_name,
+              images: capturedImages,
+              consent: true,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.status === "registered") {
+            setStatus(data.message, "success");
+            capturedImages.length = 0;
+            renderPreviews();
+            employeeIdInput.value = "";
+            employeeNameInput.value = "";
+            loadUsers();
+            return;
+          }
+
+          setStatus(data.message || "Falha ao cadastrar pessoa.", "error");
+        } catch (error) {
+          setStatus("Erro no cadastro: " + error.message, "error");
+        } finally {
+          captureButton.disabled = false;
+          registerButton.disabled = false;
+          clearButton.disabled = false;
+        }
+      }
+
+      captureButton.addEventListener("click", () => {
+        const frame = captureFrame();
+        if (!frame) {
+          setStatus("A camera ainda nao esta pronta.", "warning");
+          return;
+        }
+
+        capturedImages.push(frame);
+        renderPreviews();
+        setStatus("Foto capturada. Total: " + capturedImages.length + ".", "success");
+      });
+
+      registerButton.addEventListener("click", registerPerson);
+
+      clearButton.addEventListener("click", () => {
+        capturedImages.length = 0;
+        renderPreviews();
+        setStatus("Fotos removidas.", "info");
+      });
+
+      refreshUsersButton.addEventListener("click", loadUsers);
+      refreshVoicePhrasesButton.addEventListener("click", loadVoicePhrases);
+      addVoicePhraseButton.addEventListener("click", addVoicePhrase);
+      bulkVoicePhraseButton.addEventListener("click", bulkVoicePhrases);
+      importVoiceJsonButton.addEventListener("click", importVoiceJson);
+      exportVoiceJsonButton.addEventListener("click", exportVoiceJson);
+
+      window.addEventListener("beforeunload", () => {
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach((track) => track.stop());
+        }
+      });
+
+      initCamera();
+      loadUsers();
+      loadVoicePhrases();
+      loadPrivacyNotice();
+    </script>
+  </body>
+</html>
