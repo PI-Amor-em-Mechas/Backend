@@ -1,6 +1,6 @@
 # Evolution Bot (Java 21)
 
-Estrutura base para bot de atendimento WhatsApp com Evolution API, Spring Boot e MySQL.
+Bot de atendimento WhatsApp com Evolution API, Spring Boot e MySQL.
 
 ## Stack
 
@@ -9,6 +9,7 @@ Estrutura base para bot de atendimento WhatsApp com Evolution API, Spring Boot e
 - Spring Web + Spring Data JPA
 - Flyway
 - MySQL 8
+- Docker / Docker Compose
 
 ## Estrutura
 
@@ -19,34 +20,103 @@ Estrutura base para bot de atendimento WhatsApp com Evolution API, Spring Boot e
 - `src/main/java/com/evolutionbot/web`: controllers REST
 - `src/main/resources/db/migration`: migrations Flyway
 
-## Subir MySQL
+---
 
-```bash
-docker compose up -d
+## Deploy na VM Debian (com Docker)
+
+### 1. Copiar o projeto para a VM
+
+No Windows (PowerShell), a partir da pasta do projeto:
+
+```powershell
+scp -r . artur@201.13.60.130:~/evolution_bot/
 ```
 
-## Variáveis principais
-
-- `DB_URL`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `EVOLUTION_BASE_URL`
-- `EVOLUTION_API_KEY`
-- `EVOLUTION_INSTANCE`
-- `EVOLUTION_WEBHOOK_TOKEN`
-
-## Rodar aplicação
+### 2. Na VM, configurar o `.env`
 
 ```bash
+cd ~/evolution_bot
+cp .env.example .env
+nano .env
+```
+
+Preencha com seus valores reais da Evolution API:
+
+```env
+DB_PASSWORD=SuaSenhaSegura123
+EVOLUTION_BASE_URL=http://172.17.0.1:8081
+EVOLUTION_API_KEY=sua-api-key-aqui
+EVOLUTION_INSTANCE=sua-instancia
+EVOLUTION_WEBHOOK_TOKEN=seu-token-webhook
+```
+
+> **Nota:** Se a Evolution API roda na mesma VM via Docker, use `http://172.17.0.1:PORTA` (gateway do Docker bridge). Se roda no host, use `http://localhost:PORTA`.
+
+### 3. Subir com Docker Compose
+
+```bash
+cd ~/evolution_bot
+docker compose up -d --build
+```
+
+Primeira execução: o build demora alguns minutos (baixa Maven + dependências).
+
+### 4. Verificar logs
+
+```bash
+docker compose logs -f app
+```
+
+Quando aparecer `Started EvolutionBotApplication`, está pronto.
+
+### 5. Testar
+
+```bash
+curl http://localhost:8080/api/attendance/send \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"5511999999999","text":"teste"}'
+```
+
+---
+
+## Configurar Webhook na Evolution API
+
+Configure o webhook da sua instância Evolution API para:
+
+```
+URL: http://172.20.208.128:8080/webhooks/evolution
+Header: x-webhook-token = <valor do EVOLUTION_WEBHOOK_TOKEN>
+Eventos: messages.upsert
+```
+
+Se acessando externamente (fora da VM):
+```
+URL: http://201.13.60.130:8080/webhooks/evolution
+```
+
+---
+
+## Endpoints
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/webhooks/evolution` | Recebe eventos da Evolution API (header `x-webhook-token`) |
+| POST | `/api/attendance/handoff/{phone}` | Transfere para atendimento humano |
+| POST | `/api/attendance/resume/{phone}` | Devolve para bot |
+| POST | `/api/attendance/send` | Envio ativo de mensagem |
+
+---
+
+## Desenvolvimento local (sem Docker)
+
+Variáveis de ambiente ou `application.properties` apontando para o MySQL da VM:
+
+```bash
+export DB_URL=jdbc:mysql://201.13.60.130:3306/evolution_bot?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+export DB_USERNAME=root
+export DB_PASSWORD=SuaSenhaSegura123
 mvn spring-boot:run
 ```
-
-## Endpoints iniciais
-
-- `POST /webhooks/evolution` - recebe eventos da Evolution API (header `x-webhook-token`)
-- `POST /api/attendance/handoff/{phoneNumber}` - muda para atendimento humano
-- `POST /api/attendance/resume/{phoneNumber}` - devolve para bot
-- `POST /api/attendance/send` - envio ativo de mensagem
 
 ## To Do - Implementação Real
 
