@@ -25,9 +25,6 @@ public class ArquivoController {
         this.arquivoService = arquivoService;
     }
 
-
-
-
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ArquivoResponseDto> upload(
             @RequestParam("arquivo") MultipartFile arquivo,
@@ -44,13 +41,19 @@ public class ArquivoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ArquivoResponseDto>> listUpload(){
+    public ResponseEntity<List<ArquivoResponseDto>> listUpload() {
         List<Arquivo> arquivos = arquivoService.listUpload();
         return ResponseEntity.ok(ArquivoMapper.toResponseList(arquivos));
-
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ArquivoResponseDto> buscarPorId(@PathVariable Long id) {
+        Arquivo arquivo = arquivoService.buscarPorId(id);
+        return ResponseEntity.ok(ArquivoMapper.toResponse(arquivo));
+    }
+
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> download(@PathVariable Long id){
+    public ResponseEntity<byte[]> download(@PathVariable Long id) {
         Arquivo arquivo = arquivoService.buscarPorId(id);
 
         HttpHeaders headers = new HttpHeaders();
@@ -58,7 +61,4 @@ public class ArquivoController {
         headers.setContentDisposition(ContentDisposition.attachment().filename(arquivo.getNomeOriginal()).build());
         return ResponseEntity.ok().headers(headers).body(arquivo.getConteudo());
     }
-
-
-
 }

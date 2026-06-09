@@ -30,10 +30,10 @@ private final ArquivoRepository arquivoRepository;
         arquivo.setNomeOriginal(file.getOriginalFilename());
         arquivo.setMimeType(file.getContentType());
 
-        // 🔥 ISSO AQUI ESTAVA FALTANDO
+
         arquivo.setNome(file.getOriginalFilename());
 
-        // 🔥 tamanho do arquivo em bytes
+
         arquivo.setTamanho(file.getSize());
 
         arquivo.setConteudo(file.getBytes());
