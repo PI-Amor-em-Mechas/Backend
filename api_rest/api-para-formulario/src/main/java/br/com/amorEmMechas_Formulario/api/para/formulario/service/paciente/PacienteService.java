@@ -1,4 +1,4 @@
-package br.com.amorEmMechas_Formulario.api.para.formulario.service.paciente;
+﻿package br.com.amorEmMechas_Formulario.api.para.formulario.service.paciente;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
@@ -47,7 +47,7 @@ public class PacienteService {
                         new IdNotFoundException(
                                 "ID ENDERECO: "
                                         + dto.getEnderecoId()
-                                        + " Não existe"
+                                        + " N├úo existe"
                         )
                 );
 
@@ -57,7 +57,7 @@ public class PacienteService {
                         new IdNotFoundException(
                                 "ID SOLICITANTE: "
                                         + dto.getSolicitanteId()
-                                        + " Não Encontrado"
+                                        + " N├úo Encontrado"
                         )
                 );
 
@@ -68,7 +68,7 @@ public class PacienteService {
         paciente.setEndereco(endereco);
         paciente.setSolicitante(solicitante);
 
-        // ✅ CABELO ANTES (corrigido e mais limpo)
+        // Ô£à CABELO ANTES (corrigido e mais limpo)
         if (dto.getCabeloAntesId() != null) {
 
             Arquivo arquivo = arquivoRepository
@@ -77,14 +77,14 @@ public class PacienteService {
                             new IdNotFoundException(
                                     "ID ARQUIVO (CABELO ANTES): "
                                             + dto.getCabeloAntesId()
-                                            + " Não Encontrado"
+                                            + " N├úo Encontrado"
                             )
                     );
 
             paciente.setCabeloAntes(arquivo);
         }
 
-        // ✅ FILHOS (corrigido null safety)
+        // Ô£à FILHOS (corrigido null safety)
         if (Boolean.TRUE.equals(dto.getTemFilhos())
                 && dto.getIdadesFilhos() != null
                 && !dto.getIdadesFilhos().isEmpty()) {
@@ -107,7 +107,7 @@ public class PacienteService {
             paciente.setFilhos(new ArrayList<>());
         }
 
-        // ✅ quantidade sempre consistente
+        // Ô£à quantidade sempre consistente
         paciente.setQtdFilhos(paciente.getFilhos().size());
 
         Paciente saved = repository.save(paciente);
@@ -117,7 +117,7 @@ public class PacienteService {
 
     public PacienteResponseDto update(Integer id, PacienteRequestDto pacienteDTO) {
         Paciente paciente = repository.findById(id)
-                .orElseThrow(() -> new IdNotFoundException("ID " + id + " Não Encontrado"));
+                .orElseThrow(() -> new IdNotFoundException("ID " + id + " N├úo Encontrado"));
 
         if (pacienteDTO.getNomeCompleto() != null) {
             paciente.setNomeCompleto(pacienteDTO.getNomeCompleto());
@@ -127,7 +127,7 @@ public class PacienteService {
         }
         if (pacienteDTO.getEnderecoId() != null) {
             Endereco endereco = enderecoRepository.findById(pacienteDTO.getEnderecoId())
-                    .orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + pacienteDTO.getEnderecoId() + " Não Encontrado"));
+                    .orElseThrow(() -> new IdNotFoundException("ID ENDERECO: " + pacienteDTO.getEnderecoId() + " N├úo Encontrado"));
             paciente.setEndereco(endereco);
         }
 
@@ -154,14 +154,14 @@ public class PacienteService {
                             new IdNotFoundException(
                                     "ID ARQUIVO: "
                                             + pacienteDTO.getCabeloAntesId()
-                                            + " Não Encontrado"
+                                            + " N├úo Encontrado"
                             )
                     );
 
             paciente.setCabeloAntes(arquivo);
         }
 
-        // 🔹 recalcular qtdFilhos antes de salvar
+        // ­ƒö╣ recalcular qtdFilhos antes de salvar
         paciente.setQtdFilhos(paciente.getFilhos() != null ? paciente.getFilhos().size() : 0);
 
         Paciente atualizado = repository.save(paciente);
@@ -175,15 +175,22 @@ public class PacienteService {
                 .toList();
     }
 
+    public List<PacienteResponseDto> findWithFilters(String estado, LocalDate dataInicio, LocalDate dataFim) {
+        return repository.findWithFilters(estado, dataInicio, dataFim)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
     public PacienteResponseDto findById(Integer id) {
         Paciente paciente = repository.findById(id)
-                .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + id + " Não Encontrado"));
+                .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + id + " N├úo Encontrado"));
         return mapper.toResponse(paciente);
     }
 
     public void deleteById(Integer id) {
         if (!repository.existsById(id)) {
-            throw new IdNotFoundException("ID PACIENTE: " + id + " Não Encontrado");
+            throw new IdNotFoundException("ID PACIENTE: " + id + " N├úo Encontrado");
         }
         repository.deleteById(id);
     }

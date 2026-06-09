@@ -75,10 +75,7 @@ class PacienteServiceTest {
         requestDto.setNomeCompleto("Ana");
         requestDto.setCpf("12345678900");
         requestDto.setEnderecoId(10);
-<<<<<<< HEAD
-=======
         requestDto.setSolicitanteId(20);
->>>>>>> afcf7a5df0c834943ff062711e5510d7bee16e27
         requestDto.setTemFilhos(false);
         requestDto.setQtdFilhos(0);
 
@@ -87,41 +84,6 @@ class PacienteServiceTest {
         responseDto.setNomeCompleto("Ana");
     }
 
-<<<<<<< HEAD
-//    @Test
-//    void create_semFilhos_deveSalvarECarregarResponse() {
-//        when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-//        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.of(dadosMedicos));
-//        when(mapper.toEntity(requestDto)).thenReturn(paciente);
-//        when(repository.save(any(Paciente.class))).thenReturn(paciente);
-//        when(mapper.toResponse(paciente)).thenReturn(responseDto);
-//
-//        PacienteResponseDto result = service.create(requestDto);
-//
-//        assertThat(result).isNotNull();
-//        assertThat(requestDto.getDtPedido()).isEqualTo(LocalDate.now());
-//        assertThat(paciente.getEndereco()).isEqualTo(endereco);
-//        verify(repository, atLeastOnce()).save(paciente);
-//    }
-
-//    @Test
-//    void create_comFilhos_deveCriarFilhos() {
-//        requestDto.setTemFilhos(true);
-//        requestDto.setIdadesFilhos(List.of(3, 7));
-//
-//        when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-//        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.of(dadosMedicos));
-//        when(mapper.toEntity(requestDto)).thenReturn(paciente);
-//        when(repository.save(any(Paciente.class))).thenReturn(paciente);
-//        when(filhoRepository.save(any(Filho.class))).thenAnswer(inv -> inv.getArgument(0));
-//        when(mapper.toResponse(paciente)).thenReturn(responseDto);
-//
-//        service.create(requestDto);
-//
-//        verify(filhoRepository, times(2)).save(any(Filho.class));
-//        assertThat(paciente.getQtdFilhos()).isEqualTo(2);
-//    }
-=======
     @Test
     void create_semFilhos_deveSalvarECarregarResponse() {
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
@@ -155,7 +117,6 @@ class PacienteServiceTest {
         assertThat(paciente.getFilhos()).hasSize(2);
         assertThat(paciente.getQtdFilhos()).isEqualTo(2);
     }
->>>>>>> afcf7a5df0c834943ff062711e5510d7bee16e27
 
     @Test
     void create_quandoEnderecoNaoExiste_deveLancarExcecao() {
@@ -166,17 +127,6 @@ class PacienteServiceTest {
                 .hasMessageContaining("ENDERECO");
     }
 
-<<<<<<< HEAD
-//    @Test
-//    void create_quandoDadosMedicosNaoExiste_deveLancarExcecao() {
-//        when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-//        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.empty());
-//
-//        assertThatThrownBy(() -> service.create(requestDto))
-//                .isInstanceOf(IdNotFoundException.class)
-//                .hasMessageContaining("DADOS MÉDICOS");
-//    }
-=======
     @Test
     void create_quandoSolicitanteNaoExiste_deveLancarExcecao() {
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
@@ -186,7 +136,6 @@ class PacienteServiceTest {
                 .isInstanceOf(IdNotFoundException.class)
                 .hasMessageContaining("SOLICITANTE");
     }
->>>>>>> afcf7a5df0c834943ff062711e5510d7bee16e27
 
     @Test
     void update_quandoPacienteNaoExiste_deveLancarExcecao() {
@@ -196,24 +145,6 @@ class PacienteServiceTest {
                 .isInstanceOf(IdNotFoundException.class);
     }
 
-<<<<<<< HEAD
-//    @Test
-//    void update_deveAtualizarCamposInformados() {
-//        when(repository.findById(1)).thenReturn(Optional.of(paciente));
-//        when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
-//        when(dadosMedicosRepository.findById(20)).thenReturn(Optional.of(dadosMedicos));
-//        when(repository.save(any(Paciente.class))).thenReturn(paciente);
-//        when(mapper.toResponse(paciente)).thenReturn(responseDto);
-//
-//        requestDto.setNomeCompleto("Beatriz");
-//
-//        service.update(1, requestDto);
-//
-//        assertThat(paciente.getNomeCompleto()).isEqualTo("Beatriz");
-//        assertThat(paciente.getCpf()).isEqualTo("12345678900");
-//        assertThat(paciente.getEndereco()).isEqualTo(endereco);
-//    }
-=======
     @Test
     void update_deveAtualizarCamposInformados() {
         when(repository.findById(1)).thenReturn(Optional.of(paciente));
@@ -229,7 +160,6 @@ class PacienteServiceTest {
         assertThat(paciente.getCpf()).isEqualTo("12345678900");
         assertThat(paciente.getEndereco()).isEqualTo(endereco);
     }
->>>>>>> afcf7a5df0c834943ff062711e5510d7bee16e27
 
     @Test
     void findAll_deveRetornarLista() {

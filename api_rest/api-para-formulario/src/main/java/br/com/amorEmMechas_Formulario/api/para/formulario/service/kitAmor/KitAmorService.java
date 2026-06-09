@@ -1,4 +1,4 @@
-package br.com.amorEmMechas_Formulario.api.para.formulario.service.kitAmor;
+﻿package br.com.amorEmMechas_Formulario.api.para.formulario.service.kitAmor;
 
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.kitAmor.KitAmorRequestDto;
@@ -13,6 +13,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.Pa
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -35,11 +36,11 @@ public class KitAmorService {
     public KitAmorResponseDto create(KitAmorRequestDto dto) {
         Solicitante solicitante = solicitanteRepository.findById(dto.getSolicitanteId())
                 .orElseThrow(() -> new IdNotFoundException("ID SOLICITANTE: "
-                        + dto.getSolicitanteId() + " Não Encontrado"));
+                        + dto.getSolicitanteId() + " N├úo Encontrado"));
 
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
                 .orElseThrow(() -> new IdNotFoundException
-                        ("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
+                        ("ID PACIENTE: " + dto.getPacienteId() + " N├úo Encontrado"));
 
         KitAmor kitaAmor = mapper.toEntity(dto);
         kitaAmor.setSolicitante(solicitante);
@@ -55,15 +56,22 @@ public class KitAmorService {
                 .toList();
     }
 
+    public List<KitAmorResponseDto> findWithFilters(String estado, LocalDate dataInicio, LocalDate dataFim) {
+        return repository.findWithFilters(estado, dataInicio, dataFim)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
     public KitAmorResponseDto findById(Integer id) {
         KitAmor kitAmor = repository.findById(id)
-                .orElseThrow(() -> new IdNotFoundException("ID KIT AMOR: " + id + " Não Encontrado"));
+                .orElseThrow(() -> new IdNotFoundException("ID KIT AMOR: " + id + " N├úo Encontrado"));
         return mapper.toResponse(kitAmor);
     }
 
     public void deleteById(Integer id) {
         if (!repository.existsById(id)) {
-            throw new IdNotFoundException("ID KIT AMOR: " + id + " Não Encontrado");
+            throw new IdNotFoundException("ID KIT AMOR: " + id + " N├úo Encontrado");
         }
         repository.deleteById(id);
     }
@@ -71,14 +79,14 @@ public class KitAmorService {
     public KitAmorResponseDto update (Integer id, KitAmorRequestDto dto){
         Solicitante solicitante = solicitanteRepository.findById(dto.getSolicitanteId())
                 .orElseThrow(() -> new IdNotFoundException("ID SOLICITANTE: "
-                        + dto.getSolicitanteId() + " Não Encontrado"));
+                        + dto.getSolicitanteId() + " N├úo Encontrado"));
 
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
                 .orElseThrow(()
                         ->new IdNotFoundException
-                        ("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
+                        ("ID PACIENTE: " + dto.getPacienteId() + " N├úo Encontrado"));
 
-        KitAmor kitAmor = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID: " + id + " Não Encontrado"));
+        KitAmor kitAmor = repository.findById(id).orElseThrow(() -> new IdNotFoundException("ID: " + id + " N├úo Encontrado"));
 
         kitAmor.setCorPeruca(dto.getCorPeruca());
         kitAmor.setPaciente(paciente);

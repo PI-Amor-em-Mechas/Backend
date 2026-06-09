@@ -1,4 +1,4 @@
-package br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente;
+﻿package br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.endereco.EnderecoResponseDto;
@@ -21,9 +21,12 @@ public class PacienteResponseDto {
     private Boolean temFilhos;
     private Integer qtdPessoasEmCasa;
     private String cpf;
+    private Integer idade;
 
     private EnderecoResponseDto endereco;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private DadosMedicosResponseDto dadosMedicos;
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<FilhoResponseDto> filhos;
@@ -143,5 +146,21 @@ public class PacienteResponseDto {
 
     public void setQtdFilho(Integer qtdFilho) {
         this.qtdFilho = qtdFilho;
+    }
+
+    public Integer getIdade() {
+        return idade;
+    }
+
+    public void setIdade(Integer idade) {
+        this.idade = idade;
+    }
+
+    public DadosMedicosResponseDto getDadosMedicos() {
+        return dadosMedicos;
+    }
+
+    public void setDadosMedicos(DadosMedicosResponseDto dadosMedicos) {
+        this.dadosMedicos = dadosMedicos;
     }
 }

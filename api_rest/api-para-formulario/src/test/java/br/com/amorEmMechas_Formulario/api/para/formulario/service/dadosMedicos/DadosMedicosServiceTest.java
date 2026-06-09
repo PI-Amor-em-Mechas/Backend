@@ -59,29 +59,13 @@ class DadosMedicosServiceTest {
         requestDto.setJustificativa("Urgente");
         requestDto.setTipoAtendimento("SUS");
         requestDto.setDtInicioTratamento(LocalDate.now());
-<<<<<<< HEAD
-=======
         requestDto.setRelatorioMedicoId(1);
         requestDto.setPacienteId(1);
->>>>>>> afcf7a5df0c834943ff062711e5510d7bee16e27
 
         responseDto = new DadosMedicosResponseDto();
         responseDto.setId(1);
     }
 
-<<<<<<< HEAD
-//    @Test
-//    void create_deveSalvarECarregarResponse() {
-//        when(mapper.toEntity(requestDto)).thenReturn(entity);
-//        when(repository.save(entity)).thenReturn(entity);
-//        when(mapper.toResponse(entity)).thenReturn(responseDto);
-//
-//        DadosMedicosResponseDto result = service.create(requestDto);
-//
-//        assertThat(result).isNotNull();
-//        verify(repository).save(entity);
-//    }
-=======
     @Test
     void create_deveSalvarECarregarResponse() {
         Arquivo arquivo = new Arquivo();
@@ -100,7 +84,6 @@ class DadosMedicosServiceTest {
         assertThat(result).isNotNull();
         verify(repository).save(entity);
     }
->>>>>>> afcf7a5df0c834943ff062711e5510d7bee16e27
 
     @Test
     void update_quandoExiste_deveAtualizarCampos() {

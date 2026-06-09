@@ -1,4 +1,4 @@
-package br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente;
+﻿package br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
@@ -8,17 +8,22 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.endereco.Endere
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.filho.FilhoMapper;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.Period;
+
 @Component
 public class PacienteMapper {
 
     private final EnderecoMapper enderecoMapper;
     private final FilhoMapper filhoMapper;
+    private final DadosMedicosMapper dadosMedicosMapper;
 
     public PacienteMapper(EnderecoMapper enderecoMapper,
                           DadosMedicosMapper dadosMedicosMapper,
                           FilhoMapper filhoMapper) {
         this.enderecoMapper = enderecoMapper;
         this.filhoMapper = filhoMapper;
+        this.dadosMedicosMapper = dadosMedicosMapper;
     }
 
     public Paciente toEntity(PacienteRequestDto dto) {
@@ -54,7 +59,7 @@ public class PacienteMapper {
         dto.setTemFilhos(paciente.getTemFilhos());
         dto.setQtdPessoasEmCasa(paciente.getQtdPessoasEmCasa());
 
-        // ENDEREÇO
+        // ENDERE├çO
         if (paciente.getEndereco() != null) {
             dto.setEndereco(enderecoMapper.toResponse(paciente.getEndereco()));
         }
@@ -67,7 +72,17 @@ public class PacienteMapper {
             dto.setQtdFilho(0);
         }
 
-        // 🔥 AQUI ESTÁ O QUE ESTAVA FALTANDO
+        // DADOS MEDICOS
+        if (paciente.getDadosMedicos() != null && !paciente.getDadosMedicos().isEmpty()) {
+            dto.setDadosMedicos(dadosMedicosMapper.toResponse(paciente.getDadosMedicos().get(0)));
+        }
+
+        // IDADE (calculada a partir de dtNasc)
+        if (paciente.getDtNasc() != null) {
+            dto.setIdade(Period.between(paciente.getDtNasc(), LocalDate.now()).getYears());
+        }
+
+        // ­ƒöÑ AQUI EST├ü O QUE ESTAVA FALTANDO
         if (paciente.getCabeloAntes() != null) {
             dto.setCabeloAntesId(
                     paciente.getCabeloAntes().getId()

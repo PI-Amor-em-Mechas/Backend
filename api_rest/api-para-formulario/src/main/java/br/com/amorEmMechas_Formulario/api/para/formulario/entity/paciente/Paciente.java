@@ -1,4 +1,4 @@
-    package br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente;
+﻿    package br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente;
 
 
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
@@ -41,6 +41,9 @@
 
         @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
         private List<Filho> filhos = new ArrayList<>();
+
+        @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL)
+        private List<DadosMedicos> dadosMedicos = new ArrayList<>();
 
         @ManyToOne
         @JoinColumn(name = "solicitante_id")
@@ -157,6 +160,14 @@
 
         public void setFilhos(List<Filho> filhos) {
             this.filhos = filhos;
+        }
+
+        public List<DadosMedicos> getDadosMedicos() {
+            return dadosMedicos;
+        }
+
+        public void setDadosMedicos(List<DadosMedicos> dadosMedicos) {
+            this.dadosMedicos = dadosMedicos;
         }
 
         public Solicitante getSolicitante() {

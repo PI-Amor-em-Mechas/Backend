@@ -1,4 +1,4 @@
-const { useEffect, useMemo, useState } = React;
+﻿const { useEffect, useMemo, useState } = React;
 
 const API_BASE = "http://localhost:8080";
 const AUTH_USER = {
@@ -32,15 +32,15 @@ const MOCK_MADRINHAS = [
 ];
 
 const REGIOES_DATA = [
-  { nome: "São Paulo", valor: "1 mil Doações" },
-  { nome: "Rio de Janeiro", valor: "500 Doações" },
-  { nome: "Ceará", valor: "400 Doações" },
-  { nome: "Cuiabá", valor: "247 Doações" },
-  { nome: "Amazonas", valor: "100 Doações" },
+  { nome: "S├úo Paulo", valor: "1 mil Doa├º├Áes" },
+  { nome: "Rio de Janeiro", valor: "500 Doa├º├Áes" },
+  { nome: "Cear├í", valor: "400 Doa├º├Áes" },
+  { nome: "Cuiab├í", valor: "247 Doa├º├Áes" },
+  { nome: "Amazonas", valor: "100 Doa├º├Áes" },
 ];
 
 /* ===== SYNTHETIC CHART DATA ===== */
-// Envios por estado — soma ~130, condiz com KPI "Total de Envios: 130"
+// Envios por estado ÔÇö soma ~130, condiz com KPI "Total de Envios: 130"
 const MOCK_ENVIOS_POR_ESTADO = [
   { label: "SP", value: 38 },
   { label: "RJ", value: 24 },
@@ -52,7 +52,7 @@ const MOCK_ENVIOS_POR_ESTADO = [
   { label: "PR", value: 6 },
 ];
 
-// Solicitações por estado — soma ~320, condiz com volume de pacientes ativos
+// Solicita├º├Áes por estado ÔÇö soma ~320, condiz com volume de pacientes ativos
 const MOCK_SOLICIT_POR_ESTADO = [
   { label: "SP", value: 87 },
   { label: "RJ", value: 54 },
@@ -99,10 +99,10 @@ function normalizePaciente(p) {
     idade: p.idade || "-",
     dtPedido: p.dtPedido,
     status: "pendente",
-    tratamento: p?.dadosMedicos?.tipoCancer || p?.dadosMedicos?.motivo || "Nao informado",
-    origemAtendimento: p?.dadosMedicos?.tipoAtendimento || "Nao informado",
-    cidade: p?.endereco?.cidade || "Nao informado",
-    estado: p?.endereco?.estado || "--",
+    tratamento: p.dadosMedicos?.tipoCancer || p.dadosMedicos?.motivo || "Nao informado",
+    origemAtendimento: p.dadosMedicos?.tipoAtendimento || "Nao informado",
+    cidade: p.endereco?.cidade || "Nao informado",
+    estado: p.endereco?.estado || "--",
   };
 }
 
@@ -115,7 +115,19 @@ function normalizeKit(k, idx) {
     produto: `Kit ${k.corPeruca || "Padrao"}`,
     data: patient.dtPedido || new Date().toISOString().slice(0, 10),
     status: statusPool[idx % statusPool.length],
-    estado: patient?.endereco?.estado || ["SP", "RJ", "MG", "BA"][idx % 4],
+    estado: patient.endereco?.estado || ["SP", "RJ", "MG", "BA"][idx % 4],
+  };
+}
+
+function normalizeMadrinha(m) {
+  return {
+    id: m.id,
+    nome: m.nomeCompleto || "Sem nome",
+    email: m.email || "-",
+    horas: m.horasVoluntarias || 0,
+    funcao: m.funcao || "N├úo informada",
+    dataCadastro: m.dataCadastro,
+    status: m.status || "Ativa",
   };
 }
 
@@ -209,7 +221,7 @@ function PainelEnvios({ envios, pacientes, error, usingMock }) {
   return (
     <div className="page-content">
       {error && <div className="alert-warn">{error}</div>}
-      {usingMock && !error && <div className="alert-info">Modo demonstração ativo — dados mockados.</div>}
+      {usingMock && !error && <div className="alert-info">Modo demonstra├º├úo ativo ÔÇö dados mockados.</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1>Dashboard de Envios</h1>
@@ -229,11 +241,11 @@ function PainelEnvios({ envios, pacientes, error, usingMock }) {
           <div className="kpi-icon">&#10003;</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Em Trânsito</div>
+          <div className="kpi-label">Em Tr├ónsito</div>
           <div className="kpi-value">{kpis.emTransito}</div>
           <div className="kpi-icon">&#9658;</div>
         </div>
-        <RegioesCard title="Regiões com mais kits entregues" />
+        <RegioesCard title="Regi├Áes com mais kits entregues" />
       </div>
 
       <div className="charts-row">
@@ -241,9 +253,9 @@ function PainelEnvios({ envios, pacientes, error, usingMock }) {
           <div className="chart-card-header">
             <h3>Envios por Estado</h3>
             <select className="chart-select" value={period} onChange={(e) => setPeriod(e.target.value)}>
-              <option value="7">Últimos 7 dias</option>
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
+              <option value="7">├Ültimos 7 dias</option>
+              <option value="30">├Ültimos 30 dias</option>
+              <option value="90">├Ültimos 90 dias</option>
             </select>
           </div>
           <div className="chart-area">
@@ -252,11 +264,11 @@ function PainelEnvios({ envios, pacientes, error, usingMock }) {
         </div>
         <div className="chart-card">
           <div className="chart-card-header">
-            <h3>Solicitações por Estado</h3>
+            <h3>Solicita├º├Áes por Estado</h3>
             <select className="chart-select" value={period} onChange={(e) => setPeriod(e.target.value)}>
-              <option value="7">Últimos 7 dias</option>
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
+              <option value="7">├Ültimos 7 dias</option>
+              <option value="30">├Ültimos 30 dias</option>
+              <option value="90">├Ültimos 90 dias</option>
             </select>
           </div>
           <div className="chart-area">
@@ -296,10 +308,10 @@ function PainelPacientes({ pacientes, error, usingMock }) {
   return (
     <div className="page-content">
       {error && <div className="alert-warn">{error}</div>}
-      {usingMock && !error && <div className="alert-info">Modo demonstração ativo — dados mockados.</div>}
+      {usingMock && !error && <div className="alert-info">Modo demonstra├º├úo ativo ÔÇö dados mockados.</div>}
       <div className="page-header">
         <div className="page-header-left">
-          <h1>Gerenciamento de Formulários</h1>
+          <h1>Gerenciamento de Formul├írios</h1>
           <p>Visualize e gerencie os dados das pacientes cadastradas</p>
         </div>
       </div>
@@ -308,13 +320,13 @@ function PainelPacientes({ pacientes, error, usingMock }) {
         <div className="kpi-card">
           <div className="kpi-label">Kits do amor doados</div>
           <div className="kpi-value">{kpis.total.toLocaleString("pt-BR")}</div>
-          <div className="kpi-sub">No último mês</div>
+          <div className="kpi-sub">No ├║ltimo m├¬s</div>
           <div className="kpi-icon">&#10003;</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Taxa de pacientes do SUS</div>
           <div className="kpi-value">{kpis.susRate}%</div>
-          <div className="kpi-sub">{100 - kpis.susRate}% De pacientes por convênio</div>
+          <div className="kpi-sub">{100 - kpis.susRate}% De pacientes por conv├¬nio</div>
           <div className="kpi-icon">&#9635;</div>
         </div>
         <div className="kpi-card">
@@ -323,12 +335,12 @@ function PainelPacientes({ pacientes, error, usingMock }) {
           <div className="kpi-sub">{kpis.topTratPct}% das pacientes</div>
           <div className="kpi-icon">&#9776;</div>
         </div>
-        <RegioesCard title="Regiões com mais solicitação" />
+        <RegioesCard title="Regi├Áes com mais solicita├º├úo" />
       </div>
 
       <div className="filters-row">
         <div className="filter-input">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">­ƒöì</span>
           <input placeholder="Buscar por nome ou ID..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -357,7 +369,7 @@ function PainelPacientes({ pacientes, error, usingMock }) {
               <th>Tipo de Tratamento</th>
               <th>Data Cadastro</th>
               <th>Status</th>
-              <th>Ações</th>
+              <th>A├º├Áes</th>
             </tr>
           </thead>
           <tbody>
@@ -375,8 +387,8 @@ function PainelPacientes({ pacientes, error, usingMock }) {
                 <td><span className={`status-badge ${p.status}`}>{p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span></td>
                 <td>
                   <div className="action-icons">
-                    <span className="action-icon" title="Info">ℹ</span>
-                    <span className="action-icon" title="Excluir">🗑</span>
+                    <span className="action-icon" title="Info">Ôä╣</span>
+                    <span className="action-icon" title="Excluir">­ƒùæ</span>
                   </div>
                 </td>
               </tr>
@@ -413,11 +425,11 @@ function PainelMadrinhas({ madrinhas, error, usingMock }) {
   return (
     <div className="page-content">
       {error && <div className="alert-warn">{error}</div>}
-      {usingMock && !error && <div className="alert-info">Modo demonstração ativo — dados mockados.</div>}
+      {usingMock && !error && <div className="alert-info">Modo demonstra├º├úo ativo ÔÇö dados mockados.</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1>Madrinhas do Amor</h1>
-          <p>Gestão de horas das madrinhas do amor</p>
+          <p>Gest├úo de horas das madrinhas do amor</p>
         </div>
       </div>
 
@@ -434,9 +446,9 @@ function PainelMadrinhas({ madrinhas, error, usingMock }) {
           <div className="kpi-icon">&#9201;</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Total de Horas Voluntárias</div>
+          <div className="kpi-label">Total de Horas Volunt├írias</div>
           <div className="kpi-value">{kpis.totalHoras.toLocaleString("pt-BR")}</div>
-          <div className="kpi-sub">No período de 1 ano</div>
+          <div className="kpi-sub">No per├¡odo de 1 ano</div>
           <div className="kpi-icon">&#9201;</div>
         </div>
         <div className="kpi-card">
@@ -449,7 +461,7 @@ function PainelMadrinhas({ madrinhas, error, usingMock }) {
 
       <div className="filters-row">
         <div className="filter-input">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon">­ƒöì</span>
           <input placeholder="Buscar por nome ou ID..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -472,12 +484,12 @@ function PainelMadrinhas({ madrinhas, error, usingMock }) {
             <tr>
               <th style={{ width: 40 }}></th>
               <th>ID</th>
-              <th>Voluntária</th>
-              <th>Horas Voluntárias</th>
-              <th>Função</th>
+              <th>Volunt├íria</th>
+              <th>Horas Volunt├írias</th>
+              <th>Fun├º├úo</th>
               <th>Data Cadastro</th>
               <th>Status</th>
-              <th>Ações</th>
+              <th>A├º├Áes</th>
             </tr>
           </thead>
           <tbody>
@@ -495,8 +507,8 @@ function PainelMadrinhas({ madrinhas, error, usingMock }) {
                 <td><span className={`status-badge ${m.status.toLowerCase()}`}>{m.status}</span></td>
                 <td>
                   <div className="action-icons">
-                    <span className="action-icon" title="Info">ℹ</span>
-                    <span className="action-icon" title="Excluir">🗑</span>
+                    <span className="action-icon" title="Info">Ôä╣</span>
+                    <span className="action-icon" title="Excluir">­ƒùæ</span>
                   </div>
                 </td>
               </tr>
@@ -534,9 +546,10 @@ async function ensureUserAndLogin() {
 }
 
 async function loadProtectedData() {
-  const [pResp, kResp] = await Promise.all([
+  const [pResp, kResp, mResp] = await Promise.all([
     fetch(`${API_BASE}/pacientes`, { credentials: "include" }),
     fetch(`${API_BASE}/kits`, { credentials: "include" }),
+    fetch(`${API_BASE}/madrinhas`, { credentials: "include" }),
   ]);
 
   if (!pResp.ok || !kResp.ok) {
@@ -544,9 +557,12 @@ async function loadProtectedData() {
   }
 
   const [rawP, rawK] = await Promise.all([pResp.json(), kResp.json()]);
+  const rawM = mResp.ok ? await mResp.json() : [];
+
   return {
     pacientes: Array.isArray(rawP) ? rawP.map(normalizePaciente) : [],
     envios: Array.isArray(rawK) ? rawK.map(normalizeKit) : [],
+    madrinhas: Array.isArray(rawM) ? rawM.map(normalizeMadrinha) : [],
   };
 }
 
@@ -558,6 +574,7 @@ function App() {
   const [usingMock, setUsingMock] = useState(false);
   const [pacientes, setPacientes] = useState(MOCK_PACIENTES);
   const [envios, setEnvios] = useState(MOCK_ENVIOS);
+  const [madrinhas, setMadrinhas] = useState(MOCK_MADRINHAS);
 
   async function load() {
     setLoading(true);
@@ -567,12 +584,14 @@ function App() {
       const data = await loadProtectedData();
       setPacientes(data.pacientes.length ? data.pacientes : MOCK_PACIENTES);
       setEnvios(data.envios.length ? data.envios : MOCK_ENVIOS);
+      setMadrinhas(data.madrinhas.length ? data.madrinhas : MOCK_MADRINHAS);
       setUsingMock(!data.pacientes.length || !data.envios.length);
     } catch (e) {
       setUsingMock(true);
       setPacientes(MOCK_PACIENTES);
       setEnvios(MOCK_ENVIOS);
-      setError(`${e.message}. Exibindo dados de demonstração.`);
+      setMadrinhas(MOCK_MADRINHAS);
+      setError(`${e.message}. Exibindo dados de demonstra├º├úo.`);
     } finally {
       setLoading(false);
     }
@@ -582,9 +601,9 @@ function App() {
 
   function handleExport() {
     let rows, filename, title;
-    if (tab === "painel") { rows = envios; filename = "envios"; title = "Relatório de Envios"; }
-    else if (tab === "pacientes") { rows = pacientes; filename = "pacientes"; title = "Relatório de Pacientes"; }
-    else { rows = MOCK_MADRINHAS; filename = "madrinhas"; title = "Relatório de Madrinhas"; }
+    if (tab === "painel") { rows = envios; filename = "envios"; title = "Relat├│rio de Envios"; }
+    else if (tab === "pacientes") { rows = pacientes; filename = "pacientes"; title = "Relat├│rio de Pacientes"; }
+    else { rows = madrinhas; filename = "madrinhas"; title = "Relat├│rio de Madrinhas"; }
     exportXlsx(filename, rows);
   }
 
@@ -593,7 +612,7 @@ function App() {
       {/* NAVBAR */}
       <nav className="navbar">
         <div className="navbar-logo">
-          <span className="logo-icon">♥</span>
+          <span className="logo-icon">ÔÖÑ</span>
           <div className="logo-text">
             <span className="brand-name">Amor em Mechas</span>
             <span className="brand-tagline">Transformando Vidas</span>
@@ -608,10 +627,10 @@ function App() {
 
         <div className="navbar-actions">
           {tab === "madrinhas" && (
-            <button className="btn-pink">✏️ Cadastrar Madrinha</button>
+            <button className="btn-pink">Ô£Å´©Å Cadastrar Madrinha</button>
           )}
           <button className="btn-pink" onClick={handleExport}>
-            ⬇ Exportar Dados
+            Ô¼ç Exportar Dados
           </button>
         </div>
       </nav>
@@ -620,7 +639,7 @@ function App() {
       {loading && <div className="page-content"><p>Carregando...</p></div>}
       {!loading && tab === "painel" && <PainelEnvios envios={envios} pacientes={pacientes} error={error} usingMock={usingMock} />}
       {!loading && tab === "pacientes" && <PainelPacientes pacientes={pacientes} error={error} usingMock={usingMock} />}
-      {!loading && tab === "madrinhas" && <PainelMadrinhas madrinhas={MOCK_MADRINHAS} error={error} usingMock={usingMock} />}
+      {!loading && tab === "madrinhas" && <PainelMadrinhas madrinhas={madrinhas} error={error} usingMock={usingMock} />}
     </div>
   );
 }
