@@ -1,0 +1,65 @@
+"""Vosk offline speech-to-text engine.
+
+Carrega o modelo uma unica vez e cria um KaldiRecognizer por conexao.
+"""
+
+import json
+import logging
+
+from vosk import Model, KaldiRecognizer
+
+from .. import config
+
+LOGGER = logging.getLogger(__name__)
+
+_model: Model | None = None
+
+def get_model() -> Model:
+    """Retorna o modelo Vosk singleton (carrega na primeira chamada)."""
+    global _model
+    if _model is None:
+        model_path = str(config.VOSK_MODEL_PATH)
+        LOGGER.info("Carregando modelo Vosk de %s ...", model_path)
+        _model = Model(model_path)
+        LOGGER.info("Modelo Vosk carregado com sucesso.")
+    return _model
+
+def create_recognizer(
+    sample_rate: int = 16000,
+    phrases: list[str] | None = None,
+) -> KaldiRecognizer:
+    """Cria um novo KaldiRecognizer vinculado ao modelo global.
+
+    Por padrao usa ditado livre. Se VOICE_RECOGNIZER_USE_GRAMMAR=True, limita
+    o reconhecimento as frases treinadas para cenarios de comandos fechados.
+    """
+    if config.VOICE_RECOGNIZER_USE_GRAMMAR and phrases:
+        grammar = [p for p in phrases if p]
+        if "salvar" not in grammar:
+            grammar.append("salvar")
+        if "apagar" not in grammar:
+            grammar.append("apagar")
+        LOGGER.info("Criando reconhecedor Vosk com gramatica restrita (%d frases).", len(grammar))
+        return KaldiRecognizer(get_model(), sample_rate, json.dumps(grammar, ensure_ascii=False))
+
+    LOGGER.info("Criando reconhecedor Vosk em modo ditado livre.")
+    return KaldiRecognizer(get_model(), sample_rate)
+
+def feed_audio(recognizer: KaldiRecognizer, data: bytes) -> tuple[str | None, str | None]:
+    """Alimenta o recognizer com PCM16-LE mono.
+
+    Retorna (final_text, partial_text):
+      - final_text preenchido quando AcceptWaveform == True  (frase concluida)
+      - partial_text preenchido caso contrario               (parcial)
+    """
+    if recognizer.AcceptWaveform(data):
+        result = json.loads(recognizer.Result())
+        return result.get("text", ""), None
+    else:
+        partial = json.loads(recognizer.PartialResult())
+        return None, partial.get("partial", "")
+
+def finalize(recognizer: KaldiRecognizer) -> str:
+    """Encerra o stream e retorna qualquer texto restante no buffer."""
+    result = json.loads(recognizer.FinalResult())
+    return result.get("text", "")

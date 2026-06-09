@@ -3,11 +3,13 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.avaliacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao.AvaliacaoRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao.AvaliacaoResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.avaliacao.Avaliacao;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.avaliacao.AvaliacaoMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.solicitante.SolicitanteMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.avaliacao.AvaliacaoRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,9 @@ class AvaliacaoServiceTest {
 
     @Mock
     private SolicitanteRepository solicitanteRepository;
+
+    @Mock
+    private PacienteRepository pacienteRepository;
 
     @Mock
     private AvaliacaoMapper mapper;
@@ -68,6 +73,7 @@ class AvaliacaoServiceTest {
         responseDto.setNotaFormulario(5);
     }
 
+<<<<<<< HEAD
 //    @Test
 //    void create_deveDefinirSolicitanteEDataDeConclusao() {
 //        when(solicitanteRepository.findById(10)).thenReturn(Optional.of(solicitante));
@@ -85,6 +91,29 @@ class AvaliacaoServiceTest {
 //        assertThat(salva.getDtConclusao()).isEqualTo(LocalDate.now());
 //        assertThat(result).isNotNull();
 //    }
+=======
+    @Test
+    void create_deveDefinirSolicitanteEDataDeConclusao() {
+        Paciente paciente = new Paciente();
+        paciente.setId(1);
+
+        when(solicitanteRepository.findById(10)).thenReturn(Optional.of(solicitante));
+        when(mapper.toEntity(requestDto)).thenReturn(avaliacao);
+        when(repository.save(any(Avaliacao.class))).thenReturn(avaliacao);
+        when(pacienteRepository.findBySolicitanteId(10)).thenReturn(Optional.of(paciente));
+        when(mapper.toResponse(avaliacao)).thenReturn(responseDto);
+
+        AvaliacaoResponseDto result = service.create(requestDto);
+
+        ArgumentCaptor<Avaliacao> captor = ArgumentCaptor.forClass(Avaliacao.class);
+        verify(repository).save(captor.capture());
+        Avaliacao salva = captor.getValue();
+
+        assertThat(salva.getSolicitante()).isEqualTo(solicitante);
+        assertThat(salva.getDtConclusao()).isEqualTo(LocalDate.now());
+        assertThat(result).isNotNull();
+    }
+>>>>>>> afcf7a5df0c834943ff062711e5510d7bee16e27
 
     @Test
     void create_quandoSolicitanteNaoExiste_deveLancarExcecao() {

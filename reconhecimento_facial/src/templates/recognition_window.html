@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Janela de Reconhecimento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+  </head>
+  <body class="recognition-body">
+    <main class="recognition-page">
+      <section class="video-panel">
+        <div class="video-step-indicator">
+          <span class="step-dot active">1</span>
+          <span class="step-line"></span>
+          <span class="step-dot">2</span>
+        </div>
+        <header class="video-header">
+          <h1>Reconhecimento em Tempo Real</h1>
+          <p id="recognitionHint">Mantenha o rosto centralizado. O sistema avisa quando estiver pronto para confirmar.</p>
+        </header>
+
+        <video id="cameraFeed" autoplay muted playsinline></video>
+        <canvas id="captureCanvas" class="hidden"></canvas>
+
+        <div id="statusBox" class="status overlay-status">Inicializando camera...</div>
+      </section>
+    </main>
+
+    <aside id="identityToast" class="identity-toast hidden" aria-live="polite">
+      <img id="identityPhoto" alt="Foto da pessoa reconhecida" />
+      <div class="identity-content">
+        <h2 id="identityName">-</h2>
+        <p id="identityMeta">-</p>
+        <p id="identityMessage" class="identity-message">-</p>
+        <div id="confirmActions" class="actions hidden">
+          <button id="confirmButton" class="btn success">Confirmar</button>
+          <button id="cancelButton" class="btn danger">Cancelar</button>
+        </div>
+      </div>
+    </aside>
+
+    <section id="voicePanel" class="voice-panel hidden">
+      <div class="voice-step-indicator" aria-label="Etapa 2 de 2">
+        <span class="step-dot completed" title="Reconhecimento facial">&#10003;</span>
+        <span class="step-line"></span>
+        <span class="step-dot active" title="Comando de voz">2</span>
+      </div>
+
+      <header class="voice-header">
+        <h1>&#127908; Comando de Voz</h1>
+        <p id="voiceUserInfo" class="voice-user-badge">-</p>
+        <p class="voice-instruction">Fale seu comando.<br>Diga <strong>"salvar"</strong> ao final para gravar ou <strong>"apagar"</strong> para descartar.</p>
+      </header>
+
+      <div class="voice-display">
+        <div class="voice-block">
+          <p id="voiceAccumulatedLabel" class="voice-label">Texto acumulado:</p>
+          <p id="voiceAccumulated" class="voice-text">-</p>
+        </div>
+        <div class="voice-block voice-block-partial">
+          <p id="voicePartialLabel" class="voice-label">Reconhecendo agora:</p>
+          <p id="voicePartial" class="voice-text partial">...</p>
+        </div>
+      </div>
+
+      <div id="voiceStatus" class="status voice-status">Conectando...</div>
+
+      <div class="voice-main-actions">
+        <button id="forceSaveBtn" class="btn success voice-btn-lg">&#128190; Salvar Agora</button>
+        <button id="voiceCloseBtn" class="btn danger voice-btn-lg">&#10006; Fechar</button>
+      </div>
+
+      <details class="voice-advanced">
+        <summary>Opcoes avancadas</summary>
+        <div class="voice-advanced-content">
+          <input
+            id="trainPhraseInput"
+            type="text"
+            placeholder="Frase para treinar (opcional)"
+            class="voice-train-input"
+          />
+          <button id="trainVoiceBtn" class="btn secondary">Treinar Voz</button>
+        </div>
+      </details>
+
+      <div id="voiceHistory" class="voice-history hidden">
+        <h3>Ultimos comandos salvos</h3>
+        <ul id="voiceHistoryList"></ul>
+      </div>
+    </section>
+
+    <script>
+      const video = document.getElementById("cameraFeed");
+      const canvas = document.getElementById("captureCanvas");
+      const statusBox = document.getElementById("statusBox");
+      const identityToast = document.getElementById("identityToast");
+      const identityPhoto = document.getElementById("identityPhoto");
+      const identityName = document.getElementById("identityName");
+      const identityMeta = document.getElementById("identityMeta");
+      const identityMessage = document.getElementById("identityMessage");
+      const confirmActions = document.getElementById("confirmActions");
+      const confirmButton = document.getElementById("confirmButton");
+      const cancelButton = document.getElementById("cancelButton");
+      const recognitionHint = document.getElementById("recognitionHint");
+
+      let recognitionTimer = null;
+      let requestInFlight = false;
+      let pendingToken = null;
+      let recognitionDelay = 1200;
+      let noFaceCount = 0;
+      let unknownCount = 0;
+      let errorCount = 0;
+      let lastStatus = "booting";
+
+      const RECOGNITION_FAST_MS = 900;
+      const RECOGNITION_NORMAL_MS = 1400;
+      const RECOGNITION_SLOW_MS = 2400;
+      const RECOGNITION_ERROR_MS = 3600;
+
+      const statusHints = {
+        booting: "Preparando câmera e reconhecimento...",
+        ready: "Olhe para a câmera e mantenha o rosto dentro do quadro.",
+        checking: "Verificando identidade...",
+        recognized: "Identidade confirmada. Revise e confirme o registro.",
+        no_face: "Aproxime-se da câmera e mantenha o rosto centralizado.",
+        unknown: "Tente olhar de frente e melhorar a iluminação. Se continuar, atualize o cadastro.",
+        cooldown: "Registro recente encontrado. Aguarde alguns segundos antes de tentar novamente.",
+        error: "Não foi possível verificar agora. O sistema tentará novamente em instantes.",
+        voice: "Ponto registrado. O comando de voz é opcional."
+      };
+
+      function setStatus(message, type) {
+        statusBox.textContent = message;
+        statusBox.className = "status overlay-status " + (type || "");
+      }
+
+      function setRecognitionState(state, message, type) {
+        lastStatus = state;
+        recognitionHint.textContent = statusHints[state] || statusHints.ready;
+        setStatus(message, type);
+      }
+
+      function scheduleRecognition(delay) {
+        pauseRecognition();
+        recognitionDelay = delay || recognitionDelay;
+        recognitionTimer = window.setTimeout(recognizeFrame, recognitionDelay);
+      }
+
+      function scheduleNextRecognition() {
+        if (!pendingToken) {
+          scheduleRecognition(recognitionDelay);
+        }
+      }
+
+      function showIdentity(data, withActions) {
+        identityPhoto.src = data.image || "";
+        identityName.textContent = data.name || "Não reconhecido";
+        identityMeta.textContent = data.employee_id
+          ? `ID: ${data.employee_id} | Confiança: ${Number(data.confidence || 0).toFixed(1)}`
+          : data.confidence !== undefined
+          ? `Confiança: ${Number(data.confidence || 0).toFixed(1)}`
+          : "";
+        identityMessage.textContent = data.message || "";
+
+        if (withActions) {
+          confirmActions.classList.remove("hidden");
+        } else {
+          confirmActions.classList.add("hidden");
+        }
+
+        identityToast.classList.remove("hidden");
+      }
+
+      function hideIdentity() {
+        identityToast.classList.add("hidden");
+        confirmActions.classList.add("hidden");
+      }
+
+      function pauseRecognition() {
+        if (recognitionTimer) {
+          window.clearTimeout(recognitionTimer);
+          recognitionTimer = null;
+        }
+      }
+
+      function resumeRecognition() {
+        if (!recognitionTimer) {
+          scheduleRecognition(recognitionDelay);
+        }
+      }
+
+      async function initCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30 },
+            },
+            audio: false,
+          });
+          video.srcObject = stream;
+          await video.play();
+          setRecognitionState("ready", "Câmera pronta. Posicione o rosto para começar.", "success");
+          resumeRecognition();
+        } catch (error) {
+          setRecognitionState("error", "Não foi possível acessar a câmera: " + error.message, "error");
+        }
+      }
+
+      function captureFrame() {
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+
+        if (!width || !height) {
+          return null;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: false });
+        ctx.drawImage(video, 0, 0, width, height);
+        return canvas.toDataURL("image/jpeg", 0.95);
+      }
+
+      async function recognizeFrame() {
+        if (requestInFlight || pendingToken) {
+          return;
+        }
+
+        const image = captureFrame();
+        if (!image) {
+          setRecognitionState("ready", "Preparando imagem da câmera...", "info");
+          scheduleRecognition(RECOGNITION_NORMAL_MS);
+          return;
+        }
+
+        requestInFlight = true;
+        setRecognitionState("checking", "Verificando identidade...", "info");
+
+        try {
+          const response = await fetch("/recognize-frame", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image }),
+          });
+          const data = await response.json();
+
+          if (data.status === "recognized") {
+            pendingToken = data.token;
+            noFaceCount = 0;
+            unknownCount = 0;
+            errorCount = 0;
+            recognitionDelay = RECOGNITION_FAST_MS;
+            showIdentity(data, true);
+            setRecognitionState("recognized", "Identidade confirmada. Confirme para registrar.", "success");
+            return;
+          }
+
+          if (data.status === "cooldown") {
+            noFaceCount = 0;
+            unknownCount = 0;
+            errorCount = 0;
+            recognitionDelay = RECOGNITION_SLOW_MS;
+            showIdentity(data, false);
+            setRecognitionState("cooldown", data.message, "warning");
+            return;
+          }
+
+          if (data.status === "unknown") {
+            noFaceCount = 0;
+            unknownCount += 1;
+            errorCount = 0;
+            recognitionDelay = unknownCount >= 3 ? RECOGNITION_SLOW_MS : RECOGNITION_NORMAL_MS;
+            showIdentity(data, false);
+            setRecognitionState(
+              "unknown",
+              data.guidance || "Cadastro facial não encontrado. Tente novamente ou atualize o cadastro.",
+              "warning"
+            );
+            return;
+          }
+
+          if (data.status === "no_face") {
+            noFaceCount += 1;
+            unknownCount = 0;
+            errorCount = 0;
+            recognitionDelay = noFaceCount >= 3 ? RECOGNITION_SLOW_MS : RECOGNITION_NORMAL_MS;
+            hideIdentity();
+            setRecognitionState("no_face", data.message || "Aproxime-se da câmera e centralize o rosto.", "info");
+            return;
+          }
+
+          errorCount += 1;
+          recognitionDelay = errorCount >= 2 ? RECOGNITION_ERROR_MS : RECOGNITION_SLOW_MS;
+          setRecognitionState("error", data.message || "Não foi possível verificar agora.", "error");
+        } catch (error) {
+          errorCount += 1;
+          recognitionDelay = errorCount >= 2 ? RECOGNITION_ERROR_MS : RECOGNITION_SLOW_MS;
+          setRecognitionState("error", "Falha de comunicação. Tentando novamente em instantes.", "error");
+        } finally {
+          requestInFlight = false;
+          scheduleNextRecognition();
+        }
+      }
+
+      async function sendConfirmation(confirm) {
+        if (!pendingToken) {
+          return;
+        }
+
+        confirmButton.disabled = true;
+        cancelButton.disabled = true;
+
+        // Esconde o toast e para reconhecimento imediatamente ao clicar
+        pauseRecognition();
+        hideIdentity();
+
+        try {
+          const response = await fetch("/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: pendingToken, confirm }),
+          });
+          const data = await response.json();
+
+          if (data.status === "saved") {
+            setRecognitionState("voice", `${data.message} Registro: ${data.punch_type}.`, "success");
+            pendingToken = null;
+            if (confirm && data.voice_token) {
+              startVoiceMode(data.voice_token, data.employee_id, data.name);
+              return;
+            }
+          } else {
+            setRecognitionState("ready", data.message || "Operação concluída.", "warning");
+          }
+
+          pendingToken = null;
+          resumeRecognition();
+        } catch (error) {
+          setRecognitionState("error", "Não foi possível confirmar agora. Tente novamente.", "error");
+          pendingToken = null;
+          resumeRecognition();
+        } finally {
+          confirmButton.disabled = false;
+          cancelButton.disabled = false;
+        }
+      }
+
+      confirmButton.addEventListener("click", () => sendConfirmation(true));
+      cancelButton.addEventListener("click", () => sendConfirmation(false));
+
+      window.addEventListener("beforeunload", () => {
+        pauseRecognition();
+        stopVoiceMode();
+
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach((track) => track.stop());
+        }
+      });
+
+      // ===== Voice Mode =====
+      let voiceToken = null;
+      let socket = null;
+      let audioContext = null;
+      let micStream = null;
+      let ttsAudio = null;
+
+      // Converte o resultado tecnico da biometria em texto amigavel.
+      // bio = { score, threshold, reason, enrolled_samples }
+      function formatBiometryFriendly(bio, isRejection) {
+        bio = bio || {};
+        const score = Number(bio.score || 0);
+        const threshold = Number(bio.threshold || 0);
+        const reason = String(bio.reason || "");
+        const enrolled = Number(bio.enrolled_samples || 0);
+
+        // Casos especiais por motivo (reason vindo do voice_engine).
+        if (reason === "not_enrolled" || enrolled === 0) {
+          return "voz ainda não cadastrada. Grave amostras no cadastro para ativar a confirmação.";
+        }
+        if (reason === "audio_too_short") {
+          return "amostra muito curta — fale por mais alguns segundos.";
+        }
+        if (reason === "verification_error") {
+          return "não foi possível verificar a voz desta vez.";
+        }
+
+        // Confiabilidade percentual a partir do score (cosseno em [-1,1] -> [0,100]).
+        const confPct = Math.max(0, Math.min(100, Math.round(((score + 1) / 2) * 100)));
+        let level = "muito alta";
+        if (confPct < 60) level = "baixa";
+        else if (confPct < 75) level = "media";
+        else if (confPct < 90) level = "alta";
+        const icon = confPct >= Math.round(((threshold + 1) / 2) * 100) ? "🔊" : "⚠️";
+        const verdict = isRejection ? "abaixo do minimo" : "voz reconhecida";
+        return `${icon} confiabilidade ${level} (${confPct}%) — ${verdict}.`;
+      }
+
+      function speakWelcome(employeeName) {
+        // Usa pyttsx3 no servidor para gerar WAV e reproduz no navegador.
+        try {
+          if (ttsAudio) {
+            try { ttsAudio.pause(); } catch (_) {}
+            ttsAudio = null;
+          }
+        } catch (_) {}
+
+        const firstName = String(employeeName || "")
+          .trim()
+          .split(/\s+/)[0] || "";
+        const greeting =
+          `Olá ${firstName}. Reconhecimento concluído com sucesso. ` +
+          `Por favor, fale a atividade que deseja registrar e diga "salvar" ao final ` +
+          `ou diga "apagar" para descartar a mensagem.`;
+
+        fetch("/tts/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: greeting }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("HTTP " + response.status);
+            }
+            return response.blob();
+          })
+          .then((blob) => {
+            const url = URL.createObjectURL(blob);
+            ttsAudio = new Audio(url);
+            ttsAudio.addEventListener("ended", () => URL.revokeObjectURL(url));
+            ttsAudio.play().catch((err) => {
+              console.warn("Não foi possível reproduzir TTS:", err);
+            });
+          })
+          .catch((err) => {
+            console.warn("Falha ao obter audio TTS:", err);
+          });
+      }
+
+      function startVoiceMode(token, employeeId, employeeName) {
+        // Garante que nao exista conexao anterior pendurada.
+        stopVoiceMode();
+        voiceToken = token;
+
+        // Parar camera e reconhecimento facial
+        pauseRecognition();
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach((t) => t.stop());
+        }
+
+        // Alternar paineis com transicao suave
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        const videoPanel = document.querySelector(".video-panel");
+        const voicePanel = document.getElementById("voicePanel");
+        videoPanel.classList.add("panel-exit");
+        identityToast.classList.add("hidden");
+        setTimeout(() => {
+          videoPanel.classList.add("hidden");
+          videoPanel.classList.remove("panel-exit");
+          voicePanel.classList.remove("hidden");
+          voicePanel.classList.add("panel-enter");
+          voicePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 350);
+
+        document.getElementById("voiceUserInfo").textContent =
+          `Usuário: ${employeeName} (ID: ${employeeId})`;
+
+        // Saudacao TTS chamando o usuario pelo nome.
+        speakWelcome(employeeName);
+
+        const voiceStatus = document.getElementById("voiceStatus");
+        voiceStatus.textContent = "Conectando ao servidor de voz...";
+        voiceStatus.className = "status voice-status";
+
+        // Conectar SocketIO — preferir websocket para streaming de audio estavel
+        socket = io({
+          transports: ["websocket"],
+          upgrade: false,
+          forceNew: true,
+          autoConnect: false,
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          timeout: 20000,
+        });
+
+        socket.connect();
+
+        socket.on("connect", () => {
+          socket.emit("voice_auth", { token: voiceToken });
+        });
+
+        socket.on("connect_error", (err) => {
+          console.error("Socket.IO connect_error:", err);
+          voiceStatus.textContent = "Erro de conexao: " + err.message;
+          voiceStatus.className = "status voice-status error";
+        });
+
+        socket.on("voice_ready", (data) => {
+          const phrases = Number(data?.phrases || 0);
+          const enrolled = Number(data?.voice_enrolled || 0);
+          const enforced = Boolean(data?.biometry_enforced);
+          let msg = `Microfone ativo. Fale seu comando quando quiser. Frases cadastradas: ${phrases}. Amostras de voz: ${enrolled}.`;
+          let cls = "status voice-status success";
+          if (enforced && enrolled === 0) {
+            msg += " Atenção: sua voz ainda não foi cadastrada; comandos podem ser recusados.";
+            cls = "status voice-status error";
+          } else if (!enforced) {
+            msg += " A verificação de voz está em modo de monitoramento.";
+          }
+          voiceStatus.textContent = msg;
+          voiceStatus.className = cls;
+          startMicrophone();
+        });
+
+        socket.on("voice_partial", (data) => {
+          document.getElementById("voiceAccumulated").textContent =
+            data.accumulated || "-";
+          document.getElementById("voicePartial").textContent =
+            data.partial || "...";
+        });
+
+        socket.on("voice_saved", (data) => {
+          document.getElementById("voiceAccumulated").textContent = "-";
+          document.getElementById("voicePartial").textContent = "...";
+          voiceStatus.textContent =
+            `Salvo: "${data.text}" — ${formatBiometryFriendly(data.biometry)}`;
+          voiceStatus.className = "status voice-status success";
+          addToHistory(data.text);
+        });
+
+        socket.on("voice_rejected", (data) => {
+          document.getElementById("voicePartial").textContent = "...";
+          voiceStatus.textContent =
+            (data.message || "A voz não corresponde ao cadastro.") +
+            " " + formatBiometryFriendly(data.biometry, true);
+          voiceStatus.className = "status voice-status error";
+        });
+
+        socket.on("voice_cleared", (data) => {
+          document.getElementById("voiceAccumulated").textContent = "-";
+          document.getElementById("voicePartial").textContent = "...";
+          voiceStatus.textContent = data?.message || "Mensagem apagada.";
+          voiceStatus.className = "status voice-status warning";
+        });
+
+        socket.on("voice_trained", (data) => {
+          const total = Number(data?.phrases || 0);
+          voiceStatus.textContent = `Treino atualizado: "${data.phrase}". Total de frases: ${total}.`;
+          voiceStatus.className = "status voice-status success";
+          document.getElementById("trainPhraseInput").value = "";
+        });
+
+        socket.on("voice_error", (data) => {
+          voiceStatus.textContent = data.message;
+          voiceStatus.className = "status voice-status error";
+        });
+
+        socket.on("disconnect", () => {
+          voiceStatus.textContent = "Desconectado do servidor.";
+          voiceStatus.className = "status voice-status warning";
+        });
+      }
+
+      async function startMicrophone() {
+        try {
+          audioContext = new AudioContext({ sampleRate: 16000 });
+
+          // Garantir que o AudioContext nao esta suspenso (politica de autoplay do browser)
+          if (audioContext.state === "suspended") {
+            await audioContext.resume();
+          }
+
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              channelCount: 1,
+              sampleRate: { ideal: 16000 },
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+            video: false,
+          });
+
+          const source = audioContext.createMediaStreamSource(micStream);
+
+          await audioContext.audioWorklet.addModule(
+            "/static/audio-processor.js"
+          );
+          const processor = new AudioWorkletNode(
+            audioContext,
+            "pcm16-processor"
+          );
+
+          processor.port.onmessage = (event) => {
+            if (socket && socket.connected) {
+              socket.emit("audio_chunk", event.data);
+            }
+          };
+
+          source.connect(processor);
+          // Nao conectar ao destination (nao reproduzir audio)
+        } catch (error) {
+          const voiceStatus = document.getElementById("voiceStatus");
+          voiceStatus.textContent =
+            "Erro ao acessar microfone: " + error.message;
+          voiceStatus.className = "status voice-status error";
+        }
+      }
+
+      function stopVoiceMode() {
+        if (ttsAudio) {
+          try { ttsAudio.pause(); } catch (_) {}
+          ttsAudio = null;
+        }
+        if (micStream) {
+          micStream.getTracks().forEach((t) => t.stop());
+          micStream = null;
+        }
+        if (audioContext) {
+          audioContext.close();
+          audioContext = null;
+        }
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+      }
+
+      function addToHistory(text) {
+        const historyDiv = document.getElementById("voiceHistory");
+        const list = document.getElementById("voiceHistoryList");
+        historyDiv.classList.remove("hidden");
+        const li = document.createElement("li");
+        li.textContent = text;
+        list.prepend(li);
+      }
+
+      document
+        .getElementById("forceSaveBtn")
+        .addEventListener("click", () => {
+          if (socket && socket.connected) {
+            socket.emit("force_save");
+          }
+        });
+
+      document
+        .getElementById("trainVoiceBtn")
+        .addEventListener("click", () => {
+          if (!(socket && socket.connected)) {
+            return;
+          }
+          const phrase = document.getElementById("trainPhraseInput").value;
+          socket.emit("voice_train", { phrase });
+        });
+
+      document
+        .getElementById("voiceCloseBtn")
+        .addEventListener("click", () => {
+          stopVoiceMode();
+          window.close();
+        });
+
+      initCamera();
+    </script>
+  </body>
+</html>
