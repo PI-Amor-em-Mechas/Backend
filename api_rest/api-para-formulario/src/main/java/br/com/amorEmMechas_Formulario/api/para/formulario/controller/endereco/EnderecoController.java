@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,16 +18,14 @@ import java.util.List;
 @Tag(name = "Endereços", description = "Gerenciamento de endereços")
 @RestController
 @RequestMapping("/enderecos")
-@CrossOrigin(origins = "*")
 public class EnderecoController {
 
-    private EnderecoService service;
+    private final EnderecoService service;
+    private final ViaCepService viaCepService;
 
-    @Autowired
-    private ViaCepService viaCepService;
-
-    public EnderecoController(EnderecoService service) {
+    public EnderecoController(EnderecoService service, ViaCepService viaCepService) {
         this.service = service;
+        this.viaCepService = viaCepService;
     }
 
     @Operation(summary = "Cadastra um novo endereço")

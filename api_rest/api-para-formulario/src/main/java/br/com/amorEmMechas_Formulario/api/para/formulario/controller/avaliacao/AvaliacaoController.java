@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,12 +15,14 @@ import java.util.List;
 
 @Tag(name = "Avaliações", description = "Gerenciamento de avaliações")
 @RestController
-@CrossOrigin(origins = "*")
 @RequestMapping("/avaliacoes")
 public class AvaliacaoController {
 
-    @Autowired
-    private AvaliacaoService service;
+    private final AvaliacaoService service;
+
+    public AvaliacaoController(AvaliacaoService service) {
+        this.service = service;
+    }
 
     @Operation(summary = "Cria uma nova avaliação")
     @ApiResponse(responseCode = "201", description = "Avaliação criada com sucesso")

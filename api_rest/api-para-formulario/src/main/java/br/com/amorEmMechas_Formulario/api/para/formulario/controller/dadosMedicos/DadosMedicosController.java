@@ -16,7 +16,6 @@ import java.util.List;
 @Tag(name = "Dados Médicos", description = "Gerenciamento de dados médicos dos pacientes")
 @RestController
 @RequestMapping("/dados-medicos")
-@CrossOrigin(origins = "*")
 public class DadosMedicosController {
 
     private DadosMedicosService service;

@@ -1,4 +1,4 @@
-﻿package br.com.amorEmMechas_Formulario.api.para.formulario.dto.madrinha;
+package br.com.amorEmMechas_Formulario.api.para.formulario.dto.madrinha;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

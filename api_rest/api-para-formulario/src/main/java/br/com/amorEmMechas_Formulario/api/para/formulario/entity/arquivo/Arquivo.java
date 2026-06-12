@@ -21,15 +21,14 @@ public class Arquivo {
 
     private String tipo;
 
-    @Lob
-    private byte[] conteudo;
+    private String caminhoArquivo;
 
-    public byte[] getConteudo() {
-        return conteudo;
+    public String getCaminhoArquivo() {
+        return caminhoArquivo;
     }
 
-    public void setConteudo(byte[] conteudo) {
-        this.conteudo = conteudo;
+    public void setCaminhoArquivo(String caminhoArquivo) {
+        this.caminhoArquivo = caminhoArquivo;
     }
 
     public Integer getId() {

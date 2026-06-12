@@ -1,4 +1,4 @@
-﻿package br.com.amorEmMechas_Formulario.api.para.formulario.repository.madrinha;
+package br.com.amorEmMechas_Formulario.api.para.formulario.repository.madrinha;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.madrinha.Madrinha;
 import org.springframework.data.jpa.repository.JpaRepository;

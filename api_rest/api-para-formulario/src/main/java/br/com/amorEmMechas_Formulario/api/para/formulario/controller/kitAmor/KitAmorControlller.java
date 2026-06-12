@@ -1,4 +1,4 @@
-﻿package br.com.amorEmMechas_Formulario.api.para.formulario.controller.kitAmor;
+package br.com.amorEmMechas_Formulario.api.para.formulario.controller.kitAmor;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.kitAmor.KitAmorRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.kitAmor.KitAmorResponseDto;
@@ -18,7 +18,6 @@ import java.util.List;
 @Tag(name = "Kit do Amor", description = "Gerenciamento dos kits de peruca")
 @RestController
 @RequestMapping("/kits")
-@CrossOrigin(origins = "*")
 public class KitAmorControlller {
 
     private KitAmorService service; // corrigido: era public

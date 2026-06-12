@@ -1,4 +1,4 @@
-﻿package br.com.amorEmMechas_Formulario.api.para.formulario.controller.madrinha;
+package br.com.amorEmMechas_Formulario.api.para.formulario.controller.madrinha;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.madrinha.MadrinhaRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.madrinha.MadrinhaResponseDto;
@@ -13,10 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Madrinhas", description = "Gerenciamento das madrinhas do amor (volunt├írias)")
+@Tag(name = "Madrinhas", description = "Gerenciamento das madrinhas do amor (voluntárias)")
 @RestController
 @RequestMapping("/madrinhas")
-@CrossOrigin(origins = "*")
 public class MadrinhaController {
 
     private final MadrinhaService service;

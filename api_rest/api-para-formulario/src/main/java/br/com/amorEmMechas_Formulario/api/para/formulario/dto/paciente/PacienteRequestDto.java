@@ -51,6 +51,9 @@ public class PacienteRequestDto {
 
     private Integer solicitanteId;
 
+    @NotNull(message = "Consentimento LGPD e obrigatorio")
+    private Boolean consentimentoLgpd;
+
 
     public String getNomeCompleto() {
         return nomeCompleto;
@@ -163,5 +166,13 @@ public class PacienteRequestDto {
 
     public void setSolicitanteId(Integer solicitanteId) {
         this.solicitanteId = solicitanteId;
+    }
+
+    public Boolean getConsentimentoLgpd() {
+        return consentimentoLgpd;
+    }
+
+    public void setConsentimentoLgpd(Boolean consentimentoLgpd) {
+        this.consentimentoLgpd = consentimentoLgpd;
     }
 }

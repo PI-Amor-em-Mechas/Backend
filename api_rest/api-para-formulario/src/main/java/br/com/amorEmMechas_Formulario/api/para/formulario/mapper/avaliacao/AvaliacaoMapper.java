@@ -4,16 +4,16 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao.Avaliaca
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.avaliacao.AvaliacaoResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.avaliacao.Avaliacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.solicitante.SolicitanteMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AvaliacaoMapper {
 
+    private final SolicitanteMapper mapper;
 
-
-    @Autowired
-    private SolicitanteMapper mapper;
+    public AvaliacaoMapper(SolicitanteMapper mapper) {
+        this.mapper = mapper;
+    }
 
 
     public AvaliacaoResponseDto toResponse(Avaliacao avaliacao){

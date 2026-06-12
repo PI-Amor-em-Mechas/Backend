@@ -13,6 +13,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.repository.endereco.En
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.solicitante.SolicitanteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.security.PhiEncryptionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,6 +55,9 @@ class PacienteServiceTest {
 
     @Mock
     private SolicitanteRepository solicitanteRepository;
+
+    @Mock
+    private PhiEncryptionUtil phiEncryptionUtil;
 
     @InjectMocks
     private PacienteService service;
@@ -78,6 +87,7 @@ class PacienteServiceTest {
         requestDto.setSolicitanteId(20);
         requestDto.setTemFilhos(false);
         requestDto.setQtdFilhos(0);
+        requestDto.setConsentimentoLgpd(true);
 
         responseDto = new PacienteResponseDto();
         responseDto.setId(1);
@@ -88,6 +98,7 @@ class PacienteServiceTest {
     void create_semFilhos_deveSalvarECarregarResponse() {
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
         when(solicitanteRepository.findById(20)).thenReturn(Optional.of(solicitante));
+        when(phiEncryptionUtil.encrypt("12345678900")).thenReturn("cpf-encrypted");
         when(mapper.toEntity(requestDto)).thenReturn(paciente);
         when(repository.save(any(Paciente.class))).thenReturn(paciente);
         when(mapper.toResponse(paciente)).thenReturn(responseDto);
@@ -108,6 +119,7 @@ class PacienteServiceTest {
 
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
         when(solicitanteRepository.findById(20)).thenReturn(Optional.of(solicitante));
+        when(phiEncryptionUtil.encrypt("12345678900")).thenReturn("cpf-encrypted");
         when(mapper.toEntity(requestDto)).thenReturn(paciente);
         when(repository.save(any(Paciente.class))).thenReturn(paciente);
         when(mapper.toResponse(paciente)).thenReturn(responseDto);
@@ -149,6 +161,7 @@ class PacienteServiceTest {
     void update_deveAtualizarCamposInformados() {
         when(repository.findById(1)).thenReturn(Optional.of(paciente));
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
+        when(phiEncryptionUtil.encrypt("12345678900")).thenReturn("cpf-encrypted");
         when(repository.save(any(Paciente.class))).thenReturn(paciente);
         when(mapper.toResponse(paciente)).thenReturn(responseDto);
 
@@ -157,16 +170,18 @@ class PacienteServiceTest {
         service.update(1, requestDto);
 
         assertThat(paciente.getNomeCompleto()).isEqualTo("Beatriz");
-        assertThat(paciente.getCpf()).isEqualTo("12345678900");
+        assertThat(paciente.getCpf()).isEqualTo("cpf-encrypted");
         assertThat(paciente.getEndereco()).isEqualTo(endereco);
     }
 
     @Test
     void findAll_deveRetornarLista() {
-        when(repository.findAll()).thenReturn(List.of(paciente));
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<Paciente> page = new PageImpl<>(List.of(paciente));
+        when(repository.findAll(pageable)).thenReturn(page);
         when(mapper.toResponse(paciente)).thenReturn(responseDto);
 
-        assertThat(service.findAll()).hasSize(1);
+        assertThat(service.findAll(pageable).getContent()).hasSize(1);
     }
 
     @Test

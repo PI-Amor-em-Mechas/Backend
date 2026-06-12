@@ -56,9 +56,14 @@ public class ArquivoController {
     public ResponseEntity<byte[]> download(@PathVariable Long id) {
         Arquivo arquivo = arquivoService.buscarPorId(id);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(arquivo.getMimeType()));
-        headers.setContentDisposition(ContentDisposition.attachment().filename(arquivo.getNomeOriginal()).build());
-        return ResponseEntity.ok().headers(headers).body(arquivo.getConteudo());
+        try {
+            byte[] conteudo = arquivoService.getConteudo(id);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(arquivo.getMimeType()));
+            headers.setContentDisposition(ContentDisposition.attachment().filename(arquivo.getNomeOriginal()).build());
+            return ResponseEntity.ok().headers(headers).body(conteudo);
+        } catch (java.io.IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

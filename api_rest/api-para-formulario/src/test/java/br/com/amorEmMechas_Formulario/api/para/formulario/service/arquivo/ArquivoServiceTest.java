@@ -1,19 +1,21 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.service.arquivo;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
+import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -32,19 +34,23 @@ class ArquivoServiceTest {
     @Mock
     private MultipartFile multipartFile;
 
-    @InjectMocks
-    private ArquivoService arquivoService;
+    @TempDir
+    Path tempDir;
 
+    private ArquivoService arquivoService;
     private Arquivo arquivoMock;
 
     @BeforeEach
     void setUp() {
+        arquivoService = new ArquivoService(arquivoRepository);
+        ReflectionTestUtils.setField(arquivoService, "uploadDir", tempDir.toString());
+
         arquivoMock = new Arquivo();
         arquivoMock.setNomeOriginal("documento.pdf");
         arquivoMock.setNome("documento.pdf");
         arquivoMock.setMimeType("application/pdf");
         arquivoMock.setTamanho(1024L);
-        arquivoMock.setConteudo(new byte[]{1, 2, 3});
+        arquivoMock.setCaminhoArquivo(tempDir.resolve("documento.pdf").toString());
         arquivoMock.setTipo("PDF");
     }
 
@@ -59,7 +65,7 @@ class ArquivoServiceTest {
         when(multipartFile.getOriginalFilename()).thenReturn("documento.pdf");
         when(multipartFile.getContentType()).thenReturn("application/pdf");
         when(multipartFile.getSize()).thenReturn(1024L);
-        when(multipartFile.getBytes()).thenReturn(new byte[]{1, 2, 3});
+        when(multipartFile.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[]{1, 2, 3}));
         when(arquivoRepository.save(any(Arquivo.class))).thenReturn(arquivoMock);
 
         // Act
@@ -68,53 +74,25 @@ class ArquivoServiceTest {
         // Assert
         assertNotNull(resultado);
         assertEquals("documento.pdf", resultado.getNomeOriginal());
-        assertEquals("documento.pdf", resultado.getNome());
         assertEquals("application/pdf", resultado.getMimeType());
         assertEquals(1024L, resultado.getTamanho());
         assertEquals("PDF", resultado.getTipo());
-        assertArrayEquals(new byte[]{1, 2, 3}, resultado.getConteudo());
+        assertNotNull(resultado.getCaminhoArquivo());
 
         verify(arquivoRepository, times(1)).save(any(Arquivo.class));
     }
 
     @Test
-    @DisplayName("upload: deve propagar IOException quando getBytes() falhar")
-    void upload_deveLancarIOException_quandoGetBytesFalhar() throws IOException {
+    @DisplayName("upload: deve propagar IOException quando getInputStream() falhar")
+    void upload_deveLancarIOException_quandoGetInputStreamFalhar() throws IOException {
         // Arrange
         when(multipartFile.getOriginalFilename()).thenReturn("documento.pdf");
-        when(multipartFile.getContentType()).thenReturn("application/pdf");
-        when(multipartFile.getSize()).thenReturn(1024L);
-        when(multipartFile.getBytes()).thenThrow(new IOException("Erro ao ler bytes"));
+        when(multipartFile.getInputStream()).thenThrow(new IOException("Erro ao ler stream"));
 
         // Act & Assert
         assertThrows(IOException.class, () -> arquivoService.upload(multipartFile, "PDF"));
 
         verify(arquivoRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("upload: deve aceitar arquivo com nome e tipo nulos (MultipartFile retornando null)")
-    void upload_deveAceitarValoresNulos_quandoMultipartFileRetornarNull() throws IOException {
-        // Arrange
-        when(multipartFile.getOriginalFilename()).thenReturn(null);
-        when(multipartFile.getContentType()).thenReturn(null);
-        when(multipartFile.getSize()).thenReturn(0L);
-        when(multipartFile.getBytes()).thenReturn(new byte[]{});
-
-        Arquivo arquivoNulo = new Arquivo();
-        arquivoNulo.setNomeOriginal(null);
-        arquivoNulo.setNome(null);
-        arquivoNulo.setMimeType(null);
-        when(arquivoRepository.save(any(Arquivo.class))).thenReturn(arquivoNulo);
-
-        // Act
-        Arquivo resultado = arquivoService.upload(multipartFile, "IMAGEM");
-
-        // Assert
-        assertNotNull(resultado);
-        assertNull(resultado.getNomeOriginal());
-        assertNull(resultado.getMimeType());
-        verify(arquivoRepository, times(1)).save(any(Arquivo.class));
     }
 
     // -------------------------------------------------------
@@ -139,7 +117,7 @@ class ArquivoServiceTest {
     }
 
     @Test
-    @DisplayName("listUpload: deve retornar lista vazia quando não houver arquivos")
+    @DisplayName("listUpload: deve retornar lista vazia quando nao houver arquivos")
     void listUpload_deveRetornarListaVazia_quandoNaoHouverArquivos() {
         // Arrange
         when(arquivoRepository.findAll()).thenReturn(Collections.emptyList());
@@ -173,18 +151,36 @@ class ArquivoServiceTest {
     }
 
     @Test
-    @DisplayName("buscarPorId: deve lançar ResponseStatusException (400) quando ID não existir")
-    void buscarPorId_deveLancarResponseStatusException_quandoIdNaoExistir() {
+    @DisplayName("buscarPorId: deve lancar IdNotFoundException quando ID nao existir")
+    void buscarPorId_deveLancarIdNotFoundException_quandoIdNaoExistir() {
         // Arrange
         when(arquivoRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> arquivoService.buscarPorId(99L)
-        );
+        assertThrows(IdNotFoundException.class, () -> arquivoService.buscarPorId(99L));
 
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         verify(arquivoRepository, times(1)).findById(99L);
+    }
+
+    // -------------------------------------------------------
+    // getConteudo()
+    // -------------------------------------------------------
+
+    @Test
+    @DisplayName("getConteudo: deve retornar bytes do arquivo quando existir no filesystem")
+    void getConteudo_deveRetornarBytes_quandoArquivoExistir() throws IOException {
+        // Arrange - criar arquivo fisico no tempDir
+        Path filePath = tempDir.resolve("test-file.pdf");
+        java.nio.file.Files.write(filePath, new byte[]{10, 20, 30});
+
+        Arquivo arquivo = new Arquivo();
+        arquivo.setCaminhoArquivo(filePath.toString());
+        when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
+
+        // Act
+        byte[] resultado = arquivoService.getConteudo(1L);
+
+        // Assert
+        assertArrayEquals(new byte[]{10, 20, 30}, resultado);
     }
 }

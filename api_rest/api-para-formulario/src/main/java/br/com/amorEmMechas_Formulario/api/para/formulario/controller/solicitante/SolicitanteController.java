@@ -16,7 +16,6 @@ import java.util.List;
 @Tag(name = "Solicitantes", description = "Gerenciamento de solicitantes")
 @RestController
 @RequestMapping("/solicitantes")
-@CrossOrigin(origins = "*")
 public class SolicitanteController {
 
     private SolicitanteService service;

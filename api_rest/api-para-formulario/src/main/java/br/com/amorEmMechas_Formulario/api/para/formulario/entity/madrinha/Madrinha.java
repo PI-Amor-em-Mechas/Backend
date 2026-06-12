@@ -1,4 +1,4 @@
-﻿package br.com.amorEmMechas_Formulario.api.para.formulario.entity.madrinha;
+package br.com.amorEmMechas_Formulario.api.para.formulario.entity.madrinha;
 
 import jakarta.persistence.*;
 

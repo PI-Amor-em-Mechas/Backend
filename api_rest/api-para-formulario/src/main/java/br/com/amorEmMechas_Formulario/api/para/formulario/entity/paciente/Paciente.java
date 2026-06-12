@@ -1,4 +1,4 @@
-﻿    package br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente;
+   package br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente;
 
 
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
@@ -10,6 +10,7 @@
     import jakarta.persistence.*;
 
     import java.time.LocalDate;
+    import java.time.LocalDateTime;
     import java.util.ArrayList;
     import java.util.List;
 
@@ -30,6 +31,20 @@
         private Integer qtdFilhos;
         private Integer qtdPessoasEmCasa;
         private String cpf;
+
+        // LGPD - Consentimento do titular (Art. 7, 8)
+        @Column(nullable = false)
+        private Boolean consentimentoLgpd = false;
+
+        private LocalDateTime dtConsentimento;
+
+        private String finalidadeTratamento;
+
+        // LGPD - Anonimização (Art. 18, VI)
+        @Column(nullable = false)
+        private Boolean dadosAnonimizados = false;
+
+        private LocalDateTime dtAnonimizacao;
 
         @OneToOne
         @JoinColumn(name = "cabelo_antes_id")
@@ -176,5 +191,45 @@
 
         public void setSolicitante(Solicitante solicitante) {
             this.solicitante = solicitante;
+        }
+
+        public Boolean getConsentimentoLgpd() {
+            return consentimentoLgpd;
+        }
+
+        public void setConsentimentoLgpd(Boolean consentimentoLgpd) {
+            this.consentimentoLgpd = consentimentoLgpd;
+        }
+
+        public LocalDateTime getDtConsentimento() {
+            return dtConsentimento;
+        }
+
+        public void setDtConsentimento(LocalDateTime dtConsentimento) {
+            this.dtConsentimento = dtConsentimento;
+        }
+
+        public String getFinalidadeTratamento() {
+            return finalidadeTratamento;
+        }
+
+        public void setFinalidadeTratamento(String finalidadeTratamento) {
+            this.finalidadeTratamento = finalidadeTratamento;
+        }
+
+        public Boolean getDadosAnonimizados() {
+            return dadosAnonimizados;
+        }
+
+        public void setDadosAnonimizados(Boolean dadosAnonimizados) {
+            this.dadosAnonimizados = dadosAnonimizados;
+        }
+
+        public LocalDateTime getDtAnonimizacao() {
+            return dtAnonimizacao;
+        }
+
+        public void setDtAnonimizacao(LocalDateTime dtAnonimizacao) {
+            this.dtAnonimizacao = dtAnonimizacao;
         }
     }

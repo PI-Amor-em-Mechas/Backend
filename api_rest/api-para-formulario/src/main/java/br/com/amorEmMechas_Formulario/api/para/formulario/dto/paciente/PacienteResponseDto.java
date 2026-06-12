@@ -1,4 +1,4 @@
-﻿package br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente;
+package br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.endereco.EnderecoResponseDto;
@@ -6,6 +6,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRespons
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class PacienteResponseDto {
@@ -32,6 +33,11 @@ public class PacienteResponseDto {
     private List<FilhoResponseDto> filhos;
 
     private Integer qtdFilho;
+
+    private Boolean consentimentoLgpd;
+    private LocalDateTime dtConsentimento;
+    private String finalidadeTratamento;
+    private Boolean dadosAnonimizados;
 
 
     public Integer getId() {
@@ -162,5 +168,37 @@ public class PacienteResponseDto {
 
     public void setDadosMedicos(DadosMedicosResponseDto dadosMedicos) {
         this.dadosMedicos = dadosMedicos;
+    }
+
+    public Boolean getConsentimentoLgpd() {
+        return consentimentoLgpd;
+    }
+
+    public void setConsentimentoLgpd(Boolean consentimentoLgpd) {
+        this.consentimentoLgpd = consentimentoLgpd;
+    }
+
+    public LocalDateTime getDtConsentimento() {
+        return dtConsentimento;
+    }
+
+    public void setDtConsentimento(LocalDateTime dtConsentimento) {
+        this.dtConsentimento = dtConsentimento;
+    }
+
+    public String getFinalidadeTratamento() {
+        return finalidadeTratamento;
+    }
+
+    public void setFinalidadeTratamento(String finalidadeTratamento) {
+        this.finalidadeTratamento = finalidadeTratamento;
+    }
+
+    public Boolean getDadosAnonimizados() {
+        return dadosAnonimizados;
+    }
+
+    public void setDadosAnonimizados(Boolean dadosAnonimizados) {
+        this.dadosAnonimizados = dadosAnonimizados;
     }
 }

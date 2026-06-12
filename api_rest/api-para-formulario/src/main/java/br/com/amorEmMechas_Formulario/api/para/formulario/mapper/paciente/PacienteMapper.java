@@ -1,4 +1,4 @@
-﻿package br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente;
+package br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.paciente.PacienteResponseDto;
@@ -51,13 +51,19 @@ public class PacienteMapper {
         dto.setId(paciente.getId());
         dto.setNomeCompleto(paciente.getNomeCompleto());
         dto.setEmail(paciente.getEmail());
-        dto.setCpf(paciente.getCpf());
+        dto.setCpf(paciente.getCpf()); // CPF ja vem mascarado pelo service
         dto.setCel(paciente.getCel());
         dto.setDtPedido(paciente.getDtPedido());
         dto.setDtNasc(paciente.getDtNasc());
         dto.setEstadoCivil(paciente.getEstadoCivil());
         dto.setTemFilhos(paciente.getTemFilhos());
         dto.setQtdPessoasEmCasa(paciente.getQtdPessoasEmCasa());
+
+        // LGPD
+        dto.setConsentimentoLgpd(paciente.getConsentimentoLgpd());
+        dto.setDtConsentimento(paciente.getDtConsentimento());
+        dto.setFinalidadeTratamento(paciente.getFinalidadeTratamento());
+        dto.setDadosAnonimizados(paciente.getDadosAnonimizados());
 
         // ENDERE├çO
         if (paciente.getEndereco() != null) {

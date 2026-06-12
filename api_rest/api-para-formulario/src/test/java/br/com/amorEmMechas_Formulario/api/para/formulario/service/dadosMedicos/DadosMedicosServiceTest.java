@@ -10,6 +10,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.dadosMedicos.Da
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.dadosMedicos.DadosMedicosRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.security.PhiEncryptionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,9 @@ class DadosMedicosServiceTest {
 
     @Mock
     private PacienteRepository pacienteRepository;
+
+    @Mock
+    private PhiEncryptionUtil phiEncryptionUtil;
 
     @InjectMocks
     private DadosMedicosService service;
@@ -92,15 +96,18 @@ class DadosMedicosServiceTest {
 
         when(repository.findById(1)).thenReturn(Optional.of(entity));
         when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
+        when(phiEncryptionUtil.encrypt("Tratamento")).thenReturn("enc-Tratamento");
+        when(phiEncryptionUtil.encrypt("Mama")).thenReturn("enc-Mama");
+        when(phiEncryptionUtil.encrypt("Urgente")).thenReturn("enc-Urgente");
         when(repository.save(any(DadosMedicos.class))).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(responseDto);
 
         service.update(1, requestDto);
 
-        assertThat(entity.getMotivo()).isEqualTo("Tratamento");
-        assertThat(entity.getTipoCancer()).isEqualTo("Mama");
-        assertThat(entity.getJustificativa()).isEqualTo("Urgente");
         assertThat(entity.getTipoAtendimento()).isEqualTo("SUS");
+        verify(phiEncryptionUtil).encrypt("Tratamento");
+        verify(phiEncryptionUtil).encrypt("Mama");
+        verify(phiEncryptionUtil).encrypt("Urgente");
     }
 
     @Test

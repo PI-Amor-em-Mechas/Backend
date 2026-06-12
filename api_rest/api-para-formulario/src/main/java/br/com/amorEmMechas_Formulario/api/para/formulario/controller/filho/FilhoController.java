@@ -21,7 +21,6 @@ import java.util.List;
 @Tag(name = "Filhos", description = "Gerenciamento dos filhos dos pacientes")
 @RestController
 @RequestMapping("/filhos")
-@CrossOrigin(origins = "*")
 public class FilhoController {
 
     private FilhoService service;
