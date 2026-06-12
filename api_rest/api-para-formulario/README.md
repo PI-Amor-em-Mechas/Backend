@@ -6,7 +6,7 @@ API REST para gerenciamento do formulário de cadastro de pacientes do projeto *
 
 | Tecnologia | Versão |
 |---|---|
-| Java | 17 |
+| Java | 21 |
 | Spring Boot | 3.5.6 |
 | Spring Security | JWT Stateless |
 | MySQL | 8+ |
@@ -42,7 +42,7 @@ A API está em conformidade com a Lei 13.709/2018:
 
 ## Pré-requisitos
 
-- JDK 17+
+- JDK 21+
 - MySQL 8+ rodando em `localhost:3306`
 - Database `amor_em_mechas` criada
 
