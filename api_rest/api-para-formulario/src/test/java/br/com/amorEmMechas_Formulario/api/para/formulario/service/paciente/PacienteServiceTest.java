@@ -84,6 +84,7 @@ class PacienteServiceTest {
         requestDto.setNomeCompleto("Ana");
         requestDto.setCpf("12345678900");
         requestDto.setEnderecoId(10);
+
         requestDto.setSolicitanteId(20);
         requestDto.setTemFilhos(false);
         requestDto.setQtdFilhos(0);
@@ -93,6 +94,7 @@ class PacienteServiceTest {
         responseDto.setId(1);
         responseDto.setNomeCompleto("Ana");
     }
+
 
     @Test
     void create_semFilhos_deveSalvarECarregarResponse() {
@@ -139,6 +141,7 @@ class PacienteServiceTest {
                 .hasMessageContaining("ENDERECO");
     }
 
+
     @Test
     void create_quandoSolicitanteNaoExiste_deveLancarExcecao() {
         when(enderecoRepository.findById(10)).thenReturn(Optional.of(endereco));
@@ -156,6 +159,7 @@ class PacienteServiceTest {
         assertThatThrownBy(() -> service.update(1, requestDto))
                 .isInstanceOf(IdNotFoundException.class);
     }
+
 
     @Test
     void update_deveAtualizarCamposInformados() {

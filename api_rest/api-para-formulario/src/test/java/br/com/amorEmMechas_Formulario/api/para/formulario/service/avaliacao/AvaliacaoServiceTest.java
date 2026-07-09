@@ -73,6 +73,7 @@ class AvaliacaoServiceTest {
         responseDto.setNotaFormulario(5);
     }
 
+
     @Test
     void create_deveDefinirSolicitanteEDataDeConclusao() {
         Paciente paciente = new Paciente();

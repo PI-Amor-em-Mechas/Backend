@@ -63,12 +63,19 @@ class DadosMedicosServiceTest {
         requestDto.setJustificativa("Urgente");
         requestDto.setTipoAtendimento("SUS");
         requestDto.setDtInicioTratamento(LocalDate.now());
+
         requestDto.setRelatorioMedicoId(1);
         requestDto.setPacienteId(1);
+
+        requestDto.setRelatorioMedicoId(1);
+        requestDto.setPacienteId(1);
+
+
 
         responseDto = new DadosMedicosResponseDto();
         responseDto.setId(1);
     }
+
 
     @Test
     void create_deveSalvarECarregarResponse() {
