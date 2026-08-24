@@ -33,11 +33,11 @@ public class FilhoController {
         this.service = service;
     }
 
-    @Operation(summary = "Cadastra múltiplos filhos de uma vez")
-    @ApiResponse(responseCode = "201", description = "Filhos cadastrados com sucesso")
+    @Operation(summary = "Cadastra um ou mais filhos de uma vez (envie uma lista, mesmo que com 1 item)")
+    @ApiResponse(responseCode = "201", description = "Filho(s) cadastrado(s) com sucesso")
     @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
-    @PostMapping("/many")
-    public ResponseEntity<List<FilhoResponseDto>> createBatch(@RequestBody List<FilhoRequestDto> filhosDto) {
+    @PostMapping
+    public ResponseEntity<List<FilhoResponseDto>> create(@RequestBody @Valid List<FilhoRequestDto> filhosDto) {
         List<FilhoResponseDto> response = filhosDto.stream().map(dto -> {
             Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
                     .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
@@ -52,23 +52,6 @@ public class FilhoController {
         }).toList();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @Operation(summary = "Cadastra um único filho")
-    @ApiResponse(responseCode = "201", description = "Filho cadastrado com sucesso")
-    @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
-    @PostMapping("/unique")
-    public ResponseEntity<FilhoResponseDto> createSingle(@RequestBody FilhoRequestDto dto) {
-        Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
-
-        Filho filho = new Filho();
-        filho.setIdade(dto.getIdade());
-        filho.setPaciente(paciente);
-        Filho saved = filhoRepository.save(filho);
-
-        int qtdFilhos = filhoRepository.countByPacienteId(dto.getPacienteId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(new FilhoResponseDto(saved, qtdFilhos));
     }
 
     @Operation(summary = "Atualiza um único filho")
