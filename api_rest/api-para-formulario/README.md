@@ -83,9 +83,97 @@ openssl rand -base64 32
 
 A aplicação inicia em `http://localhost:8080`.
 
+### Fluxo recomendado para desenvolvedores (Windows)
+
+Os scripts abaixo automatizam a inicialização local e a verificação dos principais endpoints. Execute o PowerShell a partir da pasta `api-para-formulario`:
+
+```powershell
+# Subir a API com H2 em memoria e executar os testes antes
+.\scripts\start-dev.ps1
+
+# Subir em outra porta, sem repetir os testes
+.\scripts\start-dev.ps1 -Port 8081 -SkipTests
+
+# Em outro terminal, testar a API em execucao
+.\scripts\smoke-test.ps1
+
+# Testar uma instancia em outra porta
+.\scripts\smoke-test.ps1 -BaseUrl http://localhost:8081
+```
+
+O script `start-dev.ps1` usa o perfil `dev`, portanto não exige MySQL: os dados ficam em um banco H2 temporário e são perdidos ao encerrar a aplicação. Ele verifica o JDK, executa `mvnw.cmd test` e só inicia a API se os testes passarem. Use `-SkipTests` apenas quando a aplicação já tiver sido validada.
+
+O script `smoke-test.ps1` testa health check, Swagger, OpenAPI, login inválido, geração de token de desenvolvimento, formulário público, endpoints protegidos e autorização por role. No final, também imprime todos os paths publicados pelo OpenAPI.
+
+Caso o PowerShell bloqueie scripts locais, permita somente nesta sessão:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+### Dashboard MVP e Token Lab
+
+Com a API em execução, sirva o dashboard em uma origem permitida pelo CORS:
+
+```bash
+cd dashboard-mvp
+python -m http.server 3000
+```
+
+Acesse `http://localhost:3000` e abra a aba **Token Lab**. Com o perfil `dev`, a tela usa `/auth/dev-token`, que assina o JWT sem consultar o MySQL, exibe a validade do token e permite testar uma rota protegida com o header `Authorization: Bearer`. Ela é destinada somente a desenvolvimento e não deve receber credenciais reais.
+
+Para executar sem MySQL, inicie a API com o perfil H2 em memória:
+
+```bash
+./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
 ## Documentação da API
 
 Swagger UI disponível em: `http://localhost:8080/swagger-ui.html`
+
+O Swagger permite filtrar por tag, consultar schemas dos DTOs e executar requisições. A especificação OpenAPI em JSON fica disponível em `http://localhost:8080/v3/api-docs` e pode ser importada no Postman, Insomnia ou outras ferramentas.
+
+### Mapa rápido de endpoints
+
+| Grupo | Base | Acesso |
+|---|---|---|
+| Autenticação | `/auth` | Público; `/auth/registro-admin` exige ADMIN |
+| Formulário inicial | `/formulario-solicitacao-peruca` | `POST` público, sem token |
+| Pacientes | `/pacientes` | JWT + ADMIN, MEDICO, ENFERMEIRO ou ATENDENTE |
+| Dados médicos | `/dados-medicos` | JWT + ADMIN, MEDICO ou ENFERMEIRO |
+| Avaliações | `/avaliacoes` | JWT + ADMIN, MEDICO ou ENFERMEIRO |
+| Endereços | `/enderecos` | JWT |
+| Arquivos | `/arquivos` | JWT |
+| Solicitantes | `/solicitantes` | JWT |
+| Madrinhas | `/madrinhas` | JWT |
+| Kits do Amor | `/kits` | JWT |
+| Filhos | `/filhos` | JWT |
+
+O formulário inicial é público porque a usuária final ainda não possui conta. O cadastro administrativo em `/pacientes` continua protegido. O formulário exige consentimento LGPD, valida os campos e grava o CPF criptografado.
+
+### Token de desenvolvimento
+
+No perfil `dev`, gere um token sem consultar o banco:
+
+```powershell
+$body = @{ username = "dev.user"; role = "ROLE_ATENDENTE" } | ConvertTo-Json
+$token = (Invoke-RestMethod `
+	http://localhost:8080/auth/dev-token `
+	-Method Post `
+	-ContentType "application/json" `
+	-Body $body).accessToken
+```
+
+Use-o nos endpoints protegidos:
+
+```powershell
+Invoke-RestMethod `
+	http://localhost:8080/pacientes `
+	-Headers @{ Authorization = "Bearer $token" }
+```
+
+O endpoint `/auth/dev-token` deve permanecer habilitado somente no perfil de desenvolvimento.
 
 ## Endpoints
 
@@ -112,6 +200,14 @@ Swagger UI disponível em: `http://localhost:8080/swagger-ui.html`
 | GET | `/pacientes/{id}/exportar` | LGPD: Exportar dados (portabilidade) | ADMIN, MEDICO, ENFERMEIRO, ATENDENTE |
 
 **Filtros disponíveis:** `?estado=SP&dataInicio=2024-01-01&dataFim=2024-12-31&page=0&size=20`
+
+### Formulario de solicitacao (`/formulario-solicitacao-peruca`)
+
+| Método | Endpoint | Descrição | Acesso |
+|---|---|---|---|
+| POST | `/formulario-solicitacao-peruca` | Enviar uma nova solicitacao de peruca | Público |
+
+O primeiro envio não exige conta ou token, pois é realizado pela usuária final. O endpoint utiliza a mesma validação, consentimento LGPD e criptografia de CPF do cadastro de pacientes. As operações internas continuam protegidas em `/pacientes/**`.
 
 ### Dados Médicos (`/dados-medicos`)
 
@@ -209,7 +305,8 @@ src/main/java/br/com/amorEmMechas_Formulario/api/para/formulario/
 │   ├── kitAmor/
 │   ├── madrinha/
 │   ├── paciente/
-│   └── solicitante/
+│   ├── solicitante/
+│   └── formulario/
 ├── dto/             # Request/Response DTOs com validação
 ├── entity/          # Entidades JPA
 ├── exception/       # GlobalExceptionHandler
@@ -223,6 +320,12 @@ src/main/java/br/com/amorEmMechas_Formulario/api/para/formulario/
 │   ├── PhiEncryptionUtil.java
 │   └── RateLimitFilter.java
 └── service/         # Lógica de negócio
+```
+
+```
+scripts/
+├── start-dev.ps1    # Sobe a API com perfil dev e H2
+└── smoke-test.ps1   # Testa endpoints e lista o OpenAPI
 ```
 
 ## Testes

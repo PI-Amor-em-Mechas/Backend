@@ -87,6 +87,24 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("Envio do formulario sem token chega a validacao")
+    void envioFormularioSemTokenChegaAValidacao() throws Exception {
+        mockMvc.perform(post("/formulario-solicitacao-peruca")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Metodo GET do formulario continua protegido")
+    void metodoGetDoFormularioContinuaProtegido() throws Exception {
+        String token = jwtTokenProvider.generateTokenFromUsername("medico");
+
+        mockMvc.perform(get("/formulario-solicitacao-peruca"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("Acesso com token invalido retorna 401")
     void acessoComTokenInvalidoRetorna401() throws Exception {
         mockMvc.perform(get("/pacientes")

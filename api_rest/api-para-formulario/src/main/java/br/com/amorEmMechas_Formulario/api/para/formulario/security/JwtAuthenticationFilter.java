@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -24,6 +25,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
+
+    @Value("${app.dev-token.enabled:false}")
+    private boolean devTokenEnabled;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserDetailsService userDetailsService) {
         this.jwtTokenProvider = jwtTokenProvider;
@@ -43,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Somente tokens de acesso sÃ£o vÃ¡lidos para autenticaÃ§Ã£o de requisiÃ§Ãµes
             if ("access".equals(tokenType)) {
                 String username = jwtTokenProvider.getUsernameFromToken(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                UserDetails userDetails = loadUserDetails(jwt, username);
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
@@ -58,6 +62,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private UserDetails loadUserDetails(String jwt, String username) {
+        if (devTokenEnabled && Boolean.TRUE.equals(jwtTokenProvider.getClaim(jwt, "dev", Boolean.class))) {
+            String role = jwtTokenProvider.getClaim(jwt, "role", String.class);
+            return org.springframework.security.core.userdetails.User.withUsername(username)
+                    .password("")
+                    .authorities(role)
+                    .build();
+        }
+        return userDetailsService.loadUserByUsername(username);
     }
 
     private String extractJwtFromRequest(HttpServletRequest request) {

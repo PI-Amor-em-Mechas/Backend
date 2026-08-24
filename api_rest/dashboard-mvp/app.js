@@ -3,9 +3,23 @@
 const API_BASE = "http://localhost:8080";
 const AUTH_USER = {
   username: "mvp.dashboard",
-  password: "Mvp@123456",
-  role: "ROLE_ADMIN",
+  role: "ROLE_ATENDENTE",
 };
+
+function getTokenPayload(token) {
+  try {
+    const payload = token.split(".")[1].replaceAll("-", "+").replaceAll("_", "/");
+    const binary = atob(payload);
+    const bytes = Array.from(binary, (char) => `%${char.codePointAt(0).toString(16).padStart(2, "0")}`).join("");
+    return JSON.parse(decodeURIComponent(bytes));
+  } catch (error) {
+    return null;
+  }
+}
+
+function copyToClipboard(value) {
+  return navigator.clipboard?.writeText(value);
+}
 
 /* ===== MOCK DATA ===== */
 const MOCK_PACIENTES = [
@@ -522,34 +536,24 @@ function PainelMadrinhas({ madrinhas, error, usingMock }) {
 
 /* ===== AUTH & DATA LOADING ===== */
 async function ensureUserAndLogin() {
-  const registerResp = await fetch(`${API_BASE}/auth/registro`, {
+  const loginResp = await fetch(`${API_BASE}/auth/dev-token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(AUTH_USER),
+    body: JSON.stringify({ username: AUTH_USER.username, role: AUTH_USER.role }),
   });
-
-  if (!registerResp.ok && registerResp.status !== 409) {
-    throw new Error(`Falha ao registrar usuario (${registerResp.status})`);
-  }
-
-  const loginResp = await fetch(`${API_BASE}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ username: AUTH_USER.username, password: AUTH_USER.password }),
-  });
-
   if (!loginResp.ok) {
-    throw new Error(`Falha no login (${loginResp.status})`);
+    throw new Error(`Falha ao gerar token dev (${loginResp.status})`);
   }
+
+  return loginResp.json();
 }
 
-async function loadProtectedData() {
+async function loadProtectedData(accessToken) {
+  const headers = { Authorization: `Bearer ${accessToken}` };
   const [pResp, kResp, mResp] = await Promise.all([
-    fetch(`${API_BASE}/pacientes`, { credentials: "include" }),
-    fetch(`${API_BASE}/kits`, { credentials: "include" }),
-    fetch(`${API_BASE}/madrinhas`, { credentials: "include" }),
+    fetch(`${API_BASE}/pacientes`, { headers }),
+    fetch(`${API_BASE}/kits`, { headers }),
+    fetch(`${API_BASE}/madrinhas`, { headers }),
   ]);
 
   if (!pResp.ok || !kResp.ok) {
@@ -566,6 +570,117 @@ async function loadProtectedData() {
   };
 }
 
+/* ===== DEV TOKEN LAB ===== */
+function TokenLab() {
+  const [username, setUsername] = useState(AUTH_USER.username);
+  const [role, setRole] = useState(AUTH_USER.role);
+  const [accessToken, setAccessToken] = useState("");
+  const [refreshToken, setRefreshToken] = useState("");
+  const [endpoint, setEndpoint] = useState("/pacientes");
+  const [result, setResult] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const payload = accessToken ? getTokenPayload(accessToken) : null;
+  const expiresAt = payload?.exp ? new Date(payload.exp * 1000).toLocaleString("pt-BR") : "-";
+
+  async function login() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch(`${API_BASE}/auth/dev-token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, role }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.mensagem || `Login falhou (${response.status})`);
+      setAccessToken(data.accessToken || "");
+      setRefreshToken(data.refreshToken || "");
+      setMessage("Token de desenvolvimento gerado sem consultar o MySQL.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function refresh() {
+    if (!refreshToken) return setMessage("Gere um login antes de renovar o token.");
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.mensagem || `Refresh falhou (${response.status})`);
+      setAccessToken(data.accessToken || "");
+      setMessage("Access token renovado.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function testEndpoint() {
+    if (!accessToken) return setMessage("Gere um access token antes de testar a API.");
+    setBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+      const text = await response.text();
+      setResult(`${response.status} ${response.statusText}\n${text}`);
+      setMessage(response.ok ? "Endpoint respondeu com sucesso." : "A API recusou a chamada.");
+    } catch (error) {
+      setResult(error.message);
+      setMessage("Nao foi possivel conectar ao backend.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="page-content token-lab-page">
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1>Token Lab</h1>
+          <p>Ferramenta local para testar autenticacao JWT da API</p>
+        </div>
+        <span className="dev-badge">DEV ONLY</span>
+      </div>
+      {message && <div className="alert-info">{message}</div>}
+      <div className="token-lab-grid">
+        <section className="token-panel">
+          <h3>1. Gerar autenticacao dev</h3>
+          <label>Username<input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" /></label>
+          <label>Role<select value={role} onChange={(e) => setRole(e.target.value)}><option>ROLE_ATENDENTE</option><option>ROLE_ADMIN</option><option>ROLE_MEDICO</option><option>ROLE_ENFERMEIRO</option><option>ROLE_USER</option></select></label>
+          <div className="token-actions">
+            <button type="button" className="btn-pink" onClick={login} disabled={busy}>Gerar access token</button>
+            <button type="button" className="btn-outline" onClick={refresh} disabled={busy || !refreshToken}>Renovar access</button>
+          </div>
+        </section>
+        <section className="token-panel token-summary">
+          <h3>2. Access token</h3>
+          <div className="token-meta"><span>Usuario</span><strong>{payload?.sub || "-"}</strong></div>
+          <div className="token-meta"><span>Tipo</span><strong>{payload?.type || "-"}</strong></div>
+          <div className="token-meta"><span>Expira em</span><strong>{expiresAt}</strong></div>
+          <textarea readOnly value={accessToken} placeholder="O access token aparecera aqui" />
+          <button type="button" className="btn-outline" onClick={() => copyToClipboard(accessToken)} disabled={!accessToken}>Copiar access token</button>
+        </section>
+        <section className="token-panel">
+          <h3>3. Testar endpoint protegido</h3>
+          <label>Rota da API<input value={endpoint} onChange={(e) => setEndpoint(e.target.value)} /></label>
+          <button type="button" className="btn-pink" onClick={testEndpoint} disabled={busy || !accessToken}>Enviar com Bearer</button>
+          <pre className="token-result">{result || "A resposta da API aparecera aqui."}</pre>
+        </section>
+      </div>
+      <div className="token-note">O painel usa a API em {API_BASE}. Nao use credenciais reais nem publique esta tela em producao.</div>
+    </div>
+  );
+}
+
 /* ===== MAIN APP ===== */
 function App() {
   const [tab, setTab] = useState("painel");
@@ -580,8 +695,8 @@ function App() {
     setLoading(true);
     setError("");
     try {
-      await ensureUserAndLogin();
-      const data = await loadProtectedData();
+      const auth = await ensureUserAndLogin();
+      const data = await loadProtectedData(auth.accessToken);
       setPacientes(data.pacientes.length ? data.pacientes : MOCK_PACIENTES);
       setEnvios(data.envios.length ? data.envios : MOCK_ENVIOS);
       setMadrinhas(data.madrinhas.length ? data.madrinhas : MOCK_MADRINHAS);
@@ -623,15 +738,16 @@ function App() {
           <li className={tab === "painel" ? "active" : ""} onClick={() => setTab("painel")}>Painel</li>
           <li className={tab === "pacientes" ? "active" : ""} onClick={() => setTab("pacientes")}>Pacientes</li>
           <li className={tab === "madrinhas" ? "active" : ""} onClick={() => setTab("madrinhas")}>Madrinhas</li>
+          <li className={tab === "tokens" ? "active" : ""} onClick={() => setTab("tokens")}>Token Lab</li>
         </ul>
 
         <div className="navbar-actions">
           {tab === "madrinhas" && (
-            <button className="btn-pink">Ô£Å´©Å Cadastrar Madrinha</button>
+            <button type="button" className="btn-pink">Ô£Å´©Å Cadastrar Madrinha</button>
           )}
-          <button className="btn-pink" onClick={handleExport}>
+          {tab !== "tokens" && <button type="button" className="btn-pink" onClick={handleExport}>
             Ô¼ç Exportar Dados
-          </button>
+          </button>}
         </div>
       </nav>
 
@@ -640,6 +756,7 @@ function App() {
       {!loading && tab === "painel" && <PainelEnvios envios={envios} pacientes={pacientes} error={error} usingMock={usingMock} />}
       {!loading && tab === "pacientes" && <PainelPacientes pacientes={pacientes} error={error} usingMock={usingMock} />}
       {!loading && tab === "madrinhas" && <PainelMadrinhas madrinhas={madrinhas} error={error} usingMock={usingMock} />}
+      {!loading && tab === "tokens" && <TokenLab />}
     </div>
   );
 }

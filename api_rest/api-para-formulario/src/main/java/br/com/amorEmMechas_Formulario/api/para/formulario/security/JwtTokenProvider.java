@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Provedor de tokens JWT conforme requisitos de segurança HL7.
@@ -62,6 +64,23 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    public String generateDevToken(String username, String role) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "access");
+        claims.put("dev", true);
+        claims.put("role", role);
+
+        return Jwts.builder()
+                .claims(claims)
+                .subject(username)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     public String getUsernameFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -92,5 +111,14 @@ public class JwtTokenProvider {
                 .getPayload();
 
         return claims.get("type", String.class);
+    }
+
+    public <T> T getClaim(String token, String name, Class<T> type) {
+        Claims claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        return claims.get(name, type);
     }
 }

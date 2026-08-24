@@ -9,6 +9,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.security.audit.AuditLo
 import br.com.amorEmMechas_Formulario.api.para.formulario.security.audit.AuditService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,6 +40,9 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuditService auditService;
+
+        @Value("${app.dev-token.enabled:false}")
+        private boolean devTokenEnabled;
 
     public AuthController(AuthenticationManager authenticationManager,
                           UsuarioRepository usuarioRepository,
@@ -102,6 +106,32 @@ public class AuthController {
                     .body(Map.of("mensagem", "Usuário ou senha inválidos"));
         }
     }
+
+        @PostMapping("/dev-token")
+        public ResponseEntity<?> devToken(@RequestBody Map<String, String> requestBody) {
+                if (!devTokenEnabled) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                        .body(Map.of("mensagem", "Gerador de token de desenvolvimento desabilitado"));
+                }
+
+                String username = requestBody.getOrDefault("username", "dev.user").trim();
+                String role = requestBody.getOrDefault("role", "ROLE_ATENDENTE").trim();
+                if (username.isBlank() || !role.matches("ROLE_(ADMIN|MEDICO|ENFERMEIRO|ATENDENTE|USER)")) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("mensagem", "Username invalido ou role nao permitida"));
+                }
+
+                String accessToken = jwtTokenProvider.generateDevToken(username, role);
+                String refreshToken = jwtTokenProvider.generateRefreshToken(username);
+                return ResponseEntity.ok(Map.of(
+                                "mensagem", "Token de desenvolvimento gerado sem consultar o banco",
+                                "usuario", username,
+                                "role", role,
+                                "accessToken", accessToken,
+                                "refreshToken", refreshToken,
+                                "tokenType", "Bearer"
+                ));
+        }
 
     /**
      * Refresh Token: gera novo access token a partir de um refresh token válido.
