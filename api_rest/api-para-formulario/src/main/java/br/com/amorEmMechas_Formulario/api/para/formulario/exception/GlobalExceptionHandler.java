@@ -1,5 +1,7 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.exception;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -37,6 +39,38 @@ public class GlobalExceptionHandler {
                         "status", 400,
                         "erro", "Dados invalidos",
                         "campos", erros
+                )
+        );
+    }
+
+    // Validacao manual (ex: quando o corpo aceita objeto unico OU lista, e cada
+    // item precisa ser validado fora do fluxo automatico do @Valid)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> constraintViolation(ConstraintViolationException ex) {
+        Map<String, String> erros = new HashMap<>();
+        for (ConstraintViolation<?> violacao : ex.getConstraintViolations()) {
+            erros.put(violacao.getPropertyPath().toString(), violacao.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                Map.of(
+                        "timestamp", LocalDateTime.now().toString(),
+                        "status", 400,
+                        "erro", "Dados invalidos",
+                        "campos", erros
+                )
+        );
+    }
+
+    // Regras de negocio quebradas manualmente com IllegalArgumentException
+    // (ex: consentimento LGPD ausente) - antes virava 500 sem handler
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> illegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                Map.of(
+                        "timestamp", LocalDateTime.now().toString(),
+                        "status", 400,
+                        "erro", ex.getMessage()
                 )
         );
     }

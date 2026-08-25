@@ -2,21 +2,25 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.controller.filho;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.filho.FilhoResponseDto;
-import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
-import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
-import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.filho.FilhoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.service.filho.FilhoService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
+import jakarta.validation.Validator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Tag(name = "Filhos", description = "Gerenciamento dos filhos dos pacientes")
 @RestController
@@ -26,32 +30,60 @@ public class FilhoController {
     private FilhoService service;
     private PacienteRepository pacienteRepository;
     private FilhoRepository filhoRepository;
+    private final ObjectMapper objectMapper;
+    private final Validator validator;
 
-    public FilhoController(FilhoRepository filhoRepository, PacienteRepository pacienteRepository, FilhoService service) {
+    public FilhoController(FilhoRepository filhoRepository, PacienteRepository pacienteRepository,
+                           FilhoService service, ObjectMapper objectMapper, Validator validator) {
         this.filhoRepository = filhoRepository;
         this.pacienteRepository = pacienteRepository;
         this.service = service;
+        this.objectMapper = objectMapper;
+        this.validator = validator;
     }
 
-    @Operation(summary = "Cadastra um ou mais filhos de uma vez (envie uma lista, mesmo que com 1 item)")
+    @Operation(summary = "Cadastra filho(s) - aceita um objeto unico ou uma lista de filhos no mesmo endpoint")
     @ApiResponse(responseCode = "201", description = "Filho(s) cadastrado(s) com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados invalidos")
     @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
     @PostMapping
-    public ResponseEntity<List<FilhoResponseDto>> create(@RequestBody @Valid List<FilhoRequestDto> filhosDto) {
-        List<FilhoResponseDto> response = filhosDto.stream().map(dto -> {
-            Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                    .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
+    public ResponseEntity<List<FilhoResponseDto>> create(@RequestBody JsonNode body) {
+        List<FilhoRequestDto> filhosDto = parseFilhosBody(body);
+        filhosDto.forEach(this::validar);
 
-            Filho filho = new Filho();
-            filho.setIdade(dto.getIdade());
-            filho.setPaciente(paciente);
-            Filho saved = filhoRepository.save(filho);
-
-            int qtdFilhos = filhoRepository.countByPacienteId(dto.getPacienteId());
-            return new FilhoResponseDto(saved, qtdFilhos);
-        }).toList();
+        List<FilhoResponseDto> response = filhosDto.stream()
+                .map(service::create)
+                .toList();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Aceita tanto um unico objeto {"idade":..,"pacienteId":..} quanto uma lista
+     * [{"idade":..,"pacienteId":..}, ...] no mesmo endpoint POST /filhos.
+     */
+    private List<FilhoRequestDto> parseFilhosBody(JsonNode body) {
+        if (body == null || body.isNull() || body.isMissingNode()) {
+            throw new IllegalArgumentException("O corpo da requisicao nao pode ser vazio");
+        }
+
+        if (body.isArray()) {
+            List<FilhoRequestDto> lista = new ArrayList<>();
+            body.forEach(node -> lista.add(objectMapper.convertValue(node, FilhoRequestDto.class)));
+            if (lista.isEmpty()) {
+                throw new IllegalArgumentException("Envie pelo menos um filho");
+            }
+            return lista;
+        }
+
+        return List.of(objectMapper.convertValue(body, FilhoRequestDto.class));
+    }
+
+    private void validar(FilhoRequestDto dto) {
+        Set<ConstraintViolation<FilhoRequestDto>> violacoes = validator.validate(dto);
+        if (!violacoes.isEmpty()) {
+            throw new ConstraintViolationException(violacoes);
+        }
     }
 
     @Operation(summary = "Atualiza um único filho")

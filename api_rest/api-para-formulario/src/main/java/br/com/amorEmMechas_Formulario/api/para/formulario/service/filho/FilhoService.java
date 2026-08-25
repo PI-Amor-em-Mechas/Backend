@@ -27,9 +27,15 @@ public class FilhoService {
     }
 
     public FilhoResponseDto create(FilhoRequestDto dto) {
+        Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
+                .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + dto.getPacienteId() + " Não Encontrado"));
+
         Filho f = mapper.toEntity(dto);
+        f.setPaciente(paciente);
         Filho saved = repository.save(f);
-        return mapper.toResponse(saved);
+
+        int qtd = repository.countByPacienteId(dto.getPacienteId());
+        return new FilhoResponseDto(saved, qtd);
     }
 
     public FilhoResponseDto update(Integer id, FilhoRequestDto dto) {

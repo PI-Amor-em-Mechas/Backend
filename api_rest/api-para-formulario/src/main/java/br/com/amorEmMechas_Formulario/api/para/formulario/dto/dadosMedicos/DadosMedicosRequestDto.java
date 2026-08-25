@@ -22,6 +22,7 @@ public class DadosMedicosRequestDto {
     @NotBlank(message = "Tipo de atendimento não pode estar vazio")
     private String tipoAtendimento;
 
+    @NotNull(message = "Paciente não pode ser nulo")
     private Integer pacienteId;
 
     @NotNull(message = "Relatório médico não pode ser nulo")

@@ -62,7 +62,9 @@ public class PacienteService {
         }
 
         Endereco endereco = buscarEndereco(dto.getEnderecoId());
-        Solicitante solicitante = buscarSolicitante(dto.getSolicitanteId());
+        // solicitanteId e opcional no formulario (sem @NotNull no DTO) - so busca se foi enviado,
+        // senao o cadastro publico quebrava com 500 sempre que o campo vinha nulo
+        Solicitante solicitante = dto.getSolicitanteId() != null ? buscarSolicitante(dto.getSolicitanteId()) : null;
 
         dto.setDtPedido(LocalDate.now());
 
@@ -321,6 +323,3 @@ public class PacienteService {
         }
     }
 }
-
-
-

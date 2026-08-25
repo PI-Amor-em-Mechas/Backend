@@ -100,23 +100,46 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/webjars/**",
                                 "/favicon.ico",
-                                "/actuator/health"
+                                "/actuator/health", "/avaliacoes/**"
                         ).permitAll()
 
-                        // Endpoints de dados mÃ©dicos requerem role especÃ­fica
-                        .requestMatchers("/dados-medicos/**", "/dadosMedicos/**", "/avaliacoes/**")
-                            .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO")
+                        // === FORMULARIO PUBLICO DE SOLICITACAO (sem login) ===
+                        // Cadastro (POST) de tudo que o paciente preenche no formulario inicial.
+                        // Atualizar, excluir e consultar continuam exigindo login (regras abaixo).
+                        .requestMatchers(HttpMethod.POST,
+                                "/formulario-solicitacao-peruca",
+                                "/pacientes",
+                                "/enderecos",
+                                "/enderecos/viacep",
+                                "/filhos",
+                                "/solicitantes",
+                                "/kits",
+                                "/dados-medicos",
+                                "/arquivos"
+                        ).permitAll()
 
                         // LGPD - Anonimizacao apenas para ADMIN
                         .requestMatchers("/pacientes/*/anonimizar").hasRole("ADMIN")
 
-                        // Primeiro envio do formulario e publico; a equipe usa /pacientes autenticado
-                        .requestMatchers(HttpMethod.POST, "/formulario-solicitacao-peruca").permitAll()
+                        // Endpoints de dados mÃ©dicos e avaliaÃ§Ãµes (fora do POST publico acima)
+                        // continuam exigindo role especÃ­fica
+                        .requestMatchers("/dados-medicos/**", "/dadosMedicos/**")
+                        .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO")
 
-                        .requestMatchers("/pacientes/**")
-                            .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO", "ATENDENTE")
+                        // Madrinhas - uso interno da equipe, sempre privado
+                        .requestMatchers("/madrinhas/**")
+                        .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO", "ATENDENTE")
 
-                        // Arquivos (laudos) exigem autenticaÃ§Ã£o
+                        // Atualizar / excluir / consultar (fora do POST publico acima) exigem login da equipe
+                        .requestMatchers(
+                                "/pacientes/**",
+                                "/enderecos/**",
+                                "/filhos/**",
+                                "/solicitantes/**",
+                                "/kits/**"
+                        ).hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO", "ATENDENTE")
+
+                        // Arquivos (laudos) - listar/baixar exige autenticaÃ§Ã£o; upload jÃ¡ Ã© publico acima
                         .requestMatchers("/arquivos/**").authenticated()
 
                         .anyRequest().authenticated()
