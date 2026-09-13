@@ -25,7 +25,18 @@ public class WebhookService {
 
     @Transactional
     public void process(JsonNode payload) {
-        String eventId = payload.path("event").asText("") + ":" + payload.path("data").path("key").path("id").asText("");
+        // Only process incoming messages
+        String event = payload.path("event").asText("");
+        if (!event.equals("messages.upsert")) {
+            return;
+        }
+
+        // Ignore messages sent by us (fromMe) to avoid infinite loop
+        if (payload.path("data").path("key").path("fromMe").asBoolean(false)) {
+            return;
+        }
+
+        String eventId = event + ":" + payload.path("data").path("key").path("id").asText("");
         if (eventId.isBlank() || inboundEventRepository.existsByEventId(eventId)) {
             return;
         }

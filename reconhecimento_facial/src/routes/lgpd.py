@@ -4,6 +4,8 @@ from __future__ import annotations
 import io
 import json
 
+from cv2 import data
+from cv2 import data
 from flask import Blueprint, jsonify, request, send_file
 
 from .. import db
@@ -60,7 +62,7 @@ def export(employee_id: str):
         data = export_employee_data(employee_id)
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 404
-    payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    payload = json.dumps(data, ensure_ascii=False, indent=2, default=str).encode("utf-8")
     return send_file(
         io.BytesIO(payload),
         mimetype="application/json",

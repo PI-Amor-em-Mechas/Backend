@@ -2,7 +2,7 @@
 
 Executar (PowerShell, a partir da raiz do projeto):
 
-    $env:DB_USER="mechas"; $env:DB_PASSWORD="mechas123"; $env:DB_HOST="127.0.0.1"; $env:DB_PORT="3306"; $env:DB_NAME="amor_em_mechas"; $env:HOST="127.0.0.1"; $env:PORT="5000"; .\\venv\\Scripts\\python.exe -m src.web_app
+    $env:DB_USER="mechas"; $env:DB_PASSWORD="mechas123"; $env:DB_HOST="127.0.0.1"; $env:DB_PORT="3306"; $env:DB_NAME="amor_em_mechas"; $env:HOST="127.0.0.1"; $env:PORT="5000"; .\\.venv\\Scripts\\python.exe -m src.web_app
 """
 from __future__ import annotations
 

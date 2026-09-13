@@ -18,7 +18,7 @@ PyMySQL>=1.1.0
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu
 # webrtcvad-wheels provides prebuilt Windows wheels (avoids MSVC build tools);
 # it ships the same `webrtcvad` module that resemblyzer imports.
-webrtcvad-wheels>=2.0.14
-resemblyzer>=0.1.4
+#webrtcvad-wheels>=2.0.14
+# resemblyzer>=0.1.4
 torch>=2.0.0
 librosa>=0.10.0

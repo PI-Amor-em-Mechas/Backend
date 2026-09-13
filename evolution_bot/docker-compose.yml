@@ -3,13 +3,16 @@ services:
   mysql:
     image: mysql:8.4
     container_name: evolution-bot-mysql
+    network_mode: host
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: evolution_bot
+      MYSQL_TCP_PORT: "3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -17,6 +20,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: evolution-redis
+    network_mode: host
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     healthcheck:
@@ -28,30 +33,32 @@ services:
   evolution-api:
     image: evoapicloud/evolution-api:v2.3.7
     container_name: evolution-api
-    ports:
-      - "8081:8080"
+    network_mode: host
+    restart: unless-stopped
     environment:
+      - SERVER_PORT=8081
       - AUTHENTICATION_API_KEY=${EVOLUTION_GLOBAL_API_KEY:-minha-chave-global}
       - DATABASE_ENABLED=true
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://postgres:postgres@evolution-postgres:5432/evolution
+      - DATABASE_CONNECTION_URI=postgresql://postgres:postgres@127.0.0.1:5432/evolution
       - DATABASE_SAVE_DATA_INSTANCE=true
       - DATABASE_SAVE_DATA_NEW_MESSAGE=true
       - DATABASE_SAVE_DATA_CONTACTS=true
       - CACHE_REDIS_ENABLED=true
-      - CACHE_REDIS_URI=redis://redis:6379
+      - CACHE_REDIS_URI=redis://127.0.0.1:6379
       - CACHE_LOCAL_ENABLED=false
+      - WEBHOOK_GLOBAL_ENABLED=true
+      - WEBHOOK_GLOBAL_URL=http://127.0.0.1:8080/webhooks/evolution
+      - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=false
+      - WEBHOOK_EVENTS_MESSAGES_UPSERT=true
     volumes:
       - evolution_instances:/evolution/instances
-    depends_on:
-      evolution-postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   evolution-postgres:
     image: postgres:16-alpine
     container_name: evolution-postgres
+    network_mode: host
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -59,29 +66,23 @@ services:
     volumes:
       - evolution_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -h 127.0.0.1"]
       interval: 5s
       timeout: 3s
       retries: 10
 
   app:
-    build: .
+    image: evolution-bot-app
     container_name: evolution-bot-app
-    ports:
-      - "8080:8080"
+    network_mode: host
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/evolution_bot?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_URL: jdbc:mysql://127.0.0.1:3306/evolution_bot?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: root
       DB_PASSWORD: ${DB_PASSWORD:-root}
-      EVOLUTION_BASE_URL: http://evolution-api:8080
+      EVOLUTION_BASE_URL: http://127.0.0.1:8081
       EVOLUTION_API_KEY: ${EVOLUTION_GLOBAL_API_KEY:-minha-chave-global}
       EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-default}
       EVOLUTION_WEBHOOK_TOKEN: ${EVOLUTION_WEBHOOK_TOKEN:-meu-token-webhook}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      evolution-api:
-        condition: service_started
     restart: unless-stopped
 
 volumes:

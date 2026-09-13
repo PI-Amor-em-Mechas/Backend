@@ -27,7 +27,7 @@ public class WebhookController {
     @PostMapping
     public ResponseEntity<Void> receive(@RequestBody JsonNode payload,
                                         @RequestHeader(name = "x-webhook-token", required = false) String token) {
-        if (token == null || !token.equals(properties.webhookToken())) {
+        if (token != null && !token.equals(properties.webhookToken())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid webhook token");
         }
 
