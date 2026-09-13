@@ -119,7 +119,9 @@ PRELOAD_VOICE_BIOMETRY_ENCODER = os.getenv(
 
 ADMIN_PROFILE_PASSWORD = os.getenv("ADMIN_PROFILE_PASSWORD", "admin123")
 
-# ---- Banco de dados (MariaDB / MySQL) ----
+# ---- Banco de dados (MariaDB / MySQL ou SQLite) ----
+# DB_BACKEND: "mysql" (padrao) ou "sqlite" (fallback local sem MySQL)
+DB_BACKEND = os.getenv("DB_BACKEND", "mysql").strip().lower()
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER", "root")
