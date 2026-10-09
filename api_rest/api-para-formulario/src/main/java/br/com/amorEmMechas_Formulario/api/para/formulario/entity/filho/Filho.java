@@ -4,10 +4,6 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "Filho")
@@ -16,6 +12,7 @@ public class Filho {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_filho")
     private Integer id;
 
     private Integer idade;

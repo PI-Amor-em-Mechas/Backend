@@ -122,7 +122,7 @@ public class AuthController {
                 }
 
                 String accessToken = jwtTokenProvider.generateDevToken(username, role);
-                String refreshToken = jwtTokenProvider.generateRefreshToken(username);
+                String refreshToken = jwtTokenProvider.generateDevRefreshToken(username, role);
                 return ResponseEntity.ok(Map.of(
                                 "mensagem", "Token de desenvolvimento gerado sem consultar o banco",
                                 "usuario", username,
@@ -152,7 +152,17 @@ public class AuthController {
         }
 
         String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
-        String newAccessToken = jwtTokenProvider.generateTokenFromUsername(username);
+                String newAccessToken;
+                if (Boolean.TRUE.equals(jwtTokenProvider.getClaim(refreshToken, "dev", Boolean.class))) {
+                        String role = jwtTokenProvider.getClaim(refreshToken, "role", String.class);
+                        if (role == null || !role.matches("ROLE_(ADMIN|MEDICO|ENFERMEIRO|ATENDENTE|USER)")) {
+                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                                .body(Map.of("mensagem", "Refresh token inválido ou expirado"));
+                        }
+                        newAccessToken = jwtTokenProvider.generateDevToken(username, role);
+                } else {
+                        newAccessToken = jwtTokenProvider.generateTokenFromUsername(username);
+                }
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", newAccessToken,

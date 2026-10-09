@@ -10,6 +10,7 @@ public class Madrinha {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_madrinha")
     private Integer id;
 
     private String nomeCompleto;

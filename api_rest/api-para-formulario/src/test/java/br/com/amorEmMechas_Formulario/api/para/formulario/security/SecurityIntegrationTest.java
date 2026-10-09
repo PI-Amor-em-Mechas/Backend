@@ -80,6 +80,15 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("Gerador de token demo fica desabilitado fora do perfil dev")
+    void geradorDemoDesabilitadoForaDoPerfilDev() throws Exception {
+        mockMvc.perform(post("/auth/dev-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"demo.atendente\",\"role\":\"ROLE_ATENDENTE\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("Acesso sem token a endpoint protegido retorna 401")
     void acessoSemTokenRetorna401() throws Exception {
         mockMvc.perform(get("/pacientes"))

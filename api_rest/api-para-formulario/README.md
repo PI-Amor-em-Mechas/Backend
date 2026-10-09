@@ -52,7 +52,11 @@ A API está em conformidade com a Lei 13.709/2018:
 
 | Variável | Descrição | Valor padrão (dev) |
 |---|---|---|
-| `DB_PASSWORD` | Senha do banco MySQL | `123456` |
+| `DB_HOST` | Host do MySQL | `127.0.0.1` |
+| `DB_PORT` | Porta do MySQL | `3306` |
+| `DB_NAME` | Database MySQL | `amor_em_mechas` |
+| `DB_USER` | Usuário do MySQL | `mechas` |
+| `DB_PASSWORD` | Senha do banco MySQL | Obrigatória por variável de ambiente |
 | `JWT_SECRET` | Chave secreta JWT (mín. 256 bits) | Base64 embutido |
 | `PHI_ENCRYPTION_KEY` | Chave AES-256 para dados médicos | Base64 embutido |
 | `CORS_ORIGINS` | Origens permitidas (separadas por vírgula) | `http://localhost:3000,http://localhost:4200` |
@@ -122,7 +126,9 @@ python -m http.server 3000
 
 Acesse `http://localhost:3000` e abra a aba **Token Lab**. Com o perfil `dev`, a tela usa `/auth/dev-token`, que assina o JWT sem consultar o MySQL, exibe a validade do token e permite testar uma rota protegida com o header `Authorization: Bearer`. Ela é destinada somente a desenvolvimento e não deve receber credenciais reais.
 
-Para executar sem MySQL, inicie a API com o perfil H2 em memória:
+O perfil `dev` usa o MySQL configurado pelas variáveis `DB_HOST`, `DB_PORT`,
+`DB_NAME`, `DB_USER` e `DB_PASSWORD`. Para usar outros valores, defina essas
+variáveis no ambiente antes de iniciar a API. O perfil `dev` não usa H2.
 
 ```bash
 ./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"

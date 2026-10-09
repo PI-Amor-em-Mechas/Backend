@@ -64,6 +64,21 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    public String generateDevRefreshToken(String username, String role) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshExpirationMs);
+
+        return Jwts.builder()
+                .subject(username)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .claim("type", "refresh")
+                .claim("dev", true)
+                .claim("role", role)
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     public String generateDevToken(String username, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);

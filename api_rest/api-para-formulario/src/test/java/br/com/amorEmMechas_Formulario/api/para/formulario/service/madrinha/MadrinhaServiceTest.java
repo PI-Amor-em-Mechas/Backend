@@ -3,12 +3,15 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.madrinha;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.madrinha.MadrinhaRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.madrinha.MadrinhaResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.madrinha.Madrinha;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.madrinha.StatusMadrinha;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.madrinha.MadrinhaMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.madrinha.MadrinhaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -83,6 +86,7 @@ class MadrinhaServiceTest {
         Madrinha semData = new Madrinha();
         semData.setNomeCompleto("Nova");
         semData.setDataCadastro(null);
+        semData.setStatus("Ativa");
 
         when(mapper.toEntity(requestDto)).thenReturn(semData);
         when(repository.save(semData)).thenReturn(semData);
@@ -91,6 +95,18 @@ class MadrinhaServiceTest {
         service.create(requestDto);
 
         assertThat(semData.getDataCadastro()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void create_statusInvalido_deveRejeitarSemSalvar() {
+        requestDto.setStatus("TESTE - NAO USAR");
+
+        assertThatThrownBy(() -> service.create(requestDto))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(error -> ((ResponseStatusException) error).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verifyNoInteractions(mapper, repository);
     }
 
     // ===== UPDATE =====
@@ -144,16 +160,47 @@ class MadrinhaServiceTest {
                 .hasMessageContaining("99");
     }
 
+    @Test
+    void update_statusInvalido_deveRejeitarAntesDeConsultarBanco() {
+        requestDto.setStatus("Ativa ");
+
+        assertThatThrownBy(() -> service.update(1, requestDto))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(error -> ((ResponseStatusException) error).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verifyNoInteractions(repository);
+    }
+
     // ===== FIND =====
 
     @Test
     void findAll_deveRetornarListaCompleta() {
-        when(repository.findAll()).thenReturn(List.of(madrinha));
+        when(repository.findByStatusIn(StatusMadrinha.apiValues())).thenReturn(List.of(madrinha));
         when(mapper.toResponse(madrinha)).thenReturn(responseDto);
 
         List<MadrinhaResponseDto> result = service.findAll();
 
         assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findAll_naoDeveRetornarStatusLegadoOuComCapitalizacaoInvalida() {
+        Madrinha legado = new Madrinha();
+        legado.setStatus("TESTE - NAO USAR");
+        Madrinha capitalizacaoInvalida = new Madrinha();
+        capitalizacaoInvalida.setStatus("ativa");
+        when(repository.findByStatusIn(StatusMadrinha.apiValues()))
+                .thenReturn(List.of(madrinha, legado, capitalizacaoInvalida));
+        when(mapper.toResponse(madrinha)).thenReturn(responseDto);
+
+        List<MadrinhaResponseDto> result = service.findAll();
+
+        assertThat(result)
+            .hasSize(1)
+            .allMatch(dto -> StatusMadrinha.isAllowed(dto.getStatus()));
+        verify(mapper, never()).toResponse(legado);
+        verify(mapper, never()).toResponse(capitalizacaoInvalida);
     }
 
     @Test

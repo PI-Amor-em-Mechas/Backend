@@ -2,7 +2,9 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.config;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.security.JwtAuthenticationFilter;
 import br.com.amorEmMechas_Formulario.api.para.formulario.security.JwtAuthenticationEntryPoint;
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -60,6 +62,14 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
+
+        @Bean
+        public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration() {
+                FilterRegistrationBean<JwtAuthenticationFilter> registration =
+                                new FilterRegistrationBean<>(jwtAuthenticationFilter);
+                registration.setEnabled(false);
+                return registration;
+        }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -141,6 +151,9 @@ public class SecurityConfig {
 
                         // Arquivos (laudos) - listar/baixar exige autenticaÃ§Ã£o; upload jÃ¡ Ã© publico acima
                         .requestMatchers("/arquivos/**").authenticated()
+
+                        // Permite o dispatch interno de erro preservar o status original (401/403).
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 
                         .anyRequest().authenticated()
                 )

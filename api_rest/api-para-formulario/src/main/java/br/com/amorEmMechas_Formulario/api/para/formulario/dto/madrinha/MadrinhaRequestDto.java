@@ -3,6 +3,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.dto.madrinha;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDate;
 
@@ -24,6 +25,7 @@ public class MadrinhaRequestDto {
     private LocalDate dataCadastro;
 
     @NotBlank
+    @Pattern(regexp = "^(Ativa|Afastada|Desassociada)$", message = "Status deve ser Ativa, Afastada ou Desassociada")
     private String status;
 
     public String getNomeCompleto() {

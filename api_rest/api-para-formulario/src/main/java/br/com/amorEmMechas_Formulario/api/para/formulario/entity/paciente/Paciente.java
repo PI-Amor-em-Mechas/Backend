@@ -5,7 +5,6 @@
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.endereco.Endereco;
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
-    import br.com.amorEmMechas_Formulario.api.para.formulario.entity.kitAmor.KitAmor;
     import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
     import jakarta.persistence.*;
 
@@ -20,15 +19,20 @@
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "id_paciente")
         private Integer id;
         private String nomeCompleto;
         private String email;
+        @Column(name = "data_pedido")
         private LocalDate dtPedido;
+        @Column(name = "celular")
         private String cel;
+        @Column(name = "data_nascimento")
         private LocalDate dtNasc;
         private String estadoCivil;
         private Boolean temFilhos;
         private Integer qtdFilhos;
+        @Column(name = "qtd_pessoas_casa")
         private Integer qtdPessoasEmCasa;
         private String cpf;
 
