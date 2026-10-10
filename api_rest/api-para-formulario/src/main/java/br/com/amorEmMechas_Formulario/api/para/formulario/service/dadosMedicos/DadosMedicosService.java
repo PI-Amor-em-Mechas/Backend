@@ -4,6 +4,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.Dados
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacaoDocumento;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.dadosMedicos.DadosMedicosMapper;
@@ -12,6 +13,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.repository.dadosMedico
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.security.PhiEncryptionUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -48,6 +51,13 @@ public class DadosMedicosService {
                                             + " Não Encontrado"
                             )
                     );
+
+                    if (arquivo.getStatusValidacao() != StatusValidacaoDocumento.APROVADO) {
+                    throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "O documento medico precisa ser aprovado antes de ser associado aos dados medicos"
+                    );
+                    }
 
             entity.setArquivo(arquivo);
         }

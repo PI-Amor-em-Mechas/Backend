@@ -2,6 +2,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo;
 
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 
 @Entity
@@ -22,6 +23,19 @@ public class Arquivo {
     private String tipo;
 
     private String caminhoArquivo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_validacao", nullable = false, length = 20)
+    private StatusValidacaoDocumento statusValidacao = StatusValidacaoDocumento.PENDENTE;
+
+    @Column(name = "validado_por", length = 100)
+    private String validadoPor;
+
+    @Column(name = "validado_em")
+    private LocalDateTime validadoEm;
+
+    @Column(name = "observacao_validacao", length = 1000)
+    private String observacaoValidacao;
 
     public String getCaminhoArquivo() {
         return caminhoArquivo;
@@ -77,5 +91,37 @@ public class Arquivo {
 
     public void setTipo(String tipo) {
         this.tipo = tipo;
+    }
+
+    public StatusValidacaoDocumento getStatusValidacao() {
+        return statusValidacao;
+    }
+
+    public void setStatusValidacao(StatusValidacaoDocumento statusValidacao) {
+        this.statusValidacao = statusValidacao;
+    }
+
+    public String getValidadoPor() {
+        return validadoPor;
+    }
+
+    public void setValidadoPor(String validadoPor) {
+        this.validadoPor = validadoPor;
+    }
+
+    public LocalDateTime getValidadoEm() {
+        return validadoEm;
+    }
+
+    public void setValidadoEm(LocalDateTime validadoEm) {
+        this.validadoEm = validadoEm;
+    }
+
+    public String getObservacaoValidacao() {
+        return observacaoValidacao;
+    }
+
+    public void setObservacaoValidacao(String observacaoValidacao) {
+        this.observacaoValidacao = observacaoValidacao;
     }
 }

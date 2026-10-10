@@ -14,6 +14,10 @@ public class ArquivoMapper {
         arquivoResponseDto.setNome(arquivo.getNome());
         arquivoResponseDto.setMimeType(arquivo.getMimeType());
         arquivoResponseDto.setTamanho(arquivo.getTamanho());
+        arquivoResponseDto.setStatusValidacao(arquivo.getStatusValidacao());
+        arquivoResponseDto.setValidadoPor(arquivo.getValidadoPor());
+        arquivoResponseDto.setValidadoEm(arquivo.getValidadoEm());
+        arquivoResponseDto.setObservacaoValidacao(arquivo.getObservacaoValidacao());
         arquivoResponseDto.setNomeOriginal(arquivo.getNomeOriginal());
 
         return arquivoResponseDto;

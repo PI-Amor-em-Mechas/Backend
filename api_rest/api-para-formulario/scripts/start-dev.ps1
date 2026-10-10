@@ -12,7 +12,7 @@ if (-not (Get-Command java -ErrorAction SilentlyContinue)) {
     throw "Java nao foi encontrado no PATH. Instale o JDK 21 ou superior."
 }
 
-$javaVersion = (java -version 2>&1 | Select-Object -First 1)
+$javaVersion = (cmd /c "java -version 2>&1" | Select-Object -First 1)
 Write-Host "Java detectado: $javaVersion" -ForegroundColor DarkGray
 
 if (-not (Test-Path ".\mvnw.cmd")) {
@@ -27,7 +27,7 @@ if (-not $SkipTests) {
     }
 }
 
-Write-Host "Subindo API com perfil dev (H2 em memoria) na porta $Port..." -ForegroundColor Green
+Write-Host "Subindo API com perfil dev (MySQL via variaveis DB_*) na porta $Port..." -ForegroundColor Green
 Write-Host "Swagger: http://localhost:$Port/swagger-ui.html" -ForegroundColor Yellow
 Write-Host "OpenAPI: http://localhost:$Port/v3/api-docs" -ForegroundColor Yellow
 Write-Host "Health:  http://localhost:$Port/actuator/health" -ForegroundColor Yellow

@@ -92,6 +92,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Structural PDF inspection for uploaded documents -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.8</version>
+		</dependency>
+
 		<!-- Testes -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

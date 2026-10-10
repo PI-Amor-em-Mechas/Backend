@@ -136,6 +136,13 @@ public class SecurityConfig {
                         .requestMatchers("/dados-medicos/**", "/dadosMedicos/**")
                         .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO")
 
+                        .requestMatchers("/arquivos/pendentes-validacao", "/arquivos/*/validacao")
+                        .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO")
+
+                        // Revisao humana de documentos medicos
+                        .requestMatchers("/arquivos/pendentes-validacao", "/arquivos/*/validacao")
+                        .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO")
+
                         // Madrinhas - uso interno da equipe, sempre privado
                         .requestMatchers("/madrinhas/**")
                         .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO", "ATENDENTE")

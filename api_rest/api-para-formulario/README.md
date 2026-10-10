@@ -247,12 +247,35 @@ O primeiro envio não exige conta ou token, pois é realizado pela usuária fina
 
 ### Arquivos (`/arquivos`)
 
+O upload aceita somente PDF, JPEG/JPG ou PNG, compara a assinatura com a
+extensão e limita o arquivo a 10 MB. PDFs são analisados estruturalmente pelo
+Apache PDFBox 3.0.8 em modo estrito; documentos criptografados, ilegíveis,
+excessivamente grandes em páginas/objetos/profundidade ou com ações ativas,
+anexos, XFA ou multimídia são rejeitados antes da gravação. Os limites podem ser
+ajustados por `UPLOAD_PDF_MAX_PAGES` (100), `UPLOAD_PDF_MAX_OBJECTS` (100000),
+`UPLOAD_PDF_MAX_DEPTH` (100) e `UPLOAD_PDF_MAX_PROCESSING_MS` (3000).
+
+A inspeção estrutural não é antivírus e não comprova autoria ou legitimidade
+médica. O limite de processamento é verificado durante a inspeção, mas não
+interrompe de forma forçada uma chamada interna do parser; processamento de
+arquivos não confiáveis em produção deve usar isolamento de processo/contêiner
+com limites próprios de memória e encerramento. Todo upload aceito inicia como
+`PENDENTE`; somente ADMIN, MEDICO ou ENFERMEIRO pode listá-lo para revisão e
+marcá-lo `APROVADO` ou `REJEITADO`. Rejeições exigem observação. O revisor e o
+horário ficam registrados e arquivos não aprovados não podem ser baixados por
+outros perfis.
+
+Em bancos existentes, aplique uma vez `scripts/migrate-document-review.sql`.
+Documentos antigos são migrados para `PENDENTE`, nunca aprovados automaticamente.
+
 | Método | Endpoint | Descrição | Acesso |
 |---|---|---|---|
 | GET | `/arquivos` | Listar arquivos | Autenticado |
 | GET | `/arquivos/{id}` | Buscar metadados | Autenticado |
 | GET | `/arquivos/{id}/download` | Download do arquivo | Autenticado |
-| POST | `/arquivos` | Upload (multipart) | Autenticado |
+| POST | `/arquivos` | Upload (multipart; inicia pendente) | Público para formulário |
+| GET | `/arquivos/pendentes-validacao` | Fila de revisão | ADMIN, MEDICO, ENFERMEIRO |
+| PATCH | `/arquivos/{id}/validacao` | Aprovar/rejeitar e registrar decisão | ADMIN, MEDICO, ENFERMEIRO |
 
 ### Solicitantes (`/solicitantes`)
 

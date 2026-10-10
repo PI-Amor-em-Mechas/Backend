@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS `amor_em_mechas`.`arquivo` (
   `nome_original` VARCHAR(255) NULL DEFAULT NULL,
   `tamanho` BIGINT NULL DEFAULT NULL,
   `tipo` VARCHAR(255) NULL DEFAULT NULL,
+  `status_validacao` VARCHAR(20) NOT NULL DEFAULT 'PENDENTE',
+  `validado_por` VARCHAR(100) NULL DEFAULT NULL,
+  `validado_em` DATETIME(6) NULL DEFAULT NULL,
+  `observacao_validacao` VARCHAR(1000) NULL DEFAULT NULL,
   `caminho_arquivo` VARCHAR(255) NULL DEFAULT NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB

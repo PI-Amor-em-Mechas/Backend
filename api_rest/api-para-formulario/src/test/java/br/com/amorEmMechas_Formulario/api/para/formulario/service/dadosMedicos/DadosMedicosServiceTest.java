@@ -3,6 +3,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.dadosMedicos;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacaoDocumento;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -81,6 +83,7 @@ class DadosMedicosServiceTest {
     void create_deveSalvarECarregarResponse() {
         Arquivo arquivo = new Arquivo();
         arquivo.setId(1);
+        arquivo.setStatusValidacao(StatusValidacaoDocumento.APROVADO);
         Paciente paciente = new Paciente();
         paciente.setId(1);
 
@@ -132,6 +135,24 @@ class DadosMedicosServiceTest {
 
         assertThat(service.findAll()).hasSize(1);
     }
+
+            @Test
+            void create_deveImpedirAssociacaoDeRelatorioPendente() {
+                Arquivo arquivo = new Arquivo();
+                arquivo.setId(1);
+                arquivo.setStatusValidacao(StatusValidacaoDocumento.PENDENTE);
+                Paciente paciente = new Paciente();
+                paciente.setId(1);
+
+                when(mapper.toEntity(requestDto)).thenReturn(entity);
+                when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
+
+                assertThatThrownBy(() -> service.create(requestDto))
+                        .isInstanceOf(ResponseStatusException.class);
+
+                verify(repository, never()).save(any());
+                verifyNoInteractions(pacienteRepository);
+            }
 
     @Test
     void findById_quandoExiste_deveRetornarDto() {
