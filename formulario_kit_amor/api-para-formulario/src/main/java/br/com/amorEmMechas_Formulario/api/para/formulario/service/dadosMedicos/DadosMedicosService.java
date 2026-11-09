@@ -12,6 +12,11 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.repository.dadosMedico
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.security.PhiEncryptionUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacao;
+import java.util.Objects;
 
 import java.util.List;
 
@@ -32,6 +37,7 @@ public class DadosMedicosService {
         this.phiEncryptionUtil = phiEncryptionUtil;
     }
 
+    @Transactional
     public DadosMedicosResponseDto create(DadosMedicosRequestDto dto) {
 
         DadosMedicos entity = mapper.toEntity(dto);
@@ -49,6 +55,7 @@ public class DadosMedicosService {
                             )
                     );
 
+            validarRelatorio(arquivo, dto.getPacienteId());
             entity.setArquivo(arquivo);
         }
 
@@ -109,6 +116,7 @@ public class DadosMedicosService {
         repository.deleteById(id);
     }
 
+    @Transactional
     public DadosMedicosResponseDto update(
             Integer id,
             DadosMedicosRequestDto dto
@@ -123,6 +131,18 @@ public class DadosMedicosService {
                         )
                 );
 
+        if (dadosMedicos.getPaciente() != null
+                && !Objects.equals(dadosMedicos.getPaciente().getId(), dto.getPacienteId())) {
+            throw new IllegalArgumentException("Nao e permitido trocar o paciente dos dados medicos");
+        }
+
+        if (dto.getRelatorioMedicoId() != null) {
+            Arquivo arquivo = arquivoRepository.findById(dto.getRelatorioMedicoId().longValue())
+                    .orElseThrow(() -> new IdNotFoundException("Relatorio medico nao encontrado"));
+            validarRelatorio(arquivo, dto.getPacienteId());
+            dadosMedicos.setArquivo(arquivo);
+        }
+
         dadosMedicos.setMotivo(dto.getMotivo());
         dadosMedicos.setTipoCancer(dto.getTipoCancer());
         dadosMedicos.setJustificativa(dto.getJustificativa());
@@ -132,25 +152,19 @@ public class DadosMedicosService {
         // LGPD - Criptografar dados sensiveis
         encryptSensitiveFields(dadosMedicos);
 
-        // NOVO
-        if (dto.getRelatorioMedicoId() != null) {
-
-            Arquivo arquivo = arquivoRepository
-                    .findById(dto.getRelatorioMedicoId().longValue())
-                    .orElseThrow(() ->
-                            new IdNotFoundException(
-                                    "ID ARQUIVO: "
-                                            + dto.getRelatorioMedicoId()
-                                            + " Não Encontrado"
-                            )
-                    );
-
-            dadosMedicos.setArquivo(arquivo);
-        }
-
         DadosMedicos dadosSave = repository.save(dadosMedicos);
 
         return mapper.toResponse(dadosSave);
+    }
+
+    private void validarRelatorio(Arquivo arquivo, Integer pacienteId) {
+        if (arquivo.getStatusValidacao() != StatusValidacao.APROVADO) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "O laudo ainda nao foi aprovado");
+        }
+        if ("FOTO_CABELO".equals(arquivo.getTipo()) || arquivo.getPaciente() == null
+                || !Objects.equals(arquivo.getPaciente().getId(), pacienteId)) {
+            throw new IllegalArgumentException("Relatorio medico nao pertence a este paciente");
+        }
     }
 
     private void encryptSensitiveFields(DadosMedicos entity) {

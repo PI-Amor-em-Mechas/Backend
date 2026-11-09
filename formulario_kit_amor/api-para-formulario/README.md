@@ -40,6 +40,71 @@ A API está em conformidade com a Lei 13.709/2018:
 | Art. 12 | Anonimização | Dados pessoais substituídos por `[ANONIMIZADO]` |
 | Minimização | Mascaramento | CPF exibido como `***.***.***-XX` nas respostas da API |
 
+## API de solicitações de peruca
+
+Disponível no Swagger em `http://localhost:8080/swagger-ui.html` e no OpenAPI
+em `/v3/api-docs`, tag **Solicitacoes**. Utilize **Authorize** com o access token
+JWT. As três rotas exigem `ADMIN`, `MEDICO`, `ENFERMEIRO` ou `ATENDENTE`.
+
+| Método | Rota | Função |
+|---|---|---|
+| GET | `/solicitacoes` | Lista paginada de ativas; `page` (base zero), `size`, `sort`, `busca` por nome/e-mail |
+| GET | `/solicitacoes/{id}` | Paciente, contato, endereço, família, dados médicos, nome do solicitante e kits; CPF completo para a equipe autorizada |
+| PATCH | `/solicitacoes/{id}/status` | Encerra pedido ativo com `{"status":"CONCLUIDA"}` ou `{"status":"CANCELADA"}` |
+
+O ID da solicitação corresponde ao ID do paciente, mantendo o fluxo de cadastro
+existente, sem duplicar pedidos. Um cadastro novo inicia `ATIVA`. Registros
+legados com coluna nula também são interpretados como `ATIVA`, inclusive
+cadastros incompletos/aguardando laudo. Pedidos anonimizados são excluídos da
+lista, dos detalhes e das alterações.
+
+Somente `GET /solicitacoes/{id}` retorna o CPF completo para o modal da equipe.
+As demais rotas de pacientes continuam mascarando o CPF. A criptografia no
+banco e a auditoria de acesso permanecem habilitadas.
+
+A coluna JPA `Paciente.status_solicitacao` é criada pelo `ddl-auto=update` já
+configurado. Para ambientes que controlam DDL externamente, aplique antes do
+deploy: `ALTER TABLE paciente ADD COLUMN status_solicitacao VARCHAR(20) NULL;`
+(ajuste a capitalização da tabela ao banco). Não é necessário alterar valores
+legados: `NULL` significa ativo por compatibilidade.
+
+O encerramento é transacional com bloqueio de escrita: o primeiro atendimento
+persiste a decisão; um segundo retorna `409`. Não permite reabertura nem exclui
+pacientes ou altera entregas. Respostas: `400` status inválido, `401` sem JWT,
+`403` perfil sem permissão, `404` pedido inexistente/anonimizado, `409` encerrado.
+Acesso e alterações participam da auditoria existente de pacientes.
+A lista retorna `content`, `totalElements`, `totalPages` e demais metadados de
+`Page`; a ordem padrão é `dtPedido DESC, id DESC`.
+
+Testes específicos: `.\mvnw.cmd "-Dtest=Solicitacao*Test" test`.
+
+## Revisao humana de documentos
+
+Nao ha OCR, comparacao automatica ou dependencia de Tesseract.
+
+- `POST /arquivos`: multipart `arquivo`, `tipo` e `pacienteId` opcional.
+  Associar ao paciente exige `ADMIN`, `MEDICO` ou `ENFERMEIRO`.
+- `GET /arquivos/pendentes-validacao`: fila para os mesmos perfis revisores,
+  excluindo `FOTO_CABELO`. Arquivos legados sem status sao pendentes.
+- `PATCH /arquivos/{id}/validacao`: `decisao` (`APROVADO` ou `REJEITADO`) e
+  `observacao` (ate 2000 caracteres; obrigatoria para rejeicao).
+  Persiste decisao, data e usuario revisor. Segunda revisao retorna `409`.
+- `GET /arquivos/{id}` retorna status, observacao, `dataUpload` e `validadoEm`.
+  Downloads continuam autenticados; documentos nao aprovados so podem ser
+  baixados pela equipe revisora.
+- Criar ou atualizar dados medicos exige laudo aprovado e associado ao mesmo
+  paciente. Um laudo pendente/rejeitado retorna `409`, sem persistir alteracoes.
+
+Uploads permitem PDF, JPG/JPEG e PNG, ate 10 MiB. O servidor normaliza nomes,
+confere extensao/MIME, inicio/fim do PDF e decodificacao de imagens. Nao ha
+antivirus nem inspecao estrutural completa de PDFs. A revisao humana nao e
+substituto dessas camadas.
+
+Com `ddl-auto=update`, o JPA adiciona as colunas de revisao e `paciente_id` em
+`Arquivo`. Ambientes com migracoes externas devem provisionar essas colunas
+antes de executar a nova versao. Arquivos antigos sem associacao nao podem ser
+usados em novos dados medicos: envie o laudo com `pacienteId` pela equipe.
+
 ## Pré-requisitos
 
 - JDK 21+

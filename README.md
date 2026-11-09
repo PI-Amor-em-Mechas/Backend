@@ -1,16 +1,21 @@
 # Backend - Amor em Mechas
 
-Repositório com dois projetos backend do sistema Amor em Mechas:
+Repositório com os projetos backend do sistema Amor em Mechas:
 
 - API REST para formulário de pacientes (Java + Spring Boot + JPA).
 - Módulo de reconhecimento facial para registro de ponto (Python + OpenCV + MediaPipe).
+- Bot de atendimento integrado à Evolution API (Java + Spring Boot).
+- Dashboard MVP estático, preservado em `api_rest/dashboard-mvp`.
 
 ## Estrutura do repositório
 
 ```text
 Backend/
-├── api_rest/
+├── formulario_kit_amor/
 │   └── api-para-formulario/
+├── api_rest/
+│   └── dashboard-mvp/
+├── evolution_bot/
 └── reconhecimento_facial/
 ```
 
@@ -47,7 +52,7 @@ Backend/
 Diretorio do projeto:
 
 ```bash
-cd api_rest/api-para-formulario
+cd formulario_kit_amor/api-para-formulario
 ```
 
 ### Banco MySQL esperado
@@ -170,5 +175,8 @@ python src/app.py
 
 ## Observacoes
 
-- Este repositório e um monorepo com dois projetos independentes.
+- A API foi movida de `api_rest/api-para-formulario` para
+  `formulario_kit_amor/api-para-formulario`. Execute builds e testes no novo caminho.
+- O bot e o dashboard MVP foram preservados na integração; o
+  [README do bot](evolution_bot/README.md) descreve sua execução e dependências.
 - O README interno de `reconhecimento_facial` traz detalhes adicionais do modulo Python.

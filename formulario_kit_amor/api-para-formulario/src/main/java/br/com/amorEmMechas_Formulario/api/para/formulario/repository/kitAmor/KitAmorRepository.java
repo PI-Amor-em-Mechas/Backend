@@ -10,6 +10,8 @@ import java.util.List;
 
 public interface KitAmorRepository extends JpaRepository<KitAmor, Integer> {
 
+    List<KitAmor> findByPacienteIdOrderByIdAsc(Integer pacienteId);
+
     @Query("SELECT k FROM KitAmor k LEFT JOIN k.paciente p LEFT JOIN p.endereco e WHERE " +
            "(:estado IS NULL OR e.estado = :estado) AND " +
            "(:dataInicio IS NULL OR p.dtPedido >= :dataInicio) AND " +

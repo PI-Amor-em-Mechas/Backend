@@ -1,6 +1,9 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.StatusSolicitacao;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +15,20 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PacienteRepository extends JpaRepository<Paciente, Integer> {
+
+    @Query("""
+            SELECT p FROM Paciente p
+            WHERE p.dadosAnonimizados = false
+              AND (p.statusSolicitacao IS NULL OR p.statusSolicitacao = :status)
+              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                   OR LOWER(p.email) LIKE LOWER(CONCAT('%', :busca, '%')))
+            """)
+    Page<Paciente> findSolicitacoesAtivas(@Param("status") StatusSolicitacao status,
+                                         @Param("busca") String busca, Pageable pageable);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Paciente p WHERE p.id = :id AND p.dadosAnonimizados = false")
+    Optional<Paciente> findSolicitacaoParaAtualizar(@Param("id") Integer id);
 
     Optional<Paciente> findBySolicitanteId(Integer solicitanteId);
 

@@ -15,6 +15,22 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> uploadMuitoGrande(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+                "timestamp", LocalDateTime.now().toString(),
+                "status", 413,
+                "erro", "Limite de 10 MiB por arquivo"));
+    }
+
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<?> responseStatus(org.springframework.web.server.ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode()).body(Map.of(
+                "timestamp", LocalDateTime.now().toString(),
+                "status", ex.getStatusCode().value(),
+                "erro", ex.getReason() == null ? "Falha na requisicao" : ex.getReason()));
+    }
+
     @ExceptionHandler(IdNotFoundException.class)
     public ResponseEntity<?> idNotFound(IdNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(

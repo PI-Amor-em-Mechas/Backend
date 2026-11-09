@@ -32,6 +32,18 @@
         private Integer qtdPessoasEmCasa;
         private String cpf;
 
+        @Enumerated(EnumType.STRING)
+        @Column(length = 20)
+        private StatusSolicitacao statusSolicitacao = StatusSolicitacao.ATIVA;
+
+        public StatusSolicitacao getStatusSolicitacao() {
+            return statusSolicitacao == null ? StatusSolicitacao.ATIVA : statusSolicitacao;
+        }
+
+        public void setStatusSolicitacao(StatusSolicitacao statusSolicitacao) {
+            this.statusSolicitacao = statusSolicitacao;
+        }
+
         // LGPD - Consentimento do titular (Art. 7, 8)
         @Column(nullable = false)
         private Boolean consentimentoLgpd = false;

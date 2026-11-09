@@ -1,5 +1,8 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.dto.arquivo;
 
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacao;
+import java.time.LocalDateTime;
+
 public class ArquivoResponseDto {
 
     private Long id;
@@ -8,6 +11,19 @@ public class ArquivoResponseDto {
     private String nomeOriginal;
     private String mimeType;
     private Long tamanho;
+    private StatusValidacao statusValidacao;
+    private String observacaoValidacao;
+    private LocalDateTime dataUpload;
+    private LocalDateTime validadoEm;
+
+    public StatusValidacao getStatusValidacao() { return statusValidacao; }
+    public void setStatusValidacao(StatusValidacao statusValidacao) { this.statusValidacao = statusValidacao; }
+    public String getObservacaoValidacao() { return observacaoValidacao; }
+    public void setObservacaoValidacao(String observacaoValidacao) { this.observacaoValidacao = observacaoValidacao; }
+    public LocalDateTime getDataUpload() { return dataUpload; }
+    public void setDataUpload(LocalDateTime dataUpload) { this.dataUpload = dataUpload; }
+    public LocalDateTime getValidadoEm() { return validadoEm; }
+    public void setValidadoEm(LocalDateTime validadoEm) { this.validadoEm = validadoEm; }
 
 
     public Long getId() {

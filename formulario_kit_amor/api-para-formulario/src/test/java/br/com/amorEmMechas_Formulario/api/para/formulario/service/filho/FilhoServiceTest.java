@@ -66,14 +66,19 @@ class FilhoServiceTest {
 
     @Test
     void create_deveSalvarECarregarResponse() {
+        when(pacienteRepository.findById(100)).thenReturn(Optional.of(paciente));
         when(mapper.toEntity(requestDto)).thenReturn(filho);
         when(repository.save(filho)).thenReturn(filho);
-        when(mapper.toResponse(filho)).thenReturn(responseDto);
+        when(repository.countByPacienteId(100)).thenReturn(1);
 
         FilhoResponseDto result = service.create(requestDto);
 
         assertThat(result).isNotNull();
+        assertThat(result.getPacienteId()).isEqualTo(100);
+        assertThat(result.getId()).isEqualTo(1);
+        assertThat(filho.getPaciente()).isSameAs(paciente);
         verify(repository).save(filho);
+        verify(repository).countByPacienteId(100);
     }
 
     @Test

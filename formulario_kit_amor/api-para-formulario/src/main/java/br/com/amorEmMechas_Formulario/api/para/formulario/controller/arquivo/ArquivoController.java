@@ -14,6 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import br.com.amorEmMechas_Formulario.api.para.formulario.dto.arquivo.ValidacaoArquivoRequestDto;
+import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/arquivos")
@@ -28,16 +31,24 @@ public class ArquivoController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ArquivoResponseDto> upload(
             @RequestParam("arquivo") MultipartFile arquivo,
-            @RequestParam("tipo") String tipo) {
+            @RequestParam("tipo") String tipo,
+            @RequestParam(value = "pacienteId", required = false) Integer pacienteId) throws IOException {
 
-        Arquivo arquivoSalvo = null;
-        try {
-            arquivoSalvo = arquivoService.upload(arquivo, tipo);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+        Arquivo arquivoSalvo = arquivoService.upload(arquivo, tipo, pacienteId);
         return ResponseEntity.ok(ArquivoMapper.toResponse(arquivoSalvo));
+    }
+
+    @GetMapping("/pendentes-validacao")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'ENFERMEIRO')")
+    public ResponseEntity<List<ArquivoResponseDto>> pendentes() {
+        return ResponseEntity.ok(ArquivoMapper.toResponseList(arquivoService.listarPendentes()));
+    }
+
+    @PatchMapping("/{id}/validacao")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'ENFERMEIRO')")
+    public ResponseEntity<ArquivoResponseDto> validar(@PathVariable Long id,
+            @RequestBody @Valid ValidacaoArquivoRequestDto dto) {
+        return ResponseEntity.ok(ArquivoMapper.toResponse(arquivoService.validar(id, dto.decisao(), dto.observacao())));
     }
 
     @GetMapping

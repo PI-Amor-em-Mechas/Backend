@@ -1,6 +1,8 @@
 package br.com.amorEmMechas_Formulario.api.para.formulario.service.arquivo;
 
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacao;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,8 @@ class ArquivoServiceTest {
 
     @Mock
     private ArquivoRepository arquivoRepository;
+    @Mock
+    private PacienteRepository pacienteRepository;
 
     @Mock
     private MultipartFile multipartFile;
@@ -42,7 +46,7 @@ class ArquivoServiceTest {
 
     @BeforeEach
     void setUp() {
-        arquivoService = new ArquivoService(arquivoRepository);
+        arquivoService = new ArquivoService(arquivoRepository, pacienteRepository);
         ReflectionTestUtils.setField(arquivoService, "uploadDir", tempDir.toString());
 
         arquivoMock = new Arquivo();
@@ -64,8 +68,7 @@ class ArquivoServiceTest {
         // Arrange
         when(multipartFile.getOriginalFilename()).thenReturn("documento.pdf");
         when(multipartFile.getContentType()).thenReturn("application/pdf");
-        when(multipartFile.getSize()).thenReturn(1024L);
-        when(multipartFile.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[]{1, 2, 3}));
+        when(multipartFile.getInputStream()).thenReturn(new ByteArrayInputStream("%PDF-1.7\n%%EOF".getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
         when(arquivoRepository.save(any(Arquivo.class))).thenReturn(arquivoMock);
 
         // Act
@@ -174,6 +177,7 @@ class ArquivoServiceTest {
         java.nio.file.Files.write(filePath, new byte[]{10, 20, 30});
 
         Arquivo arquivo = new Arquivo();
+        arquivo.setStatusValidacao(StatusValidacao.APROVADO);
         arquivo.setCaminhoArquivo(filePath.toString());
         when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
 

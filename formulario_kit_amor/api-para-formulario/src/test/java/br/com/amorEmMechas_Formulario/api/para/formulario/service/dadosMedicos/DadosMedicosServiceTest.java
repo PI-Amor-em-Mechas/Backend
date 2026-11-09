@@ -3,6 +3,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.dadosMedicos;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.dadosMedicos.DadosMedicos;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
@@ -83,6 +84,8 @@ class DadosMedicosServiceTest {
         arquivo.setId(1);
         Paciente paciente = new Paciente();
         paciente.setId(1);
+        arquivo.setPaciente(paciente);
+        arquivo.setStatusValidacao(StatusValidacao.APROVADO);
 
         when(mapper.toEntity(requestDto)).thenReturn(entity);
         when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
@@ -100,6 +103,10 @@ class DadosMedicosServiceTest {
     void update_quandoExiste_deveAtualizarCampos() {
         Arquivo arquivo = new Arquivo();
         arquivo.setId(1);
+        Paciente paciente = new Paciente();
+        paciente.setId(1);
+        arquivo.setPaciente(paciente);
+        arquivo.setStatusValidacao(StatusValidacao.APROVADO);
 
         when(repository.findById(1)).thenReturn(Optional.of(entity));
         when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));

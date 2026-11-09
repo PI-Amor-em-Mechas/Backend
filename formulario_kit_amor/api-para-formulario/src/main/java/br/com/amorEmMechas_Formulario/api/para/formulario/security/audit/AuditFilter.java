@@ -27,7 +27,7 @@ public class AuditFilter extends OncePerRequestFilter {
     }
 
     private static final Set<String> PATHS_SENSIVEIS = Set.of(
-            "/pacientes", "/dadosMedicos", "/avaliacoes", "/arquivos", "/filhos"
+            "/pacientes", "/dadosMedicos", "/avaliacoes", "/arquivos", "/filhos", "/solicitacoes"
     );
 
     @Override
@@ -64,7 +64,7 @@ public class AuditFilter extends OncePerRequestFilter {
             };
         }
 
-        if (path.contains("/pacientes")) {
+        if (path.contains("/pacientes") || path.contains("/solicitacoes")) {
             return switch (metodo) {
                 case "PUT", "PATCH" -> AuditLog.TipoEvento.ALTERACAO_PACIENTE;
                 default -> AuditLog.TipoEvento.ACESSO_PACIENTE;

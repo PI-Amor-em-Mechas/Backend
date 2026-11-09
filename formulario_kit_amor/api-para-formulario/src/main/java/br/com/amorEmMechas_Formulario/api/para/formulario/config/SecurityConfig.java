@@ -130,6 +130,9 @@ public class SecurityConfig {
                         .requestMatchers("/madrinhas/**")
                         .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO", "ATENDENTE")
 
+                        .requestMatchers("/solicitacoes/**")
+                        .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO", "ATENDENTE")
+
                         // Atualizar / excluir / consultar (fora do POST publico acima) exigem login da equipe
                         .requestMatchers(
                                 "/pacientes/**",
