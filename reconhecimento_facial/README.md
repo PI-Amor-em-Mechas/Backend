@@ -134,6 +134,31 @@ Instale dependencias:
 pip install -r requirements.txt
 ```
 
+### Interface React
+
+A interface web nova fica em `frontend/` e usa React, TypeScript, Vite, Axios
+e `socket.io-client`. O Flask continua responsavel pela API, sessao, modelos
+de reconhecimento e processamento de voz.
+
+Em um terminal, suba o backend normalmente. Em outro terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Abra `http://localhost:5173`. O Vite encaminha as chamadas HTTP e Socket.IO
+para o Flask em `http://127.0.0.1:5000`. Para gerar os arquivos de producao:
+
+```bash
+npm run build
+```
+
+O resultado fica em `frontend/dist/`. A interface React usa a sessao por cookie
+do Flask e envia audio PCM16-LE a 16 kHz pelo Socket.IO, mantendo o processamento
+de face e voz no backend Python.
+
 ### PyTorch (CPU)
 
 O `torch` (transitivo de `resemblyzer`) deve ser instalado via wheel CPU
