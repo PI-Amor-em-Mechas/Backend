@@ -20,6 +20,7 @@
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "id_paciente")
         private Integer id;
         private String nomeCompleto;
         private String email;
@@ -31,6 +32,27 @@
         private Integer qtdFilhos;
         private Integer qtdPessoasEmCasa;
         private String cpf;
+
+        /*
+         * The Azure database still contains these legacy NOT NULL columns.
+         * Keep them synchronized with the current fields until the schema is
+         * migrated, rather than allowing a public submission to fail at insert.
+         */
+        @Column(name = "data_pedido", nullable = false)
+        private LocalDate dataPedido;
+
+        @Column(name = "data_nascimento", nullable = false)
+        private LocalDate dataNascimento;
+
+        @Column(name = "celular")
+        private String celular;
+
+        @Column(name = "qtd_pessoas_casa", nullable = false)
+        private Integer qtdPessoasCasa;
+
+        @Lob
+        @Column(name = "cabelo_antes", nullable = false, columnDefinition = "longblob")
+        private byte[] cabeloAntesLegado = new byte[0];
 
         @Enumerated(EnumType.STRING)
         @Column(length = 20)
@@ -75,6 +97,18 @@
         @ManyToOne
         @JoinColumn(name = "solicitante_id")
         private Solicitante solicitante;
+
+        @PrePersist
+        @PreUpdate
+        private void sincronizarColunasLegadas() {
+            dataPedido = dtPedido == null ? LocalDate.now() : dtPedido;
+            dataNascimento = dtNasc == null ? LocalDate.of(1900, 1, 1) : dtNasc;
+            celular = cel;
+            qtdPessoasCasa = qtdPessoasEmCasa == null ? 0 : qtdPessoasEmCasa;
+            if (cabeloAntesLegado == null) {
+                cabeloAntesLegado = new byte[0];
+            }
+        }
 
         public Integer getQtdFilhos() {
             return qtdFilhos;

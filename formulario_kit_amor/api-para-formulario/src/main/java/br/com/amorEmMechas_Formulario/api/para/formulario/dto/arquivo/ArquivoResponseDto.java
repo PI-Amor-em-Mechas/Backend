@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public class ArquivoResponseDto {
 
-    private Long id;
+    private Integer id;
 
     private String nome;
     private String nomeOriginal;
@@ -15,6 +15,8 @@ public class ArquivoResponseDto {
     private String observacaoValidacao;
     private LocalDateTime dataUpload;
     private LocalDateTime validadoEm;
+    private String tipo;
+    private String validadoPor;
 
     public StatusValidacao getStatusValidacao() { return statusValidacao; }
     public void setStatusValidacao(StatusValidacao statusValidacao) { this.statusValidacao = statusValidacao; }
@@ -24,13 +26,17 @@ public class ArquivoResponseDto {
     public void setDataUpload(LocalDateTime dataUpload) { this.dataUpload = dataUpload; }
     public LocalDateTime getValidadoEm() { return validadoEm; }
     public void setValidadoEm(LocalDateTime validadoEm) { this.validadoEm = validadoEm; }
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
+    public String getValidadoPor() { return validadoPor; }
+    public void setValidadoPor(String validadoPor) { this.validadoPor = validadoPor; }
 
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 

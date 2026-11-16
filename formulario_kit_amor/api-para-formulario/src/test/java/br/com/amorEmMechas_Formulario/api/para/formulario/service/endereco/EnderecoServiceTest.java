@@ -42,6 +42,7 @@ class EnderecoServiceTest {
         endereco = new Endereco();
         endereco.setId(1);
         endereco.setRua("Rua A");
+        endereco.setComplemento("Casa 1");
         endereco.setCep("00000-000");
 
         requestDto = new EnderecoRequestDto();
@@ -51,6 +52,7 @@ class EnderecoServiceTest {
         requestDto.setCidade("Uberaba");
         requestDto.setEstado("MG");
         requestDto.setNumero("100");
+        requestDto.setComplemento("Apto 2");
 
         responseDto = new EnderecoResponseDto();
         responseDto.setId(1);
@@ -82,6 +84,7 @@ class EnderecoServiceTest {
         assertThat(endereco.getCidade()).isEqualTo("Uberaba");
         assertThat(endereco.getEstado()).isEqualTo("MG");
         assertThat(endereco.getNumero()).isEqualTo("100");
+        assertThat(endereco.getComplemento()).isEqualTo("Apto 2");
     }
 
     @Test

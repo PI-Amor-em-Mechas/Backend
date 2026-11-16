@@ -9,6 +9,7 @@ public class Endereco {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_endereco")
     private Integer id;
 
     private String rua;
@@ -17,6 +18,7 @@ public class Endereco {
     private String cidade;
     private String estado;
     private String cep;
+    private String complemento;
 
     public String getBairro() {
         return bairro;
@@ -72,5 +74,13 @@ public class Endereco {
 
     public void setRua(String rua) {
         this.rua = rua;
+    }
+
+    public String getComplemento() {
+        return complemento;
+    }
+
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
     }
 }

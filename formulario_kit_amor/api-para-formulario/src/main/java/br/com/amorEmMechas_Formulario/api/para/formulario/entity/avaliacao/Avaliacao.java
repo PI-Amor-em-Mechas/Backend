@@ -12,6 +12,7 @@ public class Avaliacao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_avaliacao")
     private Integer id;
 
     @OneToOne

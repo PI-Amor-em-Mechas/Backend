@@ -1,0 +1,2 @@
+ALTER TABLE arquivo
+    ADD COLUMN data_upload DATETIME(6) NULL DEFAULT NULL;

@@ -9,6 +9,7 @@
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "id_solicitante")
         private Integer id;
         private String nomeCompleto;
         private String rg;

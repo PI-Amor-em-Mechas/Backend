@@ -1,0 +1,35 @@
+2026-11-16 19:17:11,153 [INFO] src.db - Conectado ao MySQL 127.0.0.1:13306/amor_em_mechas — schema OK.
+2026-11-16 19:17:11,154 [INFO] __main__ - Pre-carregando modelos de reconhecimento...
+2026-11-16 19:17:11,156 [INFO] src.services.face_engine - Inicializando YuNet com input_size=(960, 540)
+2026-11-16 19:17:11,217 [INFO] src.services.face_engine - Inicializando modelo SFace
+2026-11-16 19:17:12,713 [INFO] src.services.face_engine - Dimensões encontradas nos embeddings do banco: {128: 72}
+2026-11-16 19:17:12,714 [INFO] src.services.face_engine - Índice facial carregado: válidos=72 inválidos=0 shape=(72, 128)
+2026-11-16 19:17:12,715 [INFO] src.services.face_engine - Modelos faciais e índice inicializados
+2026-11-16 19:17:12,715 [INFO] __main__ - Modelos faciais prontos.
+2026-11-16 19:17:12,715 [INFO] src.voice.vosk_engine - Carregando modelo Vosk de C:\Trabalho\Clientes\Amor em Mechas\Backend\reconhecimento_facial\data\vosk-model ...
+2026-11-16 19:17:13,776 [INFO] src.voice.vosk_engine - Modelo Vosk carregado com sucesso.
+2026-11-16 19:17:13,777 [INFO] __main__ - Modelo de voz Vosk pronto.
+2026-11-16 19:17:16,490 [INFO] __main__ - SocketIO async_mode: gevent
+2026-11-16 19:17:16,490 [INFO] __main__ - Servidor iniciando em http://127.0.0.1:5000
+2026-11-16 19:17:16,816 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:17:16] "GET /lgpd/privacy-notice HTTP/1.1" 200 609 0.001472
+2026-11-16 19:18:47,021 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:18:47] "GET /me HTTP/1.1" 200 156 0.000997
+2026-11-16 19:18:47,027 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:18:47] "GET /me HTTP/1.1" 200 156 0.001352
+2026-11-16 19:18:57,678 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:18:57] "GET /employees HTTP/1.1" 200 999 10.588743
+2026-11-16 19:19:07,780 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:19:07] "GET /employees HTTP/1.1" 200 999 10.097616
+2026-11-16 19:19:20,477 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:19:20] "GET /employees HTTP/1.1" 200 999 10.449175
+2026-11-16 19:19:24,593 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:19:24] "GET /me HTTP/1.1" 200 156 0.000000
+2026-11-16 19:19:24,597 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:19:24] "GET /me HTTP/1.1" 200 156 0.000000
+2026-11-16 19:19:34,509 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:19:34] "GET /employees HTTP/1.1" 200 999 9.880374
+2026-11-16 19:19:44,291 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:19:44] "GET /employees HTTP/1.1" 200 999 9.777120
+2026-11-16 19:19:57,533 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:19:57] "GET /employees HTTP/1.1" 200 999 9.818675
+2026-11-16 19:20:08,248 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:08] "GET /me HTTP/1.1" 200 156 0.000000
+2026-11-16 19:20:08,255 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:08] "GET /me HTTP/1.1" 200 156 0.001312
+2026-11-16 19:20:20,431 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:20] "GET /employees HTTP/1.1" 200 999 12.152703
+2026-11-16 19:20:21,587 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:21] "POST /logout HTTP/1.1" 302 455 1.154843
+2026-11-16 19:20:31,750 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:31] "GET /employees HTTP/1.1" 200 999 10.162004
+2026-11-16 19:20:56,672 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:56] "GET /me HTTP/1.1" 200 153 0.001001
+2026-11-16 19:20:56,677 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:56] "GET /me HTTP/1.1" 200 153 0.000998
+2026-11-16 19:20:58,589 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:20:58] "GET /employees HTTP/1.1" 403 204 0.000999
+2026-11-16 19:21:11,781 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:21:11] "POST /set-profile HTTP/1.1" 200 271 1.138179
+2026-11-16 19:21:21,584 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:21:21] "GET /employees HTTP/1.1" 200 999 9.787575
+2026-11-16 19:21:31,833 [INFO] geventwebsocket.handler - 127.0.0.1 - - [2026-11-16 19:21:31] "GET /employees HTTP/1.1" 200 999 10.243617

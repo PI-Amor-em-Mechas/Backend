@@ -9,6 +9,7 @@ public class EnderecoResponseDto {
     private String bairro;
     private String cidade;
     private String estado;
+    private String complemento;
 
     public Integer getId() {
         return id;
@@ -65,5 +66,13 @@ public class EnderecoResponseDto {
 
     public void setRua(String rua) {
         this.rua = rua;
+    }
+
+    public String getComplemento() {
+        return complemento;
+    }
+
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
     }
 }

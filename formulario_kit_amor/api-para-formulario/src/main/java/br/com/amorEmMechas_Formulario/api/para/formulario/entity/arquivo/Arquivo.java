@@ -28,7 +28,7 @@ public class Arquivo {
     @Enumerated(EnumType.STRING)
     private StatusValidacao statusValidacao = StatusValidacao.PENDENTE;
 
-    @Column(length = 2000)
+    @Column(length = 1000)
     private String observacaoValidacao;
     private LocalDateTime dataUpload;
     private LocalDateTime validadoEm;

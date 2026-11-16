@@ -22,3 +22,23 @@ export interface RecognitionResult {
   punch_type?: string;
   image?: string;
 }
+
+export interface PrivacyNotice {
+  status: string;
+  version?: string;
+  text?: string;
+  retention_days?: number;
+}
+
+export interface VoicePhraseResponse {
+  status: string;
+  phrases?: string[];
+  message?: string;
+}
+
+export interface VoiceBiometryConfig {
+  enforced: boolean;
+  min_samples: number;
+  min_seconds: number;
+  threshold: number;
+}

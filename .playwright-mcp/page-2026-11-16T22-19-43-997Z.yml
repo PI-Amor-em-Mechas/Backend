@@ -1,0 +1,70 @@
+- main [ref=f2e3]:
+  - generic [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - paragraph [ref=f2e6]: AMOR EM MECHAS
+      - heading "Ponto" [level=1] [ref=f2e7]
+    - generic [ref=f2e8]:
+      - generic [ref=f2e9]: Administrador
+      - button "Sair" [ref=f2e10] [cursor=pointer]
+  - generic [ref=f2e11]:
+    - generic [ref=f2e12]:
+      - paragraph [ref=f2e13]: JORNADA DE HOJE
+      - heading [level=2] [ref=f2e14]:
+        - text: Presença registrada
+        - emphasis [ref=f2e15]: com confiança.
+      - paragraph [ref=f2e16]: Use a câmera para reconhecer sua identidade e registrar entrada ou saída.
+      - button "Abrir reconhecimento →" [ref=f2e17] [cursor=pointer]
+    - generic [ref=f2e18]:
+      - generic [ref=f2e19]: AM
+      - generic [ref=f2e20]: FACE+ VOZ
+  - generic [ref=f2e21]:
+    - generic [ref=f2e22]:
+      - generic [ref=f2e23]:
+        - paragraph [ref=f2e24]: ADMINISTRAÇÃO
+        - heading "Colaboradores" [level=2] [ref=f2e25]
+      - generic [ref=f2e26]:
+        - generic [ref=f2e27]: 3 cadastrados
+        - button "Cadastrar pessoa" [ref=f2e28] [cursor=pointer]
+    - generic [ref=f2e29]:
+      - article [ref=f2e34]:
+        - generic [ref=f2e35]:
+          - strong [ref=f2e36]: Artur
+          - generic [ref=f2e37]: ID 1 · 53 amostras faciais
+          - generic [ref=f2e38]: Voz 0/3
+        - generic [ref=f2e39]:
+          - textbox "Nome de 1" [ref=f2e40]: Artur
+          - button "Salvar nome" [ref=f2e41] [cursor=pointer]
+          - button "Exportar LGPD" [ref=f2e42] [cursor=pointer]
+          - button "Gravar voz (5s)" [ref=f2e43] [cursor=pointer]
+          - button "Limpar voz" [ref=f2e44] [cursor=pointer]
+          - button "×" [ref=f2e45] [cursor=pointer]
+          - generic [ref=f2e46]: "Biometria de voz: grave uma amostra de 3 necessárias."
+      - article [ref=f2e47]:
+        - generic [ref=f2e48]:
+          - strong [ref=f2e49]: artur
+          - generic [ref=f2e50]: ID pessoa-b6eb328d-a8b8-44bf-b4d7-030417fa6f63 · 21 amostras faciais
+          - generic [ref=f2e51]: Voz 0/3
+        - generic [ref=f2e52]:
+          - textbox "Nome de pessoa-b6eb328d-a8b8-44bf-b4d7-030417fa6f63" [ref=f2e53]: artur
+          - button "Salvar nome" [ref=f2e54] [cursor=pointer]
+          - button "Exportar LGPD" [ref=f2e55] [cursor=pointer]
+          - button "Gravar voz (5s)" [ref=f2e56] [cursor=pointer]
+          - button "Limpar voz" [ref=f2e57] [cursor=pointer]
+          - button "×" [ref=f2e58] [cursor=pointer]
+          - generic [ref=f2e59]: "Biometria de voz: grave uma amostra de 3 necessárias."
+      - article [ref=f2e60]:
+        - generic [ref=f2e61]:
+          - strong [ref=f2e62]: giovanna
+          - generic [ref=f2e63]: ID pessoa-cbb825df-ae4b-4839-8320-4fd370cc2804 · 48 amostras faciais
+          - generic [ref=f2e64]: Voz 0/3
+        - generic [ref=f2e65]:
+          - textbox "Nome de pessoa-cbb825df-ae4b-4839-8320-4fd370cc2804" [ref=f2e66]: giovanna
+          - button "Salvar nome" [ref=f2e67] [cursor=pointer]
+          - button "Exportar LGPD" [ref=f2e68] [cursor=pointer]
+          - button "Gravar voz (5s)" [ref=f2e69] [cursor=pointer]
+          - button "Limpar voz" [ref=f2e70] [cursor=pointer]
+          - button "×" [ref=f2e71] [cursor=pointer]
+          - generic [ref=f2e72]: "Biometria de voz: grave uma amostra de 3 necessárias."
+  - generic [ref=f2e31]:
+    - generic [ref=f2e32]: Reconhecimento facial seguro
+    - generic [ref=f2e33]: LGPD · Biometria protegida

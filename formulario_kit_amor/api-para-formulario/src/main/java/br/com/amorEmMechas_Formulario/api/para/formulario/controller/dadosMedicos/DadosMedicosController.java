@@ -3,6 +3,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.controller.dadosMedic
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.dadosMedicos.DadosMedicosResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.service.dadosMedicos.DadosMedicosService;
+import br.com.amorEmMechas_Formulario.api.para.formulario.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +11,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -19,9 +22,11 @@ import java.util.List;
 public class DadosMedicosController {
 
     private DadosMedicosService service;
+    private JwtTokenProvider jwtTokenProvider;
 
-    public DadosMedicosController(DadosMedicosService service) {
+    public DadosMedicosController(DadosMedicosService service, JwtTokenProvider jwtTokenProvider) {
         this.service = service;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
 
@@ -29,9 +34,24 @@ public class DadosMedicosController {
     @ApiResponse(responseCode = "201", description = "Dados médicos cadastrados com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos")
     @PostMapping
-    public ResponseEntity<DadosMedicosResponseDto> create(@RequestBody @Valid DadosMedicosRequestDto dto) {
+    public ResponseEntity<DadosMedicosResponseDto> create(
+            @RequestBody @Valid DadosMedicosRequestDto dto,
+            @RequestHeader(value = "X-Application-Token", required = false) String applicationToken) {
+        validarAcessoPublico(dto.getPacienteId(), applicationToken);
         DadosMedicosResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    private void validarAcessoPublico(Integer pacienteId, String applicationToken) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean equipeAutorizada = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                        || a.getAuthority().equals("ROLE_MEDICO")
+                        || a.getAuthority().equals("ROLE_ENFERMEIRO"));
+        if (!equipeAutorizada && (applicationToken == null
+                || !jwtTokenProvider.validateApplicationToken(applicationToken, pacienteId))) {
+            throw new AccessDeniedException("Contexto da solicitacao invalido");
+        }
     }
 
     @Operation(summary = "Atualiza dados médicos")

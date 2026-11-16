@@ -1,0 +1,102 @@
+- generic [ref=f15e28]:
+  - generic [ref=f15e29]:
+    - banner [ref=f15e30]:
+      - img "Instituto Amor em Mechas" [ref=f15e32]
+      - button "Área da equipe" [ref=f15e33] [cursor=pointer]
+    - main [ref=f15e39]:
+      - heading "Formulário de Solicitação de Peruca" [level=1] [ref=f15e40]
+      - paragraph [ref=f15e41]: Preencha todos os campos obrigatórios para solicitar sua peruca do amor.
+      - generic [ref=f15e42]:
+        - paragraph [ref=f15e43]:
+          - strong [ref=f15e44]: Atenção!
+          - text: Utilizamos cookies* e outras tecnologias de medição para melhorar a sua experiência de navegação no nosso site.
+        - paragraph [ref=f15e45]: "*Cookies de sites são pequenos arquivos de texto criados por sites que você visita e armazenados no seu navegador."
+        - button "Concordo" [ref=f15e46] [cursor=pointer]
+      - generic [ref=f15e47]:
+        - heading "Informações Pessoais" [level=2] [ref=f15e48]
+        - generic [ref=f15e49]:
+          - generic [ref=f15e50]:
+            - text: Nome completo da/o Paciente *
+            - textbox "Nome completo da/o Paciente *" [ref=f15e51]:
+              - /placeholder: Ex. Luciana Silva
+          - generic [ref=f15e52]:
+            - text: Seu email *
+            - textbox "Seu email *" [ref=f15e53]:
+              - /placeholder: Ex. luciana@email.com
+          - generic [ref=f15e54]:
+            - text: Data do Nascimento *
+            - textbox "Data do Nascimento *" [ref=f15e55]:
+              - /placeholder: dd/mm/aaaa
+          - generic [ref=f15e56]:
+            - text: Celular *
+            - textbox "Celular *" [ref=f15e57]:
+              - /placeholder: Ex. 11 987654321
+          - generic [ref=f15e58]:
+            - text: CPF *
+            - textbox "CPF *" [ref=f15e59]:
+              - /placeholder: Ex. 123.456.789-11
+          - generic [ref=f15e60]:
+            - text: CEP *
+            - textbox "CEP *" [ref=f15e61]:
+              - /placeholder: Ex. 12345-678
+      - generic [ref=f15e62]:
+        - heading "Endereço de Entrega" [level=2] [ref=f15e63]
+        - generic [ref=f15e64]:
+          - generic [ref=f15e65]:
+            - text: Endereço completo *
+            - textbox "Endereço completo *" [ref=f15e66]:
+              - /placeholder: Ex. Rua, Número, Bairro, Cidade, Estado
+          - generic [ref=f15e67]:
+            - text: Número *
+            - textbox "Número *" [ref=f15e68]:
+              - /placeholder: Ex. 2500
+          - generic [ref=f15e69]:
+            - text: Bairro *
+            - textbox "Bairro *" [ref=f15e70]:
+              - /placeholder: Ex. Barra Funda
+          - generic [ref=f15e71]:
+            - text: Cidade *
+            - textbox "Cidade *" [ref=f15e72]:
+              - /placeholder: Ex. São Paulo
+          - generic [ref=f15e73]:
+            - text: Estado *
+            - combobox "Estado *" [ref=f15e74]:
+              - option "Selecione o estado" [disabled] [selected]
+              - option "Acre"
+              - option "Alagoas"
+              - option "Amapá"
+              - option "Amazonas"
+              - option "Bahia"
+              - option "Ceará"
+              - option "Distrito Federal"
+              - option "Espírito Santo"
+              - option "Goiás"
+              - option "Maranhão"
+              - option "Mato Grosso"
+              - option "Mato Grosso do Sul"
+              - option "Minas Gerais"
+              - option "Pará"
+              - option "Paraíba"
+              - option "Paraná"
+              - option "Pernambuco"
+              - option "Piauí"
+              - option "Rio de Janeiro"
+              - option "Rio Grande do Norte"
+              - option "Rio Grande do Sul"
+              - option "Rondônia"
+              - option "Roraima"
+              - option "Santa Catarina"
+              - option "São Paulo"
+              - option "Sergipe"
+              - option "Tocantins"
+          - generic [ref=f15e75]:
+            - text: Complemento
+            - textbox "Complemento" [ref=f15e76]:
+              - /placeholder: Ex. Bloco B
+        - generic [ref=f15e77]:
+          - button "Voltar" [ref=f15e78] [cursor=pointer]
+          - button "Avançar" [ref=f15e79] [cursor=pointer]
+    - contentinfo [ref=f15e80]:
+      - img "Instituto Amor em Mechas" [ref=f15e82]
+      - paragraph [ref=f15e83]: © 2025 Instituto Amor em mechas. Todos os direitos reservados.
+  - button "← Voltar ao site da ONG" [ref=f15e84] [cursor=pointer]

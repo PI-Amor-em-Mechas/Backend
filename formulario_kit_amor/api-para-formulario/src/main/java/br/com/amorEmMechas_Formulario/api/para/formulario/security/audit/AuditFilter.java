@@ -27,7 +27,8 @@ public class AuditFilter extends OncePerRequestFilter {
     }
 
     private static final Set<String> PATHS_SENSIVEIS = Set.of(
-            "/pacientes", "/dadosMedicos", "/avaliacoes", "/arquivos", "/filhos", "/solicitacoes"
+            "/pacientes", "/dados-medicos", "/dadosMedicos", "/avaliacoes", "/arquivos",
+            "/filhos", "/solicitacoes", "/formulario-solicitacao-peruca"
     );
 
     @Override
@@ -39,7 +40,7 @@ public class AuditFilter extends OncePerRequestFilter {
 
         // ApÃ³s a resposta, registrar auditoria para paths sensÃ­veis
         String path = request.getRequestURI();
-        if (isPathSensivel(path) && isUsuarioAutenticado()) {
+        if (isPathSensivel(path)) {
             AuditLog.TipoEvento tipo = determinarTipoEvento(request.getMethod(), path);
             auditService.registrarAcesso(tipo, path, request);
         }
@@ -47,11 +48,6 @@ public class AuditFilter extends OncePerRequestFilter {
 
     private boolean isPathSensivel(String path) {
         return PATHS_SENSIVEIS.stream().anyMatch(path::contains);
-    }
-
-    private boolean isUsuarioAutenticado() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
     }
 
     private AuditLog.TipoEvento determinarTipoEvento(String metodo, String path) {

@@ -100,7 +100,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/webjars/**",
                                 "/favicon.ico",
-                                "/actuator/health", "/avaliacoes/**"
+                                "/actuator/health"
                         ).permitAll()
 
                         // === FORMULARIO PUBLICO DE SOLICITACAO (sem login) ===
@@ -108,13 +108,12 @@ public class SecurityConfig {
                         // Atualizar, excluir e consultar continuam exigindo login (regras abaixo).
                         .requestMatchers(HttpMethod.POST,
                                 "/formulario-solicitacao-peruca",
-                                "/pacientes",
                                 "/enderecos",
                                 "/enderecos/viacep",
-                                "/filhos",
                                 "/solicitantes",
-                                "/kits",
+                                "/avaliacoes",
                                 "/dados-medicos",
+                                "/kits",
                                 "/arquivos"
                         ).permitAll()
 
@@ -124,6 +123,9 @@ public class SecurityConfig {
                         // Endpoints de dados mÃ©dicos e avaliaÃ§Ãµes (fora do POST publico acima)
                         // continuam exigindo role especÃ­fica
                         .requestMatchers("/dados-medicos/**", "/dadosMedicos/**")
+                        .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO")
+
+                        .requestMatchers("/avaliacoes/**")
                         .hasAnyRole("ADMIN", "MEDICO", "ENFERMEIRO")
 
                         // Madrinhas - uso interno da equipe, sempre privado

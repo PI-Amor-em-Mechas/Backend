@@ -9,7 +9,7 @@ import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 
-public interface ArquivoRepository extends JpaRepository<Arquivo, Long> {
+public interface ArquivoRepository extends JpaRepository<Arquivo, Integer> {
     @Query("select a from Arquivo a where (a.statusValidacao is null or a.statusValidacao = "
             + "br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacao.PENDENTE) "
             + "and (a.tipo is null or a.tipo <> 'FOTO_CABELO') order by a.id desc")
@@ -17,5 +17,7 @@ public interface ArquivoRepository extends JpaRepository<Arquivo, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Arquivo a where a.id = :id")
-    Optional<Arquivo> findParaValidar(@Param("id") Long id);
+    Optional<Arquivo> findParaValidar(@Param("id") Integer id);
+
+    List<Arquivo> findByPacienteIdOrderByIdAsc(Integer pacienteId);
 }

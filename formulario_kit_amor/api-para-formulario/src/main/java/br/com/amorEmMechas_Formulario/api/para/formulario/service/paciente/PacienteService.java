@@ -6,6 +6,7 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.endereco.Endereco;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.filho.Filho;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.StatusSolicitacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.solicitante.Solicitante;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.paciente.PacienteMapper;
@@ -155,6 +156,17 @@ public class PacienteService {
     }
 
     @Transactional(readOnly = true)
+    public Page<PacienteResponseDto> findApproved(String estado, LocalDate dataInicio, LocalDate dataFim,
+                                                  Pageable pageable) {
+        return repository.findByStatus(StatusSolicitacao.CONCLUIDA, estado, dataInicio, dataFim, pageable)
+                .map(p -> {
+                    PacienteResponseDto dto = mapper.toResponse(p);
+                    dto.setCpf(mascaraCpf(p.getCpf()));
+                    return dto;
+                });
+    }
+
+    @Transactional(readOnly = true)
     public PacienteResponseDto findById(Integer id) {
         Paciente paciente = repository.findById(id)
                 .orElseThrow(() -> new IdNotFoundException("ID PACIENTE: " + id + " Nao Encontrado"));
@@ -296,7 +308,7 @@ public class PacienteService {
     private void vincularCabeloAntes(Paciente paciente, Integer cabeloAntesId) {
         if (cabeloAntesId != null) {
             Arquivo arquivo = arquivoRepository
-                    .findById(cabeloAntesId.longValue())
+                    .findById(cabeloAntesId)
                     .orElseThrow(() -> new IdNotFoundException(
                             "ID ARQUIVO (CABELO ANTES): " + cabeloAntesId + " Nao Encontrado"));
             paciente.setCabeloAntes(arquivo);

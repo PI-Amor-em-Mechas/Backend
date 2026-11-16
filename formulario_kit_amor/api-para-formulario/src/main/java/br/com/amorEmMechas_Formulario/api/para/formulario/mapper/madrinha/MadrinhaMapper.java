@@ -18,6 +18,7 @@ public class MadrinhaMapper {
         entity.setFuncao(dto.getFuncao());
         entity.setDataCadastro(dto.getDataCadastro());
         entity.setStatus(dto.getStatus());
+        entity.setColaboradorId(dto.getColaboradorId());
         return entity;
     }
 
@@ -29,9 +30,26 @@ public class MadrinhaMapper {
         dto.setNomeCompleto(entity.getNomeCompleto());
         dto.setEmail(entity.getEmail());
         dto.setHorasVoluntarias(entity.getHorasVoluntarias());
+        int minutosManuais = entity.getHorasVoluntarias() == null
+                ? 0
+                : entity.getHorasVoluntarias() * 60;
+        dto.setMinutosVoluntarios(minutosManuais);
+        dto.setDuracaoVoluntaria(formatDuration(minutosManuais));
         dto.setFuncao(entity.getFuncao());
         dto.setDataCadastro(entity.getDataCadastro());
         dto.setStatus(entity.getStatus());
+        dto.setColaboradorId(entity.getColaboradorId());
         return dto;
+    }
+
+    private String formatDuration(int minutes) {
+        if (minutes < 60) {
+            return minutes + "min";
+        }
+        int hours = minutes / 60;
+        int remainingMinutes = minutes % 60;
+        return remainingMinutes == 0
+                ? hours + "h"
+                : hours + "h " + remainingMinutes + "min";
     }
 }

@@ -361,4 +361,5 @@ Adicione estas dependências (se ainda não existem):
 4. Atualize o `pom.xml` com as dependências
 5. Reinicie a aplicação
 
-A propriedade `spring.jpa.hibernate.ddl-auto=update` criará as tabelas automaticamente se não existirem.
+A propriedade `spring.jpa.hibernate.ddl-auto=validate` valida o schema existente;
+as tabelas devem ser criadas por provisionamento controlado antes da aplicação.

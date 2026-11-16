@@ -1,0 +1,2 @@
+ALTER TABLE endereco
+    ADD COLUMN complemento VARCHAR(255) NULL DEFAULT NULL;

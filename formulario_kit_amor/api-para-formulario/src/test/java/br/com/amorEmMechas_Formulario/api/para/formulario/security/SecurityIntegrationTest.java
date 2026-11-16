@@ -113,6 +113,35 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("Token de desenvolvimento permanece desabilitado no perfil de teste")
+    void tokenDeDesenvolvimentoPermaneceDesabilitado() throws Exception {
+        mockMvc.perform(post("/auth/dev-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"dev\",\"role\":\"ROLE_ADMIN\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Leitura e exclusao de avaliacoes exigem autenticacao")
+    void operacoesSensíveisDeAvaliacaoExigemAutenticacao() throws Exception {
+        mockMvc.perform(get("/avaliacoes")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/avaliacoes/1")).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/avaliacoes/1")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Token de aplicacao nao autentica usuario")
+    void tokenDeAplicacaoNaoAutenticaUsuario() throws Exception {
+        String token = jwtTokenProvider.generateApplicationToken(1);
+
+        mockMvc.perform(get("/pacientes")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
+        org.junit.jupiter.api.Assertions.assertTrue(jwtTokenProvider.validateApplicationToken(token, 1));
+        org.junit.jupiter.api.Assertions.assertFalse(jwtTokenProvider.validateApplicationToken(token, 2));
+    }
+
+    @Test
     @DisplayName("Acesso com token valido de MEDICO a /dados-medicos retorna 200")
     void medicoAcessaDadosMedicos() throws Exception {
         String token = jwtTokenProvider.generateTokenFromUsername("medico");

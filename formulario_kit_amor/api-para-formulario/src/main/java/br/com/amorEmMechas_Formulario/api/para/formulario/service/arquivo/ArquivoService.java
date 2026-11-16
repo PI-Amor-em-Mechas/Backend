@@ -5,6 +5,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusV
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Paciente;
+import br.com.amorEmMechas_Formulario.api.para.formulario.security.JwtTokenProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,19 +29,23 @@ import java.util.Map;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import javax.imageio.ImageIO;
+import org.springframework.security.core.Authentication;
 
 @Service
 public class ArquivoService {
 
     private final ArquivoRepository arquivoRepository;
     private final PacienteRepository pacienteRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    public ArquivoService(ArquivoRepository arquivoRepository, PacienteRepository pacienteRepository) {
+    public ArquivoService(ArquivoRepository arquivoRepository, PacienteRepository pacienteRepository,
+                          JwtTokenProvider jwtTokenProvider) {
         this.arquivoRepository = arquivoRepository;
         this.pacienteRepository = pacienteRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostConstruct
@@ -52,19 +58,25 @@ public class ArquivoService {
 
     @Transactional
     public Arquivo upload(MultipartFile file, String tipo) throws IOException {
-        return upload(file, tipo, null);
+        return upload(file, tipo, null, null);
     }
 
     @Transactional
-    public Arquivo upload(MultipartFile file, String tipo, Integer pacienteId) throws IOException {
-        if (pacienteId != null && !podeRevisar()) {
-            throw new AccessDeniedException("Associacao ao paciente exige perfil revisor");
+    public Arquivo upload(MultipartFile file, String tipo, Integer pacienteId, String applicationToken) throws IOException {
+        if (!podeRevisar()) {
+            if (pacienteId == null || (!"RELATORIO_MEDICO".equals(tipo) && !"FOTO_CABELO".equals(tipo))
+                    || applicationToken == null
+                    || !jwtTokenProvider.validateApplicationToken(applicationToken, pacienteId)) {
+                throw new AccessDeniedException("Upload publico exige contexto valido da solicitacao");
+            }
         }
         Arquivo arquivo = new Arquivo();
+        Paciente paciente = null;
         if (pacienteId != null) {
-            arquivo.setPaciente(pacienteRepository.findById(pacienteId)
-                    .filter(paciente -> !Boolean.TRUE.equals(paciente.getDadosAnonimizados()))
-                    .orElseThrow(() -> new IdNotFoundException("Paciente nao encontrado")));
+            paciente = pacienteRepository.findById(pacienteId)
+                    .filter(p -> !Boolean.TRUE.equals(p.getDadosAnonimizados()))
+                    .orElseThrow(() -> new IdNotFoundException("Paciente nao encontrado"));
+            arquivo.setPaciente(paciente);
         }
         String original = file.getOriginalFilename();
         if (original == null || original.isBlank() || original.length() > 200) {
@@ -112,15 +124,29 @@ public class ArquivoService {
         }
         String nomeUnico = UUID.randomUUID() + "_" + nomeSeguro;
         Path destino = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(nomeUnico);
-        Files.write(destino, conteudo);
-        arquivo.setNomeOriginal(nomeSeguro);
-        arquivo.setNome(nomeUnico);
-        arquivo.setMimeType(mime);
-        arquivo.setTamanho((long) conteudo.length);
-        arquivo.setCaminhoArquivo(destino.toString());
-        arquivo.setTipo(tipo);
-        arquivo.setDataUpload(LocalDateTime.now());
-        return arquivoRepository.save(arquivo);
+        try {
+            Files.write(destino, conteudo);
+            arquivo.setNomeOriginal(nomeSeguro);
+            arquivo.setNome(nomeUnico);
+            arquivo.setMimeType(mime);
+            arquivo.setTamanho((long) conteudo.length);
+            arquivo.setCaminhoArquivo(destino.toString());
+            arquivo.setTipo(tipo);
+            arquivo.setDataUpload(LocalDateTime.now());
+            Arquivo salvo = arquivoRepository.save(arquivo);
+            if ("FOTO_CABELO".equals(tipo) && paciente != null) {
+                paciente.setCabeloAntes(salvo);
+                pacienteRepository.save(paciente);
+            }
+            return salvo;
+        } catch (IOException | RuntimeException ex) {
+            try {
+                Files.deleteIfExists(destino);
+            } catch (IOException cleanupFailure) {
+                ex.addSuppressed(cleanupFailure);
+            }
+            throw ex;
+        }
     }
 
     public boolean podeRevisar() {
@@ -134,7 +160,7 @@ public class ArquivoService {
     }
 
     @Transactional
-    public Arquivo validar(Long id, StatusValidacao decisao, String observacao) {
+    public Arquivo validar(Integer id, StatusValidacao decisao, String observacao) {
         if (!podeRevisar()) throw new AccessDeniedException("Revisao restrita a equipe autorizada");
         if (decisao == null || decisao == StatusValidacao.PENDENTE) {
             throw new IllegalArgumentException("Informe APROVADO ou REJEITADO");
@@ -152,24 +178,51 @@ public class ArquivoService {
         arquivo.setObservacaoValidacao(texto);
         arquivo.setValidadoEm(LocalDateTime.now());
         arquivo.setValidadoPor(SecurityContextHolder.getContext().getAuthentication().getName());
-        return arquivoRepository.save(arquivo);
+        Arquivo atualizado = arquivoRepository.save(arquivo);
+        if (decisao == StatusValidacao.APROVADO && solicitacaoPodeSerConcluida(arquivo.getPaciente())) {
+            Paciente paciente = arquivo.getPaciente();
+            paciente.setStatusSolicitacao(br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.StatusSolicitacao.CONCLUIDA);
+            pacienteRepository.save(paciente);
+        }
+        return atualizado;
+    }
+
+    private boolean solicitacaoPodeSerConcluida(Paciente paciente) {
+        if (paciente == null || paciente.getStatusSolicitacao()
+                != br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.StatusSolicitacao.ATIVA) {
+            return false;
+        }
+        List<Arquivo> obrigatorios = arquivoRepository.findByPacienteIdOrderByIdAsc(paciente.getId()).stream()
+                .filter(arquivo -> "RELATORIO_MEDICO".equals(arquivo.getTipo()))
+                .toList();
+        return !obrigatorios.isEmpty()
+                && obrigatorios.stream().allMatch(arquivo -> arquivo.getStatusValidacao() == StatusValidacao.APROVADO);
     }
 
     public List<Arquivo> listUpload() {
         return arquivoRepository.findAll();
     }
 
-    public Arquivo buscarPorId(Long id) {
+    public Arquivo buscarPorId(Integer id) {
         return arquivoRepository.findById(id)
                 .orElseThrow(() -> new IdNotFoundException("ID ARQUIVO: " + id + " Nao Encontrado"));
     }
 
-    public byte[] getConteudo(Long id) throws IOException {
+    public byte[] getConteudo(Integer id) throws IOException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new AccessDeniedException("Download exige autenticacao");
+        }
         Arquivo arquivo = buscarPorId(id);
         if (arquivo.getStatusValidacao() != StatusValidacao.APROVADO && !podeRevisar()) {
             throw new AccessDeniedException("Documento ainda nao aprovado; acesso restrito a revisores");
         }
-        Path path = Paths.get(arquivo.getCaminhoArquivo());
+        Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path path = Paths.get(arquivo.getCaminhoArquivo()).toAbsolutePath().normalize();
+        if (!path.startsWith(uploadRoot)) {
+            throw new AccessDeniedException("Caminho de arquivo fora do diretorio gerenciado");
+        }
         return Files.readAllBytes(path);
     }
 }

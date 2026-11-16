@@ -16,6 +16,7 @@ public class Filho {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_filho")
     private Integer id;
 
     private Integer idade;

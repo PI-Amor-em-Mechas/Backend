@@ -39,6 +39,7 @@ public class EnderecoService {
             e.setCidade(dto.getCidade());
             e.setEstado(dto.getEstado());
             e.setNumero(dto.getNumero());
+            e.setComplemento(dto.getComplemento());
 
             Endereco endereco = repository.save(e);
             return mapper.toResponse(endereco);

@@ -3,6 +3,7 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.controller.kitAmor;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.kitAmor.KitAmorRequestDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.dto.kitAmor.KitAmorResponseDto;
 import br.com.amorEmMechas_Formulario.api.para.formulario.service.kitAmor.KitAmorService;
+import br.com.amorEmMechas_Formulario.api.para.formulario.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,18 +24,36 @@ import java.util.List;
 public class KitAmorControlller {
 
     private KitAmorService service; // corrigido: era public
+    private JwtTokenProvider jwtTokenProvider;
 
-    public KitAmorControlller(KitAmorService service) {
+    public KitAmorControlller(KitAmorService service, JwtTokenProvider jwtTokenProvider) {
         this.service = service;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Operation(summary = "Cadastra um novo kit do amor")
     @ApiResponse(responseCode = "201", description = "Kit cadastrado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inv├ílidos")
     @PostMapping
-    public ResponseEntity<KitAmorResponseDto> create(@RequestBody @Valid KitAmorRequestDto dto) {
+    public ResponseEntity<KitAmorResponseDto> create(
+            @RequestBody @Valid KitAmorRequestDto dto,
+            @RequestHeader(value = "X-Application-Token", required = false) String applicationToken) {
+        validarAcessoPublico(dto.getPacienteId(), applicationToken);
         KitAmorResponseDto response = service.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    private void validarAcessoPublico(Integer pacienteId, String applicationToken) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean equipeAutorizada = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                        || a.getAuthority().equals("ROLE_MEDICO")
+                        || a.getAuthority().equals("ROLE_ENFERMEIRO")
+                        || a.getAuthority().equals("ROLE_ATENDENTE"));
+        if (!equipeAutorizada && (applicationToken == null
+                || !jwtTokenProvider.validateApplicationToken(applicationToken, pacienteId))) {
+            throw new AccessDeniedException("Contexto da solicitacao invalido");
+        }
     }
 
     @Operation(summary = "Atualiza um kit do amor")

@@ -20,6 +20,13 @@ public class DadosMedicos {
     private LocalDate dtInicioTratamento;
     private String tipoAtendimento;
 
+    @Column(name = "inicio_tratamento", nullable = false)
+    private LocalDate inicioTratamento;
+
+    @Lob
+    @Column(name = "relatorio_medico", columnDefinition = "longblob", nullable = false)
+    private byte[] relatorioMedico;
+
     @OneToOne
     @JoinColumn(name = "arquivo_id")
     private Arquivo arquivo;
@@ -92,5 +99,14 @@ public class DadosMedicos {
 
     public void setArquivo(Arquivo arquivo) {
         this.arquivo = arquivo;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void sincronizarColunasLegadas() {
+        inicioTratamento = dtInicioTratamento != null ? dtInicioTratamento : LocalDate.of(1900, 1, 1);
+        if (relatorioMedico == null) {
+            relatorioMedico = new byte[0];
+        }
     }
 }

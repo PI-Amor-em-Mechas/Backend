@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -157,6 +159,74 @@ class MadrinhaServiceTest {
     }
 
     @Test
+    void findAll_deveSincronizarColaboradorFacialSemVinculo() {
+        when(repository.findColaboradoresFaciaisAtivos())
+                .thenReturn(List.<Object[]>of(new Object[]{"facial-2", "Nova Facial", Timestamp.valueOf("2026-11-16 10:00:00")}));
+        when(repository.findByColaboradorId("facial-2")).thenReturn(Optional.empty());
+        when(repository.findAll()).thenReturn(List.of(madrinha));
+        when(mapper.toResponse(madrinha)).thenReturn(responseDto);
+
+        service.findAll();
+
+        verify(repository).save(argThat(saved ->
+                "facial-2".equals(saved.getColaboradorId())
+                        && "Nova Facial".equals(saved.getNomeCompleto())
+                        && "Ativa".equals(saved.getStatus())
+                        && "Voluntária".equals(saved.getFuncao())));
+    }
+
+    @Test
+    void findAll_naoDeveDuplicarColaboradorFacialJaVinculado() {
+        Madrinha vinculada = new Madrinha();
+        vinculada.setColaboradorId("facial-1");
+        when(repository.findColaboradoresFaciaisAtivos())
+                .thenReturn(List.<Object[]>of(new Object[]{"facial-1", "Existente", Timestamp.valueOf("2026-11-16 10:00:00")}));
+        when(repository.findByColaboradorId("facial-1")).thenReturn(Optional.of(vinculada));
+        when(repository.findAll()).thenReturn(List.of(madrinha));
+        when(mapper.toResponse(madrinha)).thenReturn(responseDto);
+
+        service.findAll();
+
+        verify(repository, never()).save(any(Madrinha.class));
+    }
+
+    @Test
+    void findAll_deveManterMinutosDosParesDePonto() {
+        madrinha.setColaboradorId("facial-1");
+        when(repository.findColaboradoresFaciaisAtivos()).thenReturn(List.of());
+        when(repository.findAll()).thenReturn(List.of(madrinha));
+        when(mapper.toResponse(madrinha)).thenReturn(responseDto);
+        when(repository.findPontosByColaboradorId("facial-1")).thenReturn(List.of(
+                point("2026-11-16T08:00:00", "IN"),
+                point("2026-11-16T08:30:00", "OUT"),
+                point("2026-11-16T09:00:00", "IN"),
+                point("2026-11-16T10:30:00", "OUT")
+        ));
+
+        MadrinhaResponseDto result = service.findAll().get(0);
+
+        assertThat(result.getMinutosVoluntarios()).isEqualTo(120);
+        assertThat(result.getDuracaoVoluntaria()).isEqualTo("2h");
+    }
+
+    @Test
+    void findAll_deveIgnorarInSemOutEOutSemIn() {
+        madrinha.setColaboradorId("facial-1");
+        when(repository.findColaboradoresFaciaisAtivos()).thenReturn(List.of());
+        when(repository.findAll()).thenReturn(List.of(madrinha));
+        when(mapper.toResponse(madrinha)).thenReturn(responseDto);
+        when(repository.findPontosByColaboradorId("facial-1")).thenReturn(List.of(
+                point("2026-11-16T07:00:00", "OUT"),
+                point("2026-11-16T08:00:00", "IN")
+        ));
+
+        MadrinhaResponseDto result = service.findAll().get(0);
+
+        assertThat(result.getMinutosVoluntarios()).isZero();
+        assertThat(result.getDuracaoVoluntaria()).isEqualTo("0min");
+    }
+
+    @Test
     void findByStatus_deveUsarRepositorioComFiltro() {
         when(repository.findByStatus("Ativa")).thenReturn(List.of(madrinha));
         when(mapper.toResponse(madrinha)).thenReturn(responseDto);
@@ -202,5 +272,9 @@ class MadrinhaServiceTest {
         assertThatThrownBy(() -> service.deleteById(1))
                 .isInstanceOf(IdNotFoundException.class)
                 .hasMessageContaining("1");
+    }
+
+    private Object[] point(String timestamp, String type) {
+        return new Object[]{Timestamp.valueOf(LocalDateTime.parse(timestamp)), type};
     }
 }

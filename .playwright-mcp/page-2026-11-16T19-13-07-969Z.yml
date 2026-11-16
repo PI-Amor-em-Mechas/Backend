@@ -1,0 +1,29 @@
+- main [ref=f7e3]:
+  - generic [ref=f7e4]:
+    - generic [ref=f7e5]:
+      - paragraph [ref=f7e6]: AMOR EM MECHAS
+      - heading "Ponto" [level=1] [ref=f7e7]
+    - button "Sair" [ref=f7e9] [cursor=pointer]
+  - generic [ref=f7e10]:
+    - generic [ref=f7e11]:
+      - paragraph [ref=f7e12]: JORNADA DE HOJE
+      - heading [level=2] [ref=f7e13]:
+        - text: Presença registrada
+        - emphasis [ref=f7e14]: com confiança.
+      - paragraph [ref=f7e15]: Use a câmera para reconhecer sua identidade e registrar entrada ou saída.
+      - button "Abrir reconhecimento →" [ref=f7e16] [cursor=pointer]
+    - generic [ref=f7e17]:
+      - generic [ref=f7e18]: AM
+      - generic [ref=f7e19]: FACE+ VOZ
+  - generic [ref=f7e20]:
+    - generic [ref=f7e21]:
+      - generic [ref=f7e22]:
+        - paragraph [ref=f7e23]: ADMINISTRAÇÃO
+        - heading "Colaboradores" [level=2] [ref=f7e24]
+      - generic [ref=f7e25]:
+        - generic [ref=f7e26]: 0 cadastrados
+        - button "Cadastrar pessoa" [ref=f7e27] [cursor=pointer]
+    - paragraph [ref=f7e29]: Nenhum colaborador cadastrado.
+  - generic [ref=f7e30]:
+    - generic [ref=f7e31]: Reconhecimento facial seguro
+    - generic [ref=f7e32]: LGPD · Biometria protegida

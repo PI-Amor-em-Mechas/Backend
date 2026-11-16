@@ -1,0 +1,10 @@
+{
+    "StartedAt":  "2026-11-16T22:17:16.8659041Z",
+    "TunnelPid":  54772,
+    "TunnelOwned":  true,
+    "SpringPid":  56968,
+    "FlaskPid":  67684,
+    "SpringPort":  8080,
+    "FlaskPort":  5000,
+    "TunnelPort":  13306
+}

@@ -32,9 +32,10 @@ public class ArquivoController {
     public ResponseEntity<ArquivoResponseDto> upload(
             @RequestParam("arquivo") MultipartFile arquivo,
             @RequestParam("tipo") String tipo,
-            @RequestParam(value = "pacienteId", required = false) Integer pacienteId) throws IOException {
+            @RequestParam(value = "pacienteId", required = false) Integer pacienteId,
+            @RequestHeader(value = "X-Application-Token", required = false) String applicationToken) throws IOException {
 
-        Arquivo arquivoSalvo = arquivoService.upload(arquivo, tipo, pacienteId);
+        Arquivo arquivoSalvo = arquivoService.upload(arquivo, tipo, pacienteId, applicationToken);
         return ResponseEntity.ok(ArquivoMapper.toResponse(arquivoSalvo));
     }
 
@@ -46,7 +47,7 @@ public class ArquivoController {
 
     @PatchMapping("/{id}/validacao")
     @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'ENFERMEIRO')")
-    public ResponseEntity<ArquivoResponseDto> validar(@PathVariable Long id,
+    public ResponseEntity<ArquivoResponseDto> validar(@PathVariable Integer id,
             @RequestBody @Valid ValidacaoArquivoRequestDto dto) {
         return ResponseEntity.ok(ArquivoMapper.toResponse(arquivoService.validar(id, dto.decisao(), dto.observacao())));
     }
@@ -58,20 +59,32 @@ public class ArquivoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ArquivoResponseDto> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ArquivoResponseDto> buscarPorId(@PathVariable Integer id) {
         Arquivo arquivo = arquivoService.buscarPorId(id);
         return ResponseEntity.ok(ArquivoMapper.toResponse(arquivo));
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> download(@PathVariable Long id) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> download(@PathVariable Integer id) {
         Arquivo arquivo = arquivoService.buscarPorId(id);
 
         try {
             byte[] conteudo = arquivoService.getConteudo(id);
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(arquivo.getMimeType()));
-            headers.setContentDisposition(ContentDisposition.attachment().filename(arquivo.getNomeOriginal()).build());
+            MediaType mimeType = MediaType.APPLICATION_OCTET_STREAM;
+            if (arquivo.getMimeType() != null) {
+                try {
+                    mimeType = MediaType.parseMediaType(arquivo.getMimeType());
+                } catch (IllegalArgumentException ignored) {
+                    // Conteúdo desconhecido permanece como octet-stream.
+                }
+            }
+            String nomeSeguro = arquivo.getNomeOriginal() == null
+                    ? "arquivo-" + id
+                    : arquivo.getNomeOriginal().replaceAll("[^\\p{L}\\p{N}._-]", "_");
+            headers.setContentType(mimeType);
+            headers.setContentDisposition(ContentDisposition.attachment().filename(nomeSeguro).build());
             return ResponseEntity.ok().headers(headers).body(conteudo);
         } catch (java.io.IOException e) {
             return ResponseEntity.internalServerError().build();

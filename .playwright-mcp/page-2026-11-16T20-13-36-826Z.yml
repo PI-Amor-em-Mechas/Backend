@@ -1,0 +1,44 @@
+- generic [ref=f15e85]:
+  - navigation [ref=f15e86]:
+    - button "Voltar ao formulário" [ref=f15e88] [cursor=pointer]
+    - generic [ref=f15e89]:
+      - button "Painel" [ref=f15e90] [cursor=pointer]
+      - button "Pacientes" [ref=f15e91] [cursor=pointer]
+      - button "Solicitações" [ref=f15e92] [cursor=pointer]
+      - button "Madrinhas" [ref=f15e93] [cursor=pointer]
+    - generic [ref=f15e94]:
+      - button "Sair" [ref=f15e95]
+      - img "Perfil" [ref=f15e96]
+  - main [ref=f15e97]:
+    - generic [ref=f15e98]:
+      - generic [ref=f15e99]:
+        - heading "Madrinhas do Amor" [level=1] [ref=f15e100]
+        - paragraph [ref=f15e101]: Gestão de horas das madrinhas do amor
+      - button "Cadastrar Madrinha" [ref=f15e102]
+    - generic [ref=f15e103]:
+      - generic [ref=f15e104]:
+        - heading "Total de Madrinhas" [level=3] [ref=f15e105]
+        - heading "0" [level=2] [ref=f15e106]
+        - paragraph [ref=f15e107]: Cadastros retornados pela API
+      - generic [ref=f15e108]:
+        - heading "Madrinha com Mais Horas" [level=3] [ref=f15e109]
+        - heading "-" [level=2] [ref=f15e110]
+        - paragraph [ref=f15e111]: Sem registros
+      - generic [ref=f15e112]:
+        - heading "Total de Horas Voluntárias" [level=3] [ref=f15e113]
+        - heading "0 horas" [level=2] [ref=f15e114]
+        - paragraph [ref=f15e115]: Soma dos cadastros
+      - generic [ref=f15e116]:
+        - heading "Madrinhas Ativas" [level=3] [ref=f15e117]
+        - heading "0" [level=2] [ref=f15e118]
+        - paragraph [ref=f15e119]: Status atual
+    - generic [ref=f15e121]:
+      - searchbox "Buscar por nome ou ID..." [ref=f15e122]
+      - combobox [ref=f15e123]:
+        - option "Todos os Status" [selected]
+        - option "Ativa"
+        - option "Afastada"
+        - option "Desassociada"
+      - spinbutton "Horas mínimas..." [ref=f15e124]
+      - textbox "Filtrar por mês de cadastro" [ref=f15e125]
+    - paragraph [ref=f15e126]: Carregando madrinhas...

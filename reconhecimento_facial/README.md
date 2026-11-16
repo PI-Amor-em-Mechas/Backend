@@ -110,6 +110,29 @@ Configure as credenciais via variaveis de ambiente:
 | `DB_NAME`     | `amor_em_mechas`  | Nome do database                |
 | `DB_CHARSET`  | `utf8mb4`         | Charset da conexao              |
 
+Para o teste local com o MariaDB privado, abra o tunel SSH em um terminal:
+
+```powershell
+ssh -N -L 13306:127.0.0.1:3306 <usuario>@<VM_AZURE>
+```
+
+No terminal do backend, use as variaveis da sessao (a senha nao deve ser
+gravada neste repositorio):
+
+```powershell
+$env:DB_BACKEND = "mysql"
+$env:DB_HOST = "127.0.0.1"
+$env:DB_PORT = "13306"
+$env:DB_NAME = "amor_em_mechas"
+$env:DB_USER = "amor_app"
+$env:DB_PASSWORD = "<SECRET_LOCAL_NAO_VERSIONADO>"
+```
+
+O arquivo `.env.example` documenta esses valores sem incluir segredo. O
+backend continua usando PyMySQL e o `init_db()` apenas verifica as tabelas no
+backend MySQL/MariaDB; ele nao executa DDL. Para a futura VNet, altere apenas
+`DB_HOST=10.20.10.4` e `DB_PORT=3306`.
+
 ## Instalacao
 
 ```bash

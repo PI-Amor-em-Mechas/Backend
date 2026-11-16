@@ -14,7 +14,7 @@ API REST para gerenciamento do formulário de cadastro de pacientes do projeto *
 | Swagger/OpenAPI | springdoc 2.8.16 |
 | jjwt | 0.12.6 |
 
-## Segurança (HL7 Compliance)
+## Segurança (controles técnicos alinhados ao escopo analisado)
 
 A API implementa o protocolo de segurança HL7 para proteção de dados médicos:
 
@@ -28,7 +28,7 @@ A API implementa o protocolo de segurança HL7 para proteção de dados médicos
 
 ## LGPD (Lei Geral de Proteção de Dados)
 
-A API está em conformidade com a Lei 13.709/2018:
+Os controles abaixo foram implementados/alinhados ao escopo analisado. Isso não constitui declaração de conformidade jurídica:
 
 | Artigo | Requisito | Implementação |
 |---|---|---|
@@ -62,9 +62,10 @@ Somente `GET /solicitacoes/{id}` retorna o CPF completo para o modal da equipe.
 As demais rotas de pacientes continuam mascarando o CPF. A criptografia no
 banco e a auditoria de acesso permanecem habilitadas.
 
-A coluna JPA `Paciente.status_solicitacao` é criada pelo `ddl-auto=update` já
-configurado. Para ambientes que controlam DDL externamente, aplique antes do
-deploy: `ALTER TABLE paciente ADD COLUMN status_solicitacao VARCHAR(20) NULL;`
+A coluna JPA `Paciente.status_solicitacao` deve existir no schema provisionado;
+o backend usa `ddl-auto=validate` e não altera o banco durante a inicialização.
+Para ambientes que controlam DDL externamente, aplique antes do deploy:
+`ALTER TABLE paciente ADD COLUMN status_solicitacao VARCHAR(20) NULL;`
 (ajuste a capitalização da tabela ao banco). Não é necessário alterar valores
 legados: `NULL` significa ativo por compatibilidade.
 
@@ -82,8 +83,11 @@ Testes específicos: `.\mvnw.cmd "-Dtest=Solicitacao*Test" test`.
 
 Nao ha OCR, comparacao automatica ou dependencia de Tesseract.
 
-- `POST /arquivos`: multipart `arquivo`, `tipo` e `pacienteId` opcional.
-  Associar ao paciente exige `ADMIN`, `MEDICO` ou `ENFERMEIRO`.
+- `POST /arquivos`: multipart `arquivo`, `tipo` e `pacienteId`.
+  Revisores (`ADMIN`, `MEDICO` ou `ENFERMEIRO`) podem enviar arquivos
+  diretamente. O fluxo público deve enviar o `X-Application-Token` retornado
+  pelo formulário inicial; esse token é temporário, vinculado ao paciente e
+  limitado a `RELATORIO_MEDICO`. Upload público sem contexto é rejeitado.
 - `GET /arquivos/pendentes-validacao`: fila para os mesmos perfis revisores,
   excluindo `FOTO_CABELO`. Arquivos legados sem status sao pendentes.
 - `PATCH /arquivos/{id}/validacao`: `decisao` (`APROVADO` ou `REJEITADO`) e
@@ -100,10 +104,16 @@ confere extensao/MIME, inicio/fim do PDF e decodificacao de imagens. Nao ha
 antivirus nem inspecao estrutural completa de PDFs. A revisao humana nao e
 substituto dessas camadas.
 
-Com `ddl-auto=update`, o JPA adiciona as colunas de revisao e `paciente_id` em
-`Arquivo`. Ambientes com migracoes externas devem provisionar essas colunas
+Em bancos antigos, as colunas de revisao e `paciente_id` em `Arquivo` precisam
+ser provisionadas por uma alteracao de schema controlada. Ambientes com
+migracoes externas devem provisionar essas colunas
 antes de executar a nova versao. Arquivos antigos sem associacao nao podem ser
 usados em novos dados medicos: envie o laudo com `pacienteId` pela equipe.
+
+O campo `complemento` de endereco e exposto no contrato da API e persistido pela
+aplicacao. Em ambientes que controlam DDL externamente, a migracao da coluna
+correspondente deve ser planejada e validada antes do deploy; esta alteracao nao
+executa DDL em banco compartilhado.
 
 ## Pré-requisitos
 
@@ -117,11 +127,28 @@ usados em novos dados medicos: envie o laudo com `pacienteId` pela equipe.
 
 | Variável | Descrição | Valor padrão (dev) |
 |---|---|---|
-| `DB_PASSWORD` | Senha do banco MySQL | `123456` |
-| `JWT_SECRET` | Chave secreta JWT (mín. 256 bits) | Base64 embutido |
-| `PHI_ENCRYPTION_KEY` | Chave AES-256 para dados médicos | Base64 embutido |
+| `DB_HOST` | Host do banco MariaDB/MySQL | `127.0.0.1` |
+| `DB_PORT` | Porta do banco MariaDB/MySQL | `3306` |
+| `DB_NAME` | Nome do database | `amor_em_mechas` |
+| `DB_USER` | Usuário do banco | _(obrigatório)_ |
+| `DB_USERNAME` | Nome legado aceito quando `DB_USER` não está definido | _(sem padrão)_ |
+| `DB_PASSWORD` | Senha do banco MySQL | obrigatória |
+| `SPRING_DATASOURCE_URL` | URL JDBC completa; tem precedência sobre `DB_*` | _(opcional)_ |
+| `SPRING_DATASOURCE_USERNAME` | Usuário JDBC; tem precedência sobre `DB_USER`/`DB_USERNAME` | _(opcional)_ |
+| `SPRING_DATASOURCE_PASSWORD` | Senha JDBC; tem precedência sobre `DB_PASSWORD` | _(opcional)_ |
+| `JWT_SECRET` | Chave secreta JWT (mín. 256 bits) | obrigatória |
+| `PHI_ENCRYPTION_KEY` | Chave AES-256 para dados médicos | obrigatória |
 | `CORS_ORIGINS` | Origens permitidas (separadas por vírgula) | `http://localhost:3000,http://localhost:4200` |
 | `UPLOAD_DIR` | Diretório para armazenamento de arquivos | `uploads` |
+
+O driver atualmente utilizado é `mysql-connector-j`. A URL JDBC é montada a
+partir de `DB_HOST`, `DB_PORT` e `DB_NAME`, mantendo `serverTimezone` de
+São Paulo e `utf8`. Variáveis `SPRING_DATASOURCE_*` continuam funcionando e
+sobrescrevem as propriedades equivalentes.
+
+O Hibernate usa `ddl-auto=validate`: a inicialização valida o schema existente,
+mas não cria, altera ou remove tabelas. O database deve ser provisionado
+externamente.
 
 ### Gerar chaves para produção
 
@@ -132,6 +159,35 @@ openssl rand -base64 32
 # PHI Encryption Key (AES-256)
 openssl rand -base64 32
 ```
+
+### Teste local com túnel SSH
+
+Com o MariaDB privado na VM Azure, abra o túnel em um terminal separado (sem
+colocar a senha em arquivos do projeto):
+
+```powershell
+ssh -N -L 13306:127.0.0.1:3306 <usuario>@<VM_AZURE>
+```
+
+No terminal usado para iniciar o Spring, defina as variáveis da sessão:
+
+```powershell
+$env:DB_HOST = "127.0.0.1"
+$env:DB_PORT = "13306"
+$env:DB_NAME = "amor_em_mechas"
+$env:DB_USER = "amor_app"
+$env:DB_PASSWORD = "<SECRET_LOCAL_NAO_VERSIONADO>"
+```
+
+Depois, inicie sem o perfil `dev` para usar o MariaDB:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+O perfil `dev` continua destinado aos testes locais com H2. Não é necessário
+alterar código para usar o endereço futuro da VNet: basta definir `DB_HOST`,
+`DB_PORT` e os demais segredos no ambiente de execução.
 
 ## Executar
 
@@ -204,7 +260,7 @@ O Swagger permite filtrar por tag, consultar schemas dos DTOs e executar requisi
 | Grupo | Base | Acesso |
 |---|---|---|
 | Autenticação | `/auth` | Público; `/auth/registro-admin` exige ADMIN |
-| Formulário inicial | `/formulario-solicitacao-peruca` | `POST` público, sem token |
+| Formulário inicial | `/formulario-solicitacao-peruca` | `POST` público; retorna `applicationToken` temporário |
 | Pacientes | `/pacientes` | JWT + ADMIN, MEDICO, ENFERMEIRO ou ATENDENTE |
 | Dados médicos | `/dados-medicos` | JWT + ADMIN, MEDICO ou ENFERMEIRO |
 | Avaliações | `/avaliacoes` | JWT + ADMIN, MEDICO ou ENFERMEIRO |
@@ -216,6 +272,12 @@ O Swagger permite filtrar por tag, consultar schemas dos DTOs e executar requisi
 | Filhos | `/filhos` | JWT |
 
 O formulário inicial é público porque a usuária final ainda não possui conta. O cadastro administrativo em `/pacientes` continua protegido. O formulário exige consentimento LGPD, valida os campos e grava o CPF criptografado.
+
+O campo `applicationToken` da resposta do formulario deve ser enviado no
+header `X-Application-Token` ao fazer o upload do laudo medico, junto com o
+`pacienteId` correspondente. O token nao concede autenticacao administrativa,
+nao substitui o JWT de usuario e nao permite listar, consultar, baixar ou
+revisar arquivos.
 
 ### Token de desenvolvimento
 

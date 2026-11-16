@@ -6,6 +6,8 @@ import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.Pacien
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.StatusSolicitacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.kitAmor.KitAmorRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.mapper.arquivo.ArquivoMapper;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
 import br.com.amorEmMechas_Formulario.api.para.formulario.service.paciente.PacienteService;
 import br.com.amorEmMechas_Formulario.api.para.formulario.security.PhiEncryptionUtil;
@@ -21,13 +23,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class SolicitacaoService {
     private final PacienteRepository pacientes;
     private final KitAmorRepository kits;
+    private final ArquivoRepository arquivos;
     private final PacienteService pacienteService;
     private final PhiEncryptionUtil encryption;
 
-    public SolicitacaoService(PacienteRepository pacientes, KitAmorRepository kits, PacienteService pacienteService,
+    public SolicitacaoService(PacienteRepository pacientes, KitAmorRepository kits, ArquivoRepository arquivos,
+                              PacienteService pacienteService,
                               PhiEncryptionUtil encryption) {
         this.pacientes = pacientes;
         this.kits = kits;
+        this.arquivos = arquivos;
         this.pacienteService = pacienteService;
         this.encryption = encryption;
     }
@@ -43,11 +48,17 @@ public class SolicitacaoService {
                 .orElseThrow(() -> new IdNotFoundException("Solicitacao nao encontrada"));
         var dadosPaciente = pacienteService.findById(id);
         dadosPaciente.setCpf(encryption.decrypt(paciente.getCpf()));
+        if (dadosPaciente.getDadosMedicos() != null) {
+            dadosPaciente.getDadosMedicos().setMotivo(encryption.decryptIfEncrypted(dadosPaciente.getDadosMedicos().getMotivo()));
+            dadosPaciente.getDadosMedicos().setTipoCancer(encryption.decryptIfEncrypted(dadosPaciente.getDadosMedicos().getTipoCancer()));
+            dadosPaciente.getDadosMedicos().setJustificativa(encryption.decryptIfEncrypted(dadosPaciente.getDadosMedicos().getJustificativa()));
+        }
         return new SolicitacaoDetalheDto(paciente.getId(), paciente.getStatusSolicitacao(),
                 dadosPaciente,
                 paciente.getSolicitante() == null ? null : paciente.getSolicitante().getNomeCompleto(),
                 kits.findByPacienteIdOrderByIdAsc(id).stream()
-                        .map(kit -> new SolicitacaoDetalheDto.KitResumo(kit.getId(), kit.getCorPeruca())).toList());
+                        .map(kit -> new SolicitacaoDetalheDto.KitResumo(kit.getId(), kit.getCorPeruca())).toList(),
+                arquivos.findByPacienteIdOrderByIdAsc(id).stream().map(ArquivoMapper::toResponse).toList());
     }
 
     @Transactional

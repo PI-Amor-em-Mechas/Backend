@@ -1,9 +1,44 @@
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api, apiMessage } from "./api";
-import type { Employee, Profile, RecognitionResult } from "./types";
+import type {
+  Employee,
+  PrivacyNotice,
+  Profile,
+  RecognitionResult,
+  VoiceBiometryConfig,
+} from "./types";
 
 type View = "home" | "recognition" | "admin";
+
+function createEmployeeId() {
+  return `pessoa-${crypto.randomUUID()}`;
+}
+
+function getCameraStream(constraints: MediaStreamConstraints) {
+  return new Promise<MediaStream>((resolve, reject) => {
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new DOMException("Tempo limite para acessar a câmera.", "TimeoutError"));
+    }, 5000);
+    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+      window.clearTimeout(timer);
+      if (settled) stream.getTracks().forEach((track) => track.stop());
+      else {
+        settled = true;
+        resolve(stream);
+      }
+    }).catch((error: unknown) => {
+      window.clearTimeout(timer);
+      if (!settled) {
+        settled = true;
+        reject(error);
+      }
+    });
+  });
+}
 
 function Login({ onLogin }: { onLogin: (profile: Profile) => void }) {
   const [profile, setProfile] = useState<Profile>("default");
@@ -218,9 +253,9 @@ function CameraRecognition({ onBack }: { onBack: () => void }) {
 
 function AdminPanel() {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [form, setForm] = useState({ id: "", name: "" });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
 
   async function loadEmployees() {
     try {
@@ -232,10 +267,6 @@ function AdminPanel() {
   }
   useEffect(() => { void loadEmployees(); }, []);
 
-  async function register(event: React.FormEvent) {
-    event.preventDefault();
-    setMessage("O cadastro facial exige capturas da câmera. Abra o fluxo de cadastro para concluir.");
-  }
   async function remove(id: string) {
     if (!window.confirm("Anonimizar e remover este colaborador?")) return;
     setBusy(true);
@@ -243,11 +274,390 @@ function AdminPanel() {
       await api.post("/employees/delete", { employee_id: id });
       setMessage("Colaborador removido e dados anonimizados.");
       await loadEmployees();
-    } catch (error) { setMessage(apiMessage(error, "Não foi possível remover o colaborador.")); }
-    finally { setBusy(false); }
+    } catch (error) {
+      setMessage(apiMessage(error, "Não foi possível remover o colaborador."));
+    } finally {
+      setBusy(false);
+    }
   }
 
-  return <section className="admin-section"><div className="section-heading"><div><p className="eyebrow">ADMINISTRAÇÃO</p><h2>Colaboradores</h2></div><span className="count-badge">{employees.length} cadastrados</span></div><form className="inline-form" onSubmit={register}><input placeholder="ID do colaborador" value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value })} /><input placeholder="Nome completo" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /><button className="button dark" type="submit">Preparar cadastro</button></form>{message && <p className="feedback">{message}</p>}<div className="employee-list">{employees.map((employee) => <article className="employee-row" key={employee.id}><div><strong>{employee.name}</strong><span>ID {employee.id} · {employee.sample_count} amostras faciais</span></div><div className="employee-meta"><span className={employee.consent_valid ? "tag good" : "tag warn"}>{employee.consent_valid ? "LGPD ok" : "Sem consentimento"}</span><span className={employee.voiceprint_ready ? "tag good" : "tag"}>Voz {employee.voiceprint_count}/{employee.voiceprint_min_samples}</span><button className="icon-button" disabled={busy} onClick={() => remove(employee.id)} title="Remover">×</button></div></article>)}{employees.length === 0 && <p className="muted">Nenhum colaborador cadastrado.</p>}</div></section>;
+  return <section className="admin-section">
+    <div className="section-heading">
+      <div><p className="eyebrow">ADMINISTRAÇÃO</p><h2>Colaboradores</h2></div>
+      <div className="section-heading-actions">
+        <span className="count-badge">{employees.length} cadastrados</span>
+        <button className="button dark" type="button" onClick={() => setRegisterOpen(true)}>Cadastrar pessoa</button>
+      </div>
+    </div>
+    {message && <p className="feedback">{message}</p>}
+    <div className="employee-list">
+      {employees.map((employee) => <EmployeeManagementRow key={employee.id} employee={employee} busy={busy} onRemove={() => void remove(employee.id)} />)}
+      {employees.length === 0 && <p className="muted">Nenhum colaborador cadastrado.</p>}
+    </div>
+    {registerOpen && <RegistrationPanel onClose={() => { setRegisterOpen(false); void loadEmployees(); }} />}
+  </section>;
+}
+
+async function getAudioStream(signal: AbortSignal) {
+  return new Promise<MediaStream>((resolve, reject) => {
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new DOMException("Tempo limite para acessar o microfone.", "TimeoutError"));
+    }, 5000);
+    const cancel = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      reject(new DOMException("Gravação cancelada.", "AbortError"));
+    };
+    if (signal.aborted) return cancel();
+    signal.addEventListener("abort", cancel, { once: true });
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then((stream) => {
+      signal.removeEventListener("abort", cancel);
+      window.clearTimeout(timer);
+      if (settled) stream.getTracks().forEach((track) => track.stop());
+      else {
+        settled = true;
+        resolve(stream);
+      }
+    }).catch((error: unknown) => {
+      signal.removeEventListener("abort", cancel);
+      window.clearTimeout(timer);
+      if (!settled) {
+        settled = true;
+        reject(error);
+      }
+    });
+  });
+}
+
+async function captureVoicePcm(seconds: number, signal: AbortSignal) {
+  const audioContext = new AudioContext({ sampleRate: 16000 });
+  let stream: MediaStream | null = null;
+  try {
+    const activeStream = await getAudioStream(signal);
+    stream = activeStream;
+    await audioContext.audioWorklet.addModule("/audio-processor.js");
+    const source = audioContext.createMediaStreamSource(activeStream);
+    const processor = new AudioWorkletNode(audioContext, "pcm16-processor");
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+    processor.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+      const chunk = new Uint8Array(event.data);
+      chunks.push(chunk);
+      totalBytes += chunk.byteLength;
+    };
+    source.connect(processor);
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(resolve, seconds * 1000);
+      const cancel = () => {
+        window.clearTimeout(timer);
+        reject(new DOMException("Gravação cancelada.", "AbortError"));
+      };
+      if (signal.aborted) return cancel();
+      signal.addEventListener("abort", cancel, { once: true });
+    });
+    source.disconnect();
+    processor.disconnect();
+    const merged = new Uint8Array(totalBytes);
+    let offset = 0;
+    chunks.forEach((chunk) => { merged.set(chunk, offset); offset += chunk.byteLength; });
+    let binary = "";
+    for (let index = 0; index < merged.length; index += 0x8000) {
+      binary += String.fromCharCode(...merged.subarray(index, index + 0x8000));
+    }
+    return btoa(binary);
+  } finally {
+    stream?.getTracks().forEach((track) => track.stop());
+    await audioContext.close();
+  }
+}
+
+function EmployeeManagementRow({ employee, busy, onRemove }: { employee: Employee; busy: boolean; onRemove: () => void }) {
+  const [name, setName] = useState(employee.name);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState(`Biometria de voz: grave uma amostra de ${employee.voiceprint_min_samples} necessárias.`);
+  const voiceAbortRef = useRef<AbortController | null>(null);
+
+  async function updateName() {
+    if (!name.trim()) return setVoiceStatus("Informe um nome válido.");
+    try {
+      const { data } = await api.post<{ message: string }>("/employees/update", { employee_id: employee.id, employee_name: name.trim() });
+      setVoiceStatus(data.message);
+    } catch (error) { setVoiceStatus(apiMessage(error, "Falha ao atualizar usuário.")); }
+  }
+
+  async function enrollVoice() {
+    const controller = new AbortController();
+    voiceAbortRef.current = controller;
+    setVoiceBusy(true);
+    setVoiceStatus("Gravando voz por até 5 segundos...");
+    try {
+      const pcm_base64 = await captureVoicePcm(5, controller.signal);
+      const { data } = await api.post<{ message: string; total_samples: number; ready: boolean }>("/voice-biometry/enroll", { employee_id: employee.id, pcm_base64 });
+      setVoiceStatus(`${data.message} Total: ${data.total_samples}${data.ready ? " (pronto)" : " (faltam amostras)"}.`);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setVoiceStatus("Gravação cancelada.");
+      } else if (error instanceof DOMException && error.name === "TimeoutError") {
+        setVoiceStatus("Não foi possível acessar o microfone em 5 segundos.");
+      } else {
+        setVoiceStatus(apiMessage(error, "Falha ao gravar voiceprint."));
+      }
+    } finally {
+      voiceAbortRef.current = null;
+      setVoiceBusy(false);
+    }
+  }
+
+  function cancelVoice() {
+    voiceAbortRef.current?.abort();
+  }
+
+  async function clearVoice() {
+    if (!window.confirm("Remover todos os voiceprints deste colaborador?")) return;
+    try {
+      const { data } = await api.post<{ message: string }>("/voice-biometry/clear", { employee_id: employee.id });
+      setVoiceStatus(data.message);
+    } catch (error) { setVoiceStatus(apiMessage(error, "Falha ao limpar voiceprints.")); }
+  }
+
+  return <article className="employee-row employee-row-managed">
+    <div className="employee-details">
+      <strong>{employee.name}</strong>
+      <span>ID {employee.id} · {employee.sample_count} amostras faciais</span>
+      <span className={employee.voiceprint_ready ? "tag good" : "tag"}>Voz {employee.voiceprint_count}/{employee.voiceprint_min_samples}</span>
+    </div>
+    <div className="employee-controls">
+      <input aria-label={`Nome de ${employee.id}`} value={name} onChange={(event) => setName(event.target.value)} />
+      <button className="button" type="button" onClick={() => void updateName()}>Salvar nome</button>
+      <button className="button" type="button" onClick={() => window.open(`/lgpd/export/${encodeURIComponent(employee.id)}`, "_blank")}>Exportar LGPD</button>
+      <button className={voiceBusy ? "button recording" : "button primary"} type="button" onClick={voiceBusy ? cancelVoice : () => void enrollVoice()}>{voiceBusy ? "Cancelar gravação" : "Gravar voz (5s)"}</button>
+      <button className="button ghost" type="button" onClick={() => void clearVoice()}>Limpar voz</button>
+      <button className="icon-button" disabled={busy} onClick={onRemove} title="Remover">×</button>
+      <span className="employee-status">{voiceStatus}</span>
+    </div>
+  </article>;
+}
+
+function RegistrationPanel({ onClose }: { onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [employeeId, setEmployeeId] = useState(createEmployeeId);
+  const [employeeName, setEmployeeName] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const [privacy, setPrivacy] = useState<PrivacyNotice | null>(null);
+  const [status, setStatus] = useState("Inicializando câmera...");
+  const [statusType, setStatusType] = useState("info");
+  const [busy, setBusy] = useState(false);
+  const [phrases, setPhrases] = useState<string[]>([]);
+  const [phrase, setPhrase] = useState("");
+  const [bulkPhrases, setBulkPhrases] = useState("");
+  const [phraseStatus, setPhraseStatus] = useState("Carregando frases de treino...");
+  const phraseFileRef = useRef<HTMLInputElement>(null);
+  const [voiceConfig, setVoiceConfig] = useState<VoiceBiometryConfig>({
+    enforced: true, min_samples: 3, min_seconds: 1.5, threshold: 0.7,
+  });
+
+  function updateStatus(message: string, type = "info") {
+    setStatus(message);
+    setStatusType(type);
+  }
+
+  async function loadPhrases() {
+    try {
+      const { data } = await api.get<{ phrases: string[] }>("/voice-phrases");
+      setPhrases(data.phrases ?? []);
+      setPhraseStatus(`${data.phrases?.length ?? 0} frases de treino carregadas.`);
+    } catch (error) {
+      setPhraseStatus(apiMessage(error, "Falha ao carregar frases."));
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    void api.get<PrivacyNotice>("/lgpd/privacy-notice")
+      .then(({ data }) => { if (active) setPrivacy(data); })
+      .catch(() => undefined);
+    void api.get<{ voice_biometry?: VoiceBiometryConfig }>("/employees")
+      .then(({ data }) => { if (active && data.voice_biometry) setVoiceConfig(data.voice_biometry); })
+      .catch(() => undefined);
+    void loadPhrases();
+    async function startCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        updateStatus("Este navegador não disponibilizou a câmera. Use a opção Selecionar fotos.", "warning");
+        return;
+      }
+      try {
+        let stream: MediaStream;
+        try {
+          stream = await getCameraStream({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false,
+          });
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "TimeoutError") throw error;
+          stream = await getCameraStream({ video: true, audio: false });
+        }
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        const video = videoRef.current;
+        if (video) {
+          video.srcObject = stream;
+          await video.play().catch(() => undefined);
+        }
+        updateStatus("Câmera pronta. Capture pelo menos 3 fotos.", "success");
+      } catch (error) {
+        const reason = error instanceof DOMException && error.name === "TimeoutError"
+          ? "A câmera não respondeu em 5 segundos."
+          : error instanceof DOMException && error.name === "NotAllowedError"
+          ? "Permissão da câmera negada."
+          : "A câmera não está disponível.";
+        updateStatus(`${reason} Use a opção Selecionar fotos.`, "warning");
+      }
+    }
+    void startCamera();
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  function captureFrame() {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || !video.videoWidth || !video.videoHeight) return null;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.95);
+  }
+
+  function capture() {
+    const image = captureFrame();
+    if (!image) return updateStatus("A câmera ainda não está pronta.", "warning");
+    setImages((current) => [...current, image]);
+    updateStatus(`Foto capturada. Total: ${images.length + 1}.`, "success");
+  }
+
+  function addImageFiles(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    Promise.all(files.map((file) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    }))).then((newImages) => {
+      setImages((current) => [...current, ...newImages]);
+      updateStatus(`${newImages.length} foto(s) adicionada(s).`, "success");
+    }).catch(() => updateStatus("Não foi possível carregar as fotos selecionadas.", "error"));
+    event.target.value = "";
+  }
+
+  async function register() {
+    if (!employeeName.trim()) return updateStatus("Informe o nome da pessoa.", "warning");
+    if (!images.length) return updateStatus("Capture pelo menos uma foto antes de cadastrar.", "warning");
+    if (!consent) return updateStatus("Confirme o consentimento LGPD antes de cadastrar.", "warning");
+    setBusy(true);
+    try {
+      const { data } = await api.post<{ message: string }>("/register-person", {
+        employee_id: employeeId.trim(), employee_name: employeeName.trim(), images, consent: true,
+      });
+      setImages([]);
+      setEmployeeId(createEmployeeId());
+      setEmployeeName("");
+      setConsent(false);
+      updateStatus(data.message, "success");
+    } catch (error) {
+      updateStatus(apiMessage(error, "Falha ao cadastrar pessoa."), "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addPhrase() {
+    if (!phrase.trim()) return setPhraseStatus("Informe uma frase para treino.");
+    try {
+      const { data } = await api.post<{ phrases: string[]; message: string }>("/voice-phrases/add", { phrase: phrase.trim() });
+      setPhrases(data.phrases ?? []);
+      setPhrase("");
+      setPhraseStatus(data.message);
+    } catch (error) {
+      setPhraseStatus(apiMessage(error, "Falha ao adicionar frase."));
+    }
+  }
+
+  async function addBulkPhrases() {
+    if (!bulkPhrases.trim()) return setPhraseStatus("Informe uma frase por linha.");
+    try {
+      const { data } = await api.post<{ phrases: string[]; message: string }>("/voice-phrases/bulk", { text: bulkPhrases });
+      setPhrases(data.phrases ?? []);
+      setBulkPhrases("");
+      setPhraseStatus(data.message);
+    } catch (error) {
+      setPhraseStatus(apiMessage(error, "Falha no treino em lote."));
+    }
+  }
+
+  async function removePhrase(item: string) {
+    if (!window.confirm("Deseja remover esta frase do treino de voz?")) return;
+    try {
+      const { data } = await api.post<{ phrases: string[]; message: string }>("/voice-phrases/remove", { phrase: item });
+      setPhrases(data.phrases ?? []);
+      setPhraseStatus(data.message);
+    } catch (error) {
+      setPhraseStatus(apiMessage(error, "Falha ao remover frase."));
+    }
+  }
+
+  async function importPhrases(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const { data } = await api.post<{ phrases: string[]; message: string }>("/voice-phrases/import-json", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setPhrases(data.phrases ?? []);
+      setPhraseStatus(data.message);
+    } catch (error) {
+      setPhraseStatus(apiMessage(error, "Falha ao importar JSON."));
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  return <div className="registration-panel" role="dialog" aria-modal="true" aria-labelledby="registration-title">
+    <div className="registration-header"><div><p className="eyebrow">CADASTRO BIOMÉTRICO</p><h2 id="registration-title">Cadastrar nova pessoa</h2></div><button className="text-button" type="button" onClick={onClose}>Fechar</button></div>
+    <div className="registration-grid">
+      <div>
+        <div className="registration-form">
+          <label>Nome da pessoa<input maxLength={120} value={employeeName} onChange={(event) => setEmployeeName(event.target.value)} placeholder="Ex.: Maria Silva" /></label>
+        </div>
+        <div className="privacy-box">{privacy?.status === "ok" ? `Aviso de privacidade (v${privacy.version})\n\n${privacy.text}\n\nRetenção de imagens: ${privacy.retention_days} dias.` : "Não foi possível carregar o aviso de privacidade."}</div>
+        <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>Declaro ter lido o aviso de privacidade e autorizo o tratamento dos dados biométricos para controle de ponto, conforme a LGPD.</span></label>
+        <video className="registration-camera" autoPlay muted playsInline ref={videoRef} />
+        <canvas className="hidden" ref={canvasRef} />
+        <div className="actions"><button className="button" type="button" onClick={capture} disabled={busy}>Capturar foto</button><label className="button ghost file-button">Selecionar fotos<input type="file" accept="image/png,image/jpeg" multiple onChange={addImageFiles} /></label><button className="button primary" type="button" onClick={() => void register()} disabled={busy}>Cadastrar pessoa</button><button className="button ghost" type="button" onClick={() => { setImages([]); updateStatus("Fotos removidas."); }} disabled={busy}>Limpar fotos</button></div>
+        <p className={`feedback status-${statusType}`}>{status}</p>
+        <div className="preview-grid">{images.map((image, index) => <figure key={`${image.slice(-20)}-${index}`}><img src={image} alt={`Foto capturada ${index + 1}`} /><button type="button" className="button ghost" onClick={() => setImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Remover</button></figure>)}</div>
+      </div>
+      <aside className="voice-training">
+        <p className="eyebrow">RECONHECIMENTO DE VOZ</p><h3>Treino de frases</h3><p className="muted">{phraseStatus}</p>
+        <div className="stack-form"><input maxLength={200} value={phrase} onChange={(event) => setPhrase(event.target.value)} placeholder="Frase para treinar" /><button className="button primary" type="button" onClick={() => void addPhrase()}>Adicionar frase</button><textarea rows={4} value={bulkPhrases} onChange={(event) => setBulkPhrases(event.target.value)} placeholder="Uma frase por linha" /><button className="button" type="button" onClick={() => void addBulkPhrases()}>Treinar em lote</button><input ref={phraseFileRef} type="file" accept="application/json,.json" onChange={(event) => void importPhrases(event)} /><button className="button" type="button" onClick={() => phraseFileRef.current?.click()}>Importar JSON</button><button className="button" type="button" onClick={() => window.open("/voice-phrases/export-json", "_blank")}>Exportar JSON</button></div>
+        <div className="phrase-list">{phrases.map((item) => <div className="phrase-item" key={item}><span>{item}</span><button className="button ghost" type="button" onClick={() => void removePhrase(item)}>Remover</button></div>)}</div>
+        <small>Biometria de voz: mínimo de {voiceConfig.min_samples} amostras de {voiceConfig.min_seconds}s.</small>
+      </aside>
+    </div>
+  </div>;
 }
 
 function Dashboard({ profile, onLogout, onView }: { profile: Profile; onLogout: () => void; onView: (view: View) => void }) {

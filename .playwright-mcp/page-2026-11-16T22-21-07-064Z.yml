@@ -1,0 +1,15 @@
+- main [ref=f4e3]:
+  - generic [ref=f4e4]:
+    - generic [ref=f4e5]: AM
+    - paragraph [ref=f4e6]: AMOR EM MECHAS
+    - heading "Controle de ponto com presença." [level=1] [ref=f4e7]
+    - paragraph [ref=f4e8]: Entre para registrar a jornada com reconhecimento facial.
+    - tablist [ref=f4e9]:
+      - button "Colaborador" [ref=f4e10] [cursor=pointer]
+      - button "Administrador" [ref=f4e11] [cursor=pointer]
+    - generic [ref=f4e12]:
+      - generic [ref=f4e15]:
+        - text: Senha do administrador
+        - textbox "Senha do administrador" [active] [ref=f4e16]
+      - button "Entrar no sistema" [ref=f4e13] [cursor=pointer]
+    - paragraph [ref=f4e14]: Dados biométricos tratados conforme as regras de privacidade da aplicação.

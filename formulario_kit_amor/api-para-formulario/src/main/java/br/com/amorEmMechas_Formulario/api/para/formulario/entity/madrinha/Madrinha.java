@@ -10,6 +10,7 @@ public class Madrinha {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_madrinha")
     private Integer id;
 
     private String nomeCompleto;
@@ -18,6 +19,26 @@ public class Madrinha {
     private String funcao;
     private LocalDate dataCadastro;
     private String status;
+
+    @Column(name = "data_inicio")
+    private LocalDate dataInicio;
+
+    @Lob
+    @Column(name = "imagem_facial", columnDefinition = "longblob")
+    private byte[] imagemFacial;
+
+    @Column(name = "colaborador_id")
+    private String colaboradorId;
+
+    @PrePersist
+    private void preencherCamposObrigatoriosDoSchema() {
+        if (dataInicio == null) {
+            dataInicio = dataCadastro != null ? dataCadastro : LocalDate.now();
+        }
+        if (imagemFacial == null) {
+            imagemFacial = new byte[0];
+        }
+    }
 
     public Integer getId() {
         return id;
@@ -73,5 +94,13 @@ public class Madrinha {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getColaboradorId() {
+        return colaboradorId;
+    }
+
+    public void setColaboradorId(String colaboradorId) {
+        this.colaboradorId = colaboradorId;
     }
 }

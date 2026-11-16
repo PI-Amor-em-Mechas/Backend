@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import br.com.amorEmMechas_Formulario.api.para.formulario.entity.paciente.StatusSolicitacao;
 
 @Tag(name = "Pacientes", description = "Gerenciamento de pacientes")
 @RestController
@@ -56,7 +57,11 @@ public class PacienteController {
             @RequestParam(required = false) String estado,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(required = false) StatusSolicitacao statusSolicitacao,
             @PageableDefault(size = 20) Pageable pageable) {
+        if (statusSolicitacao == StatusSolicitacao.CONCLUIDA) {
+            return ResponseEntity.ok(service.findApproved(estado, dataInicio, dataFim, pageable));
+        }
         if (estado != null || dataInicio != null || dataFim != null) {
             return ResponseEntity.ok(service.findWithFilters(estado, dataInicio, dataFim, pageable));
         }

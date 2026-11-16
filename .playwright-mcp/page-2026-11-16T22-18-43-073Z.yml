@@ -1,0 +1,91 @@
+- generic [ref=e96]:
+  - navigation [ref=e97]:
+    - button "Voltar ao formulário" [ref=e99] [cursor=pointer]
+    - generic [ref=e100]:
+      - button "Painel" [ref=e101] [cursor=pointer]
+      - button "Pacientes" [ref=e102] [cursor=pointer]
+      - button "Solicitações" [ref=e103] [cursor=pointer]
+      - button "Madrinhas" [ref=e104] [cursor=pointer]
+      - button "Documentos" [ref=e105] [cursor=pointer]
+    - generic [ref=e106]:
+      - button "Sair" [ref=e107]
+      - img "Perfil" [ref=e108]
+  - main [ref=e109]:
+    - generic [ref=e110]:
+      - generic [ref=e111]:
+        - heading "Madrinhas do Amor" [level=1] [ref=e112]
+        - paragraph [ref=e113]: Gestão de horas das madrinhas do amor
+      - button "Cadastrar Madrinha" [ref=e114]
+    - generic [ref=e115]:
+      - generic [ref=e116]:
+        - heading "Total de Madrinhas" [level=3] [ref=e117]
+        - heading "3" [level=2] [ref=e139]
+        - paragraph [ref=e119]: Cadastros retornados pela API
+      - generic [ref=e120]:
+        - heading "Madrinha com Mais Horas" [level=3] [ref=e121]
+        - heading "Madrinha Demo Facial" [level=2] [ref=e140]
+        - paragraph [ref=e123]: 5min
+      - generic [ref=e124]:
+        - heading "Total de Horas Voluntárias" [level=3] [ref=e125]
+        - heading "5min" [level=2] [ref=e141]
+        - paragraph [ref=e127]: Soma dos cadastros
+      - generic [ref=e128]:
+        - heading "Madrinhas Ativas" [level=3] [ref=e129]
+        - heading "3" [level=2] [ref=e142]
+        - paragraph [ref=e131]: Status atual
+    - generic [ref=e133]:
+      - searchbox "Buscar por nome ou ID..." [ref=e134]
+      - combobox [ref=e135]:
+        - option "Todos os Status" [selected]
+        - option "Ativa"
+        - option "Afastada"
+        - option "Desassociada"
+      - spinbutton "Horas mínimas..." [ref=e136]
+      - textbox "Filtrar por mês de cadastro" [ref=e137]
+    - table [ref=e144]:
+      - rowgroup [ref=e145]:
+        - row [ref=e146]:
+          - columnheader "ID" [ref=e147]
+          - columnheader "Voluntária" [ref=e148]
+          - columnheader "Horas Voluntárias" [ref=e149]
+          - columnheader "Função" [ref=e150]
+          - columnheader "Data Cadastro" [ref=e151]
+          - columnheader "Status" [ref=e152]
+          - columnheader "Ações" [ref=e153]
+      - rowgroup [ref=e154]:
+        - row [ref=e155]:
+          - cell "5" [ref=e156]
+          - cell [ref=e157]:
+            - strong [ref=e158]: Madrinha Demo Facial
+            - text: madrinha.demo.2026@amor-em-mechas.local
+          - cell "5min" [ref=e159]
+          - cell "Demonstração" [ref=e160]
+          - cell "16/11/2026" [ref=e161]
+          - cell "Ativa" [ref=e162]
+          - cell [ref=e164]:
+            - button "Editar" [ref=e165] [cursor=pointer]
+            - button "Excluir" [ref=e166] [cursor=pointer]
+        - row [ref=e167]:
+          - cell "6" [ref=e168]
+          - cell [ref=e169]:
+            - strong [ref=e170]: Artur
+            - text: "-"
+          - cell "0min" [ref=e171]
+          - cell "Voluntária" [ref=e172]
+          - cell "16/11/2026" [ref=e173]
+          - cell "Ativa" [ref=e174]
+          - cell [ref=e176]:
+            - button "Editar" [ref=e177] [cursor=pointer]
+            - button "Excluir" [ref=e178] [cursor=pointer]
+        - row [ref=e179]:
+          - cell "7" [ref=e180]
+          - cell [ref=e181]:
+            - strong [ref=e182]: giovanna
+            - text: "-"
+          - cell "0min" [ref=e183]
+          - cell "Voluntária" [ref=e184]
+          - cell "16/11/2026" [ref=e185]
+          - cell "Ativa" [ref=e186]
+          - cell [ref=e188]:
+            - button "Editar" [ref=e189] [cursor=pointer]
+            - button "Excluir" [ref=e190] [cursor=pointer]

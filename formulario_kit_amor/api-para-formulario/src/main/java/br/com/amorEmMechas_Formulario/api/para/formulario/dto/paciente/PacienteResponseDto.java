@@ -39,6 +39,9 @@ public class PacienteResponseDto {
     private String finalidadeTratamento;
     private Boolean dadosAnonimizados;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String applicationToken;
+
 
     public Integer getId() {
         return id;
@@ -200,5 +203,13 @@ public class PacienteResponseDto {
 
     public void setDadosAnonimizados(Boolean dadosAnonimizados) {
         this.dadosAnonimizados = dadosAnonimizados;
+    }
+
+    public String getApplicationToken() {
+        return applicationToken;
+    }
+
+    public void setApplicationToken(String applicationToken) {
+        this.applicationToken = applicationToken;
     }
 }

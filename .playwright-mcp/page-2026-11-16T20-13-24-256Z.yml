@@ -1,0 +1,17 @@
+- generic [ref=f15e4]:
+  - generic [ref=f15e5]: 🌱 Aqui sua doação transforma vidas - DOAR AGORA 🌱
+  - navigation [ref=f15e6]:
+    - button "Home" [ref=f15e7] [cursor=pointer]
+    - button "O Projeto" [ref=f15e8] [cursor=pointer]
+    - button "Quero uma peruca" [active] [ref=f15e11] [cursor=pointer]
+    - button "Como doar" [ref=f15e12] [cursor=pointer]
+    - button "Campanhas" [ref=f15e13] [cursor=pointer]
+    - button "Pontos de coleta" [ref=f15e14] [cursor=pointer]
+    - button "Parcerias" [ref=f15e15] [cursor=pointer]
+    - button "Mais" [ref=f15e16] [cursor=pointer]
+  - main [ref=f15e19]:
+    - img "Instituto Amor em Mechas - Transformando Vidas" [ref=f15e20]
+    - heading "Quero uma peruca" [level=1] [ref=f15e24]
+    - generic [ref=f15e25]:
+      - paragraph [ref=f15e26]: Para ganhar nossa Peruca do Amor basta preencher o formulário abaixo
+      - button "Click para preencher com os dados da paciente" [ref=f15e27] [cursor=pointer]

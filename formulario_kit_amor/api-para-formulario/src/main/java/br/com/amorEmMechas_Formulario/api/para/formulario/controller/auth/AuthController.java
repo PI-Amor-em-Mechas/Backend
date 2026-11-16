@@ -152,7 +152,10 @@ public class AuthController {
         }
 
         String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
-        String newAccessToken = jwtTokenProvider.generateTokenFromUsername(username);
+        String role = usuarioRepository.findByUsername(username)
+                .map(Usuario::getRole)
+                .orElse(null);
+        String newAccessToken = jwtTokenProvider.generateTokenFromUsername(username, role);
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", newAccessToken,

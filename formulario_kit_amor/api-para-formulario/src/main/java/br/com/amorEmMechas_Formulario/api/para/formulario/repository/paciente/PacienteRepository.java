@@ -26,6 +26,21 @@ public interface PacienteRepository extends JpaRepository<Paciente, Integer> {
     Page<Paciente> findSolicitacoesAtivas(@Param("status") StatusSolicitacao status,
                                          @Param("busca") String busca, Pageable pageable);
 
+    @Query("""
+            SELECT p FROM Paciente p
+            LEFT JOIN p.endereco e
+            WHERE p.dadosAnonimizados = false
+              AND p.statusSolicitacao = :status
+              AND (:estado IS NULL OR e.estado = :estado)
+              AND (:dataInicio IS NULL OR p.dtPedido >= :dataInicio)
+              AND (:dataFim IS NULL OR p.dtPedido <= :dataFim)
+            """)
+    Page<Paciente> findByStatus(@Param("status") StatusSolicitacao status,
+                                @Param("estado") String estado,
+                                @Param("dataInicio") LocalDate dataInicio,
+                                @Param("dataFim") LocalDate dataFim,
+                                Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Paciente p WHERE p.id = :id AND p.dadosAnonimizados = false")
     Optional<Paciente> findSolicitacaoParaAtualizar(@Param("id") Integer id);

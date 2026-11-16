@@ -10,7 +10,7 @@ public class ArquivoMapper {
 
     public static ArquivoResponseDto toResponse(Arquivo arquivo){
         ArquivoResponseDto arquivoResponseDto = new ArquivoResponseDto();
-        arquivoResponseDto.setId(arquivo.getId().longValue());
+        arquivoResponseDto.setId(arquivo.getId());
         arquivoResponseDto.setNome(arquivo.getNome());
         arquivoResponseDto.setMimeType(arquivo.getMimeType());
         arquivoResponseDto.setTamanho(arquivo.getTamanho());
@@ -19,6 +19,8 @@ public class ArquivoMapper {
         arquivoResponseDto.setObservacaoValidacao(arquivo.getObservacaoValidacao());
         arquivoResponseDto.setDataUpload(arquivo.getDataUpload());
         arquivoResponseDto.setValidadoEm(arquivo.getValidadoEm());
+        arquivoResponseDto.setTipo(arquivo.getTipo());
+        arquivoResponseDto.setValidadoPor(arquivo.getValidadoPor());
 
         return arquivoResponseDto;
     }

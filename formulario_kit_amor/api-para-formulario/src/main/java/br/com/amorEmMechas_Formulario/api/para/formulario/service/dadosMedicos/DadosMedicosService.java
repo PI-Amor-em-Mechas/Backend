@@ -46,7 +46,7 @@ public class DadosMedicosService {
         if (dto.getRelatorioMedicoId() != null) {
 
             Arquivo arquivo = arquivoRepository
-                    .findById(dto.getRelatorioMedicoId().longValue())
+                    .findById(dto.getRelatorioMedicoId())
                     .orElseThrow(() ->
                             new IdNotFoundException(
                                     "ID ARQUIVO: "
@@ -55,7 +55,7 @@ public class DadosMedicosService {
                             )
                     );
 
-            validarRelatorio(arquivo, dto.getPacienteId());
+            validarRelatorio(arquivo, dto.getPacienteId(), false);
             entity.setArquivo(arquivo);
         }
 
@@ -137,9 +137,9 @@ public class DadosMedicosService {
         }
 
         if (dto.getRelatorioMedicoId() != null) {
-            Arquivo arquivo = arquivoRepository.findById(dto.getRelatorioMedicoId().longValue())
+            Arquivo arquivo = arquivoRepository.findById(dto.getRelatorioMedicoId())
                     .orElseThrow(() -> new IdNotFoundException("Relatorio medico nao encontrado"));
-            validarRelatorio(arquivo, dto.getPacienteId());
+            validarRelatorio(arquivo, dto.getPacienteId(), true);
             dadosMedicos.setArquivo(arquivo);
         }
 
@@ -157,11 +157,11 @@ public class DadosMedicosService {
         return mapper.toResponse(dadosSave);
     }
 
-    private void validarRelatorio(Arquivo arquivo, Integer pacienteId) {
-        if (arquivo.getStatusValidacao() != StatusValidacao.APROVADO) {
+    private void validarRelatorio(Arquivo arquivo, Integer pacienteId, boolean exigirAprovacao) {
+        if (exigirAprovacao && arquivo.getStatusValidacao() != StatusValidacao.APROVADO) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "O laudo ainda nao foi aprovado");
         }
-        if ("FOTO_CABELO".equals(arquivo.getTipo()) || arquivo.getPaciente() == null
+        if (!"RELATORIO_MEDICO".equals(arquivo.getTipo()) || arquivo.getPaciente() == null
                 || !Objects.equals(arquivo.getPaciente().getId(), pacienteId)) {
             throw new IllegalArgumentException("Relatorio medico nao pertence a este paciente");
         }

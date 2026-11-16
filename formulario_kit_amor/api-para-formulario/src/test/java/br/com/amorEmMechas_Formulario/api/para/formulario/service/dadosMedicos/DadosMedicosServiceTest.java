@@ -88,7 +88,7 @@ class DadosMedicosServiceTest {
         arquivo.setStatusValidacao(StatusValidacao.APROVADO);
 
         when(mapper.toEntity(requestDto)).thenReturn(entity);
-        when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
+        when(arquivoRepository.findById(1)).thenReturn(Optional.of(arquivo));
         when(pacienteRepository.findById(1)).thenReturn(Optional.of(paciente));
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(responseDto);
@@ -109,7 +109,7 @@ class DadosMedicosServiceTest {
         arquivo.setStatusValidacao(StatusValidacao.APROVADO);
 
         when(repository.findById(1)).thenReturn(Optional.of(entity));
-        when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
+        when(arquivoRepository.findById(1)).thenReturn(Optional.of(arquivo));
         when(phiEncryptionUtil.encrypt("Tratamento")).thenReturn("enc-Tratamento");
         when(phiEncryptionUtil.encrypt("Mama")).thenReturn("enc-Mama");
         when(phiEncryptionUtil.encrypt("Urgente")).thenReturn("enc-Urgente");

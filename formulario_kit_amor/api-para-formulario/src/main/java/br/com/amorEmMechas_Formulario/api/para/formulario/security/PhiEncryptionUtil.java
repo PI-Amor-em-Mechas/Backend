@@ -87,4 +87,15 @@ public class PhiEncryptionUtil {
             throw new RuntimeException("Erro ao descriptografar dados médicos", e);
         }
     }
+
+    public String decryptIfEncrypted(String value) {
+        if (value == null || value.isEmpty()) return value;
+        try {
+            byte[] decoded = Base64.getDecoder().decode(value);
+            if (decoded.length < IV_LENGTH + (GCM_TAG_LENGTH / 8)) return value;
+            return decrypt(value);
+        } catch (IllegalArgumentException exception) {
+            return value;
+        }
+    }
 }

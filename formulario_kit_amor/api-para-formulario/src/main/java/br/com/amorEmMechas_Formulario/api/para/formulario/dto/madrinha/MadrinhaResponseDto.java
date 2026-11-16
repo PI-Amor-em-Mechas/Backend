@@ -8,9 +8,13 @@ public class MadrinhaResponseDto {
     private String nomeCompleto;
     private String email;
     private Integer horasVoluntarias;
+    private Integer minutosVoluntarios;
+    private String duracaoVoluntaria;
     private String funcao;
     private LocalDate dataCadastro;
     private String status;
+
+    private String colaboradorId;
 
     public Integer getId() {
         return id;
@@ -44,6 +48,22 @@ public class MadrinhaResponseDto {
         this.horasVoluntarias = horasVoluntarias;
     }
 
+    public Integer getMinutosVoluntarios() {
+        return minutosVoluntarios;
+    }
+
+    public void setMinutosVoluntarios(Integer minutosVoluntarios) {
+        this.minutosVoluntarios = minutosVoluntarios;
+    }
+
+    public String getDuracaoVoluntaria() {
+        return duracaoVoluntaria;
+    }
+
+    public void setDuracaoVoluntaria(String duracaoVoluntaria) {
+        this.duracaoVoluntaria = duracaoVoluntaria;
+    }
+
     public String getFuncao() {
         return funcao;
     }
@@ -66,5 +86,13 @@ public class MadrinhaResponseDto {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getColaboradorId() {
+        return colaboradorId;
+    }
+
+    public void setColaboradorId(String colaboradorId) {
+        this.colaboradorId = colaboradorId;
     }
 }

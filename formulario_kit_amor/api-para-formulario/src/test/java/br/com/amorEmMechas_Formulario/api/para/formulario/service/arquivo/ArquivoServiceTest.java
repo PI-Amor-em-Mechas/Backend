@@ -3,15 +3,20 @@ package br.com.amorEmMechas_Formulario.api.para.formulario.service.arquivo;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.Arquivo;
 import br.com.amorEmMechas_Formulario.api.para.formulario.entity.arquivo.StatusValidacao;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.paciente.PacienteRepository;
+import br.com.amorEmMechas_Formulario.api.para.formulario.security.JwtTokenProvider;
 import br.com.amorEmMechas_Formulario.api.para.formulario.exception.IdNotFoundException;
 import br.com.amorEmMechas_Formulario.api.para.formulario.repository.arquivo.ArquivoRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,6 +41,9 @@ class ArquivoServiceTest {
     private PacienteRepository pacienteRepository;
 
     @Mock
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
     private MultipartFile multipartFile;
 
     @TempDir
@@ -46,8 +54,10 @@ class ArquivoServiceTest {
 
     @BeforeEach
     void setUp() {
-        arquivoService = new ArquivoService(arquivoRepository, pacienteRepository);
+        arquivoService = new ArquivoService(arquivoRepository, pacienteRepository, jwtTokenProvider);
         ReflectionTestUtils.setField(arquivoService, "uploadDir", tempDir.toString());
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "revisor", "", List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
 
         arquivoMock = new Arquivo();
         arquivoMock.setNomeOriginal("documento.pdf");
@@ -56,6 +66,11 @@ class ArquivoServiceTest {
         arquivoMock.setTamanho(1024L);
         arquivoMock.setCaminhoArquivo(tempDir.resolve("documento.pdf").toString());
         arquivoMock.setTipo("PDF");
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     // -------------------------------------------------------
@@ -142,27 +157,27 @@ class ArquivoServiceTest {
     @DisplayName("buscarPorId: deve retornar o arquivo quando ID existir")
     void buscarPorId_deveRetornarArquivo_quandoIdExistir() {
         // Arrange
-        when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivoMock));
+        when(arquivoRepository.findById(1)).thenReturn(Optional.of(arquivoMock));
 
         // Act
-        Arquivo resultado = arquivoService.buscarPorId(1L);
+        Arquivo resultado = arquivoService.buscarPorId(1);
 
         // Assert
         assertNotNull(resultado);
         assertEquals("documento.pdf", resultado.getNomeOriginal());
-        verify(arquivoRepository, times(1)).findById(1L);
+        verify(arquivoRepository, times(1)).findById(1);
     }
 
     @Test
     @DisplayName("buscarPorId: deve lancar IdNotFoundException quando ID nao existir")
     void buscarPorId_deveLancarIdNotFoundException_quandoIdNaoExistir() {
         // Arrange
-        when(arquivoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(arquivoRepository.findById(99)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(IdNotFoundException.class, () -> arquivoService.buscarPorId(99L));
+        assertThrows(IdNotFoundException.class, () -> arquivoService.buscarPorId(99));
 
-        verify(arquivoRepository, times(1)).findById(99L);
+        verify(arquivoRepository, times(1)).findById(99);
     }
 
     // -------------------------------------------------------
@@ -179,10 +194,10 @@ class ArquivoServiceTest {
         Arquivo arquivo = new Arquivo();
         arquivo.setStatusValidacao(StatusValidacao.APROVADO);
         arquivo.setCaminhoArquivo(filePath.toString());
-        when(arquivoRepository.findById(1L)).thenReturn(Optional.of(arquivo));
+        when(arquivoRepository.findById(1)).thenReturn(Optional.of(arquivo));
 
         // Act
-        byte[] resultado = arquivoService.getConteudo(1L);
+        byte[] resultado = arquivoService.getConteudo(1);
 
         // Assert
         assertArrayEquals(new byte[]{10, 20, 30}, resultado);

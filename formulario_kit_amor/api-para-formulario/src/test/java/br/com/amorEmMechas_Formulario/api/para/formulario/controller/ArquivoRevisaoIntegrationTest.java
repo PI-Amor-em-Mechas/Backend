@@ -60,13 +60,13 @@ class ArquivoRevisaoIntegrationTest {
         return new MockMultipartFile("arquivo", "laudo.png", "image/png", buffer.toByteArray());
     }
 
-    private long enviar(Integer pacienteId) throws Exception {
+    private Integer enviar(Integer pacienteId) throws Exception {
         var request = multipart("/arquivos").file(imagem()).param("tipo", "RELATORIO_MEDICO");
         if (pacienteId != null) request.param("pacienteId", pacienteId.toString());
         var response = mvc.perform(request).andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusValidacao").value("PENDENTE"))
                 .andExpect(jsonPath("$.dataUpload").isNotEmpty()).andReturn();
-        return json.readTree(response.getResponse().getContentAsString()).get("id").asLong();
+        return json.readTree(response.getResponse().getContentAsString()).get("id").asInt();
     }
 
     private Arquivo registro(StatusValidacao status, Paciente paciente) {
@@ -80,7 +80,7 @@ class ArquivoRevisaoIntegrationTest {
     @Test
     void uploadRevisaoDownloadEPersistenciaSemComparacaoAutomatica() throws Exception {
         Paciente paciente = paciente();
-        long id = enviar(paciente.getId());
+        Integer id = enviar(paciente.getId());
         mvc.perform(get("/arquivos/pendentes-validacao")).andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id));
         mvc.perform(get("/arquivos/{id}", id)).andExpect(status().isOk())
@@ -102,7 +102,7 @@ class ArquivoRevisaoIntegrationTest {
 
     @Test
     void rejeicaoExigeObservacaoEPreservaDecisaoContraSegundaRevisao() throws Exception {
-        long id = enviar(null);
+        Integer id = enviar(null);
         mvc.perform(patch("/arquivos/{id}/validacao", id).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"decisao\":\"REJEITADO\",\"observacao\":\"  \"}")).andExpect(status().isBadRequest());
         assertThat(arquivos.findById(id).orElseThrow().getStatusValidacao()).isEqualTo(StatusValidacao.PENDENTE);
@@ -116,7 +116,7 @@ class ArquivoRevisaoIntegrationTest {
     @Test
     void revisoresMedicoEEnfermeiroPodemDecidir() throws Exception {
         for (String role : new String[]{"MEDICO", "ENFERMEIRO"}) {
-            long id = enviar(null);
+            Integer id = enviar(null);
             mvc.perform(patch("/arquivos/{id}/validacao", id).with(user("equipe").roles(role))
                     .contentType(MediaType.APPLICATION_JSON).content("{\"decisao\":\"APROVADO\"}"))
                     .andExpect(status().isOk());
@@ -126,7 +126,7 @@ class ArquivoRevisaoIntegrationTest {
     @Test
     @WithMockUser(roles = "ATENDENTE")
     void atendenteNaoRevisaNemAssociaOuBaixaPendentes() throws Exception {
-        long id = registro(StatusValidacao.PENDENTE, null).getId();
+        Integer id = registro(StatusValidacao.PENDENTE, null).getId();
         mvc.perform(get("/arquivos/pendentes-validacao")).andExpect(status().isForbidden());
         mvc.perform(patch("/arquivos/{id}/validacao", id).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"decisao\":\"APROVADO\"}")).andExpect(status().isForbidden());
@@ -138,7 +138,9 @@ class ArquivoRevisaoIntegrationTest {
     @Test
     @WithAnonymousUser
     void uploadAvulsoPublicoMasRevisaoEConsultaExigemSessao() throws Exception {
-        long id = enviar(null);
+        mvc.perform(multipart("/arquivos").file(imagem()).param("tipo", "RELATORIO_MEDICO"))
+                .andExpect(status().isForbidden());
+        int id = registro(StatusValidacao.PENDENTE, null).getId();
         mvc.perform(get("/arquivos/{id}", id)).andExpect(status().isUnauthorized());
         mvc.perform(get("/arquivos/pendentes-validacao")).andExpect(status().isUnauthorized());
     }

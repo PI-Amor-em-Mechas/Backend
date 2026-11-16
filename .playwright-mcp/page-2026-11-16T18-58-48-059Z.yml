@@ -1,0 +1,41 @@
+- main [ref=f2e3]:
+  - generic [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - paragraph [ref=f2e6]: AMOR EM MECHAS
+      - heading "Ponto" [level=1] [ref=f2e7]
+    - button "Sair" [ref=f2e9] [cursor=pointer]
+  - generic [ref=f2e10]:
+    - generic [ref=f2e11]:
+      - paragraph [ref=f2e12]: JORNADA DE HOJE
+      - heading [level=2] [ref=f2e13]:
+        - text: Presença registrada
+        - emphasis [ref=f2e14]: com confiança.
+      - paragraph [ref=f2e15]: Use a câmera para reconhecer sua identidade e registrar entrada ou saída.
+      - button "Abrir reconhecimento →" [ref=f2e16] [cursor=pointer]
+    - generic [ref=f2e17]:
+      - generic [ref=f2e18]: AM
+      - generic [ref=f2e19]: FACE+ VOZ
+  - generic [ref=f2e20]:
+    - generic [ref=f2e21]:
+      - generic [ref=f2e22]:
+        - paragraph [ref=f2e23]: ADMINISTRAÇÃO
+        - heading "Colaboradores" [level=2] [ref=f2e24]
+      - generic [ref=f2e25]:
+        - generic [ref=f2e26]: 1 cadastrados
+        - button "Cadastrar pessoa" [ref=f2e27] [cursor=pointer]
+    - article [ref=f2e6522]:
+      - generic [ref=f2e6523]:
+        - strong [ref=f2e6524]: Pessoa E2E 2026
+        - generic [ref=f2e6525]: ID e2e-demo-2026 · 1 amostras faciais
+        - generic [ref=f2e6526]: Voz 0/3
+      - generic [ref=f2e6527]:
+        - textbox "Nome de e2e-demo-2026" [ref=f2e6528]: Pessoa E2E 2026
+        - button "Salvar nome" [ref=f2e6529] [cursor=pointer]
+        - button "Exportar LGPD" [ref=f2e6530] [cursor=pointer]
+        - button "Gravar voz (5s)" [ref=f2e6531] [cursor=pointer]
+        - button "Limpar voz" [ref=f2e6532] [cursor=pointer]
+        - button "×" [ref=f2e6533] [cursor=pointer]
+        - generic [ref=f2e6534]: "Biometria de voz: grave uma amostra de 3 necessárias."
+  - generic [ref=f2e30]:
+    - generic [ref=f2e31]: Reconhecimento facial seguro
+    - generic [ref=f2e32]: LGPD · Biometria protegida

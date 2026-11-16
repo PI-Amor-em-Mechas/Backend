@@ -26,6 +26,8 @@ public class MadrinhaRequestDto {
     @NotBlank
     private String status;
 
+    private String colaboradorId;
+
     public String getNomeCompleto() {
         return nomeCompleto;
     }
@@ -72,5 +74,13 @@ public class MadrinhaRequestDto {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getColaboradorId() {
+        return colaboradorId;
+    }
+
+    public void setColaboradorId(String colaboradorId) {
+        this.colaboradorId = colaboradorId;
     }
 }

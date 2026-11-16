@@ -1,0 +1,11 @@
+- main [ref=f12e85]:
+  - generic [ref=f12e86]:
+    - heading "Área da equipe" [level=1] [ref=f12e87]
+    - paragraph [ref=f12e88]: Entre com sua conta para acessar os painéis internos.
+    - generic [ref=f12e89]:
+      - generic [ref=f12e90]: Usuário
+      - textbox "Usuário" [ref=f12e91]
+    - generic [ref=f12e92]:
+      - generic [ref=f12e93]: Senha
+      - textbox "Senha" [ref=f12e94]
+    - button "Entrar" [ref=f12e95] [cursor=pointer]
